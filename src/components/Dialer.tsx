@@ -118,6 +118,8 @@ const Dialer = () => {
           <DialButton onClick={onDialButtonClick} digit="*" />
           <DialButton onClick={onDialButtonClick} digit="0" />
           <DialButton onClick={onDialButtonClick} digit="#" />
+          <DialButton className="hidden" digit="Backspace" />
+          <DialButton className="hidden" digit="Call" />
         </div>
       </CardContent>
       <CardFooter className="justify-center">

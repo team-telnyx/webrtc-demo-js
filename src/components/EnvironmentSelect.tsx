@@ -1,4 +1,4 @@
-import { useEnvironment } from "@/atoms/environment";
+import { Environment, useEnvironment } from "@/atoms/environment";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
 const EnvironmentSelect = () => {
   const [env, setEnv] = useEnvironment();
   return (
-    <Select value={env} onValueChange={setEnv}>
+    <Select value={env} onValueChange={(value) => setEnv(value as Environment)}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Environment" />
       </SelectTrigger>

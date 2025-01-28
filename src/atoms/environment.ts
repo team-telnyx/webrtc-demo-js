@@ -6,6 +6,9 @@ export enum Environment {
   Development = "development",
 }
 
-export const environmentAtom = atomWithStorage("environment", "production");
+export const environmentAtom = atomWithStorage(
+  "environment",
+  Environment.Development
+);
 
 export const useEnvironment = () => useAtom(environmentAtom);
