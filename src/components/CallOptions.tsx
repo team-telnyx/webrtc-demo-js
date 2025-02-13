@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCallback } from "react";
 import CodecSelectInput from "./CodecInput";
 import CustomHeadersInput from "./CustomHeadersInput";
+import { Switch } from "./ui/switch";
 
 const CallOptions = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -30,6 +31,7 @@ const CallOptions = () => {
     defaultValues: {
       callerName: "",
       destinationNumber: "",
+      video: false,
       callerNumber: "",
       clientState: "",
       customHeaders: [],
@@ -71,6 +73,29 @@ const CallOptions = () => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="video"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Enable Video</FormLabel>
+                    <FormDescription>
+                      Enable Video Call (WebRTC To WebRTC only)
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="callerName"

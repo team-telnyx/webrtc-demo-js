@@ -20,6 +20,7 @@ export interface ICallOptions {
   debugOutput?: "socket" | "file";
   preferred_codecs?: RTCRtpCodec[];
   prefetchIceCandidates?: boolean;
+  video?: boolean;
 }
 
 const callOptionsAtom = atom({
@@ -35,6 +36,7 @@ const callOptionsAtom = atom({
   telnyxLegId: undefined,
   telnyxSessionId: undefined,
   useStereo: false,
+  video: false,
 } as ICallOptions);
 
 export const useCallOptions = () => useAtom(callOptionsAtom);
