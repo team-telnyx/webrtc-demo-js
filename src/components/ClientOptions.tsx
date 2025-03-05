@@ -149,7 +149,7 @@ const ClientOptions = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Enter only your SIP username.
+                        Enter your SIP username.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
