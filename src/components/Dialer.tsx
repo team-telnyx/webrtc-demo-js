@@ -1,5 +1,6 @@
 import { ICallOptions, useCallOptions } from "@/atoms/callOptions";
 import { useConnectionStatus, useTelnyxClient } from "@/atoms/telnyxClient";
+import { useTelnyxNotification } from "@/atoms/telnyxNotification";
 import {
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import clsx from "clsx";
-import { Phone } from "lucide-react";
+import { Phone, PhoneOff } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { Input } from "./ui/input";
@@ -52,6 +53,7 @@ const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
   const [connectionStatus] = useConnectionStatus();
   const { pushLog } = useLog();
+  const [notification] = useTelnyxNotification();
 
   const [client] = useTelnyxClient();
   const onDialButtonClick = useCallback(
@@ -63,7 +65,26 @@ const Dialer = () => {
     },
     [setCallOptions]
   );
+
+  const hasActiveCall = notification?.call && 
+    ["active", "held", "connecting", "trying", "ringing", "requesting"].includes(notification.call.state);
+
+  const onHangupCall = () => {
+    if (notification?.call) {
+      pushLog({
+        id: "hangingUpCall",
+        description: "Hanging up call",
+      });
+      notification.call.hangup();
+    }
+  };
+
   const onStartCall = () => {
+    if (hasActiveCall) {
+      onHangupCall();
+      return;
+    }
+
     if (!client) {
       toast("Telnyx client not initialized");
       return;
@@ -124,14 +145,20 @@ const Dialer = () => {
       </CardContent>
       <CardFooter className="justify-center">
         <DialButton
-          data-testid="btn-call"
+          data-testid={hasActiveCall ? "btn-hangup" : "btn-call"}
           disabled={
-            callOptions.destinationNumber == "" ||
-            connectionStatus !== "connected"
+            !hasActiveCall && (
+              callOptions.destinationNumber == "" ||
+              connectionStatus !== "connected"
+            )
           }
           onClick={onStartCall}
-          digit={<Phone />}
-          className="bg-[#00E3AA] text-black hover:bg-[#00C99B] disabled:opacity-75  disabled:cursor-not-allowed w-10 h-10"
+          digit={hasActiveCall ? <PhoneOff /> : <Phone />}
+          className={
+            hasActiveCall
+              ? "bg-red-500 text-white hover:bg-red-600 w-10 h-10"
+              : "bg-[#00E3AA] text-black hover:bg-[#00C99B] disabled:opacity-75 disabled:cursor-not-allowed w-10 h-10"
+          }
         ></DialButton>
       </CardFooter>
     </Card>
