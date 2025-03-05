@@ -144,12 +144,12 @@ const ClientOptions = () => {
                       <FormControl>
                         <Input
                           data-testid="input-username"
-                          placeholder="example@sip.telnyx.com"
+                          placeholder="Username"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        The SIP username to authenticate with.
+                        Enter only your SIP username (without @sip.telnyx.com).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
