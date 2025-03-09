@@ -10,7 +10,10 @@ import Call from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
 import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import { Button } from "./ui/button";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import Keyboard from "./Keyboard";
+import { playDTMFTone } from "@/lib/dtmf";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Props = {
   call: Call;
@@ -29,7 +32,7 @@ const VideoDisplay = ({ stream }: { stream: MediaStream }) => {
     return null;
   }
   return (
-    <div className="w-[320px] h-[240px] rounded overflow-hidden border-white border-2">
+    <div className="w-[240px] h-[120px] rounded overflow-hidden border-white border-2">
       <video
         ref={videoRef}
         autoPlay
@@ -42,6 +45,14 @@ const VideoDisplay = ({ stream }: { stream: MediaStream }) => {
 };
 
 const ActiveCall = ({ call }: Props) => {
+  const onDTMFClick = useCallback(
+    ({ digit }: { digit: string }) => {
+      call.dtmf(digit);
+      playDTMFTone(digit);
+    },
+    [call]
+  );
+
   return (
     <Dialog
       open
@@ -51,7 +62,7 @@ const ActiveCall = ({ call }: Props) => {
         }
       }}
     >
-      <DialogContent>
+      <DialogContent className="overflow-hidden">
         <DialogHeader>
           <DialogTitle>Active Call</DialogTitle>
           <DialogDescription>
@@ -60,16 +71,34 @@ const ActiveCall = ({ call }: Props) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col space-y-4 items-center">
-          <VideoDisplay stream={call.remoteStream} />
-          <h1>Inbound audio levels</h1>
-          <AudioVisualizer mediaStream={call.remoteStream} />
+        <div className="flex-1 max-h-[60vh] overflow-y-auto">
+          <div className="flex flex-col space-y-4 items-center">
+            <VideoDisplay stream={call.remoteStream} />
+            <h1>Inbound </h1>
+            <AudioVisualizer mediaStream={call.remoteStream} />
 
-          <VideoDisplay stream={call.localStream} />
-          <h1>Outbound audio levels</h1>
-          <AudioVisualizer mediaStream={call.localStream} color="#fff" />
+            <VideoDisplay stream={call.localStream} />
+            <h1>Outbound</h1>
+            <AudioVisualizer mediaStream={call.localStream} color="#fff" />
+          </div>
+          <AudioPlayer mediaStream={call.remoteStream} />
+          <Tabs defaultValue="keyboard">
+            <div className="flex justify-center">
+              <TabsList>
+                <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
+                <TabsTrigger value="metrics">Metrics</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="keyboard">
+              <Keyboard onDialButtonClick={onDTMFClick} />
+            </TabsContent>
+
+            <TabsContent value="metrics">
+              Call metrics are not available yet.
+            </TabsContent>
+          </Tabs>
         </div>
-        <AudioPlayer mediaStream={call.remoteStream} />
 
         <DialogFooter>
           <Button
