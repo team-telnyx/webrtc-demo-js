@@ -10,10 +10,10 @@ const ConnectionStatus = () => {
       className={clsx({
         "text-red-500": status === "disconnected",
         "text-yellow-500": status === "connecting",
-        "text-green-500": status === "connected",
+        "text-green-500": status === "registered",
       })}
     >
-      {status} ({status === "connected" && clientOptions.login})
+      {status} ({status === "registered" && clientOptions.login})
     </h3>
   );
 };

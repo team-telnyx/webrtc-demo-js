@@ -8,46 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import clsx from "clsx";
 import { Phone, PhoneOff } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { Input } from "./ui/input";
 import { useLog } from "@/atoms/log";
-
-interface DialButtonData {
-  digit: string;
-  characters?: string;
-}
-type DialButtonProps = {
-  disabled?: boolean;
-  className?: string;
-  characters?: string;
-  digit: React.ReactNode;
-  onClick?: (data: DialButtonData) => void;
-};
-
-const DialButton = ({
-  characters,
-  digit,
-  className,
-  onClick,
-  ...props
-}: DialButtonProps) => {
-  return (
-    <button
-      onClick={() => onClick?.({ digit: digit as string, characters })}
-      className={clsx(
-        " w-16 h-16 p-4 border hover:bg-foreground hover:text-black rounded-full flex flex-col items-center justify-center",
-        className
-      )}
-      {...props}
-    >
-      <span className="text-lg font-bold">{digit}</span>
-      <span className="text-xs text-muted-foreground">{characters}</span>
-    </button>
-  );
-};
+import { DialButton, DialButtonData } from "./DialButton";
 
 const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -89,7 +55,7 @@ const Dialer = () => {
       toast("Telnyx client not initialized");
       return;
     }
-    if (connectionStatus !== "connected") {
+    if (connectionStatus !== "registered") {
       toast("Telnyx is not registered yet");
       return;
     }
@@ -149,7 +115,7 @@ const Dialer = () => {
           disabled={
             !hasActiveCall && (
               callOptions.destinationNumber == "" ||
-              connectionStatus !== "connected"
+              connectionStatus !== "registered"
             )
           }
           onClick={onStartCall}

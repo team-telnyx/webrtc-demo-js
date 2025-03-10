@@ -20,7 +20,7 @@ const EnvironmentSelect = () => {
         <SelectGroup>
           <SelectLabel>Environment</SelectLabel>
           <SelectItem value="production">Production</SelectItem>
-          <SelectItem value="development">development</SelectItem>
+          <SelectItem value="development">Development</SelectItem>
         </SelectGroup>
       </SelectContent>
     </Select>

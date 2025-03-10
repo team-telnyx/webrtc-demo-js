@@ -1,6 +1,7 @@
 import type { Call } from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
 import { useRive } from "@rive-app/react-canvas-lite";
 import { Button } from "./ui/button";
+import { useCallOptions } from "@/atoms/callOptions";
 type Props = {
   call: Call;
 };
@@ -10,6 +11,7 @@ const IncomingCall = ({ call }: Props) => {
     autoplay: true,
     src: "/incoming.riv",
   });
+  const [callOptions] = useCallOptions();
   return (
     <div className="IncomingCallAlert container mx-auto my-4 border rounded p-4">
       <div className="flex items-center gap-2">
@@ -22,7 +24,10 @@ const IncomingCall = ({ call }: Props) => {
             {call.options.callerName} ({call.options.callerNumber})
           </p>
         </div>
-        <Button data-testid="btn-answer-call" onClick={() => call.answer()}>
+        <Button
+          data-testid="btn-answer-call"
+          onClick={() => call.answer(callOptions)}
+        >
           Answer
         </Button>
         <Button onClick={() => call.hangup()} variant={"outline"}>

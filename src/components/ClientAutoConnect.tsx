@@ -11,7 +11,7 @@ const ClientAutoConnect = () => {
     }
 
     const onReady = () => {
-      setStatus("connected");
+      setStatus("registered");
     };
     const onError = () => {
       setStatus("disconnected");

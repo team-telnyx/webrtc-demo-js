@@ -24,7 +24,10 @@ const clientAtom = atom<TelnyxRTC | null>((get) => {
     return null;
   }
 
-  return new TelnyxRTCClass({ ...clientOptions, env: environment } as any);
+  return new TelnyxRTCClass({
+    ...clientOptions,
+    env: environment,
+  } as any);
 });
 
 export const useTelnyxClient = () => useAtom(clientAtom);
