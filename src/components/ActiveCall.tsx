@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef } from "react";
 import Keyboard from "./Keyboard";
 import { playDTMFTone } from "@/lib/dtmf";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import InCallQualityMetrics from "./InCallQualityMetrics";
 
 type Props = {
   call: Call;
@@ -95,7 +96,7 @@ const ActiveCall = ({ call }: Props) => {
             </TabsContent>
 
             <TabsContent value="metrics">
-              Call metrics are not available yet.
+              <InCallQualityMetrics />
             </TabsContent>
           </Tabs>
         </div>
