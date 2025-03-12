@@ -75,12 +75,7 @@ const ActiveCall = ({ call }: Props) => {
         <div className="flex-1 max-h-[60vh] overflow-y-auto">
           <div className="flex flex-col space-y-4 items-center">
             <VideoDisplay stream={call.remoteStream} />
-            <h1>Inbound </h1>
-            <AudioVisualizer mediaStream={call.remoteStream} />
-
             <VideoDisplay stream={call.localStream} />
-            <h1>Outbound</h1>
-            <AudioVisualizer mediaStream={call.localStream} color="#fff" />
           </div>
           <AudioPlayer mediaStream={call.remoteStream} />
           <Tabs defaultValue="keyboard">
