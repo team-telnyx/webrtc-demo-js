@@ -6,9 +6,6 @@
 
 An open source reference implementation of Telnyx's Voice SDK for web browsers. This project demonstrates how to use the Telnyx JS Voice SDK to make and receive calls in a web browser. 📞 🔥
 
-<p align="center">
-  <img src="https://developers.telnyx.com/assets/telnyx-webrtc-js-sdk-demo-app-d9a0c9a5e8e5c9e9c9e9c9e9c9e9c9e9.png" alt="Telnyx WebRTC Demo App" width="600">
-</p>
 
 ## Project Structure
 
