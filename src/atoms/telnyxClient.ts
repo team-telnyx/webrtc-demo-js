@@ -3,6 +3,7 @@ import { atom, useAtom } from "jotai";
 import { IClientOptions, TelnyxRTC } from "@telnyx/webrtc";
 import { clientOptionsAtom } from "./clientOptions";
 import { hostAtom } from "./host";
+import { regionAtom } from "./region";
 
 type TelnyxRTCVersion = {
   version: string;
@@ -23,8 +24,10 @@ function hasValidCredentials(options: IClientOptions) {
 }
 const clientAtom = atom<TelnyxRTC | null>((get) => {
   const clientOptions = get(clientOptionsAtom);
-  const { Class: TelnyxRTCClass } = get(telnyxRTCVersionAtom);
+  const region = get(regionAtom);
   const host = get(hostAtom);
+
+  const { Class: TelnyxRTCClass } = get(telnyxRTCVersionAtom);
   if (!hasValidCredentials(clientOptions)) {
     return null;
   }
@@ -32,6 +35,7 @@ const clientAtom = atom<TelnyxRTC | null>((get) => {
   return new TelnyxRTCClass({
     ...clientOptions,
     host,
+    region: region !== "auto" ? region : undefined,
   } as any);
 });
 
