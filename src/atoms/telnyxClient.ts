@@ -19,8 +19,12 @@ const connectionStatusAtom = atom<string>("disconnected");
 function hasValidCredentials(options: IClientOptions) {
   const validCredentials = !!options.login && !!options.password;
   const validLoginToken = !!options.login_token;
+  const validAnonymousLoginOptions =
+    options.anonymous_login &&
+    !!options.anonymous_login.target_id &&
+    options.anonymous_login.target_type === "ai_assistant";
 
-  return validCredentials || validLoginToken;
+  return validCredentials || validLoginToken || validAnonymousLoginOptions;
 }
 const clientAtom = atom<TelnyxRTC | null>((get) => {
   const clientOptions = get(clientOptionsAtom);
