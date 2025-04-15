@@ -1,4 +1,6 @@
 import { ICallOptions, useCallOptions } from "@/atoms/callOptions";
+import { useLog } from "@/atoms/log";
+import { useLoginMethod } from "@/atoms/loginMethod";
 import { useConnectionStatus, useTelnyxClient } from "@/atoms/telnyxClient";
 import { useTelnyxNotification } from "@/atoms/telnyxNotification";
 import {
@@ -9,17 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Phone, PhoneOff } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { Input } from "./ui/input";
-import { useLog } from "@/atoms/log";
 import { DialButton, DialButtonData } from "./DialButton";
+import { Input } from "./ui/input";
 
 const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
   const [connectionStatus] = useConnectionStatus();
   const { pushLog } = useLog();
   const [notification] = useTelnyxNotification();
+  const [loginMethod] = useLoginMethod();
 
   const [client] = useTelnyxClient();
   const onDialButtonClick = useCallback(
@@ -32,8 +34,16 @@ const Dialer = () => {
     [setCallOptions]
   );
 
-  const hasActiveCall = notification?.call && 
-    ["active", "held", "connecting", "trying", "ringing", "requesting"].includes(notification.call.state);
+  const hasActiveCall =
+    notification?.call &&
+    [
+      "active",
+      "held",
+      "connecting",
+      "trying",
+      "ringing",
+      "requesting",
+    ].includes(notification.call.state);
 
   const onHangupCall = () => {
     if (notification?.call) {
@@ -60,10 +70,11 @@ const Dialer = () => {
       return;
     }
 
-    if (!callOptions.destinationNumber) {
-      toast("Destination number is required");
+    if (loginMethod !== "anonymous" && !callOptions.destinationNumber) {
+      toast("Please enter a destination number");
       return;
     }
+
     pushLog({
       id: "callingDestination",
       description: `Calling: ${callOptions.destinationNumber}`,
@@ -71,6 +82,16 @@ const Dialer = () => {
 
     client.newCall(callOptions);
   };
+
+  const isDialButtonDisabled = useMemo(() => {
+    if (hasActiveCall) {
+      return false;
+    }
+    if (connectionStatus !== "registered") {
+      return true;
+    }
+    return false;
+  }, [connectionStatus, hasActiveCall]);
   return (
     <Card>
       <CardHeader>
@@ -78,6 +99,7 @@ const Dialer = () => {
       </CardHeader>
       <CardContent>
         <Input
+          disabled={loginMethod === "anonymous"}
           data-testid="input-destination"
           onChange={(e) =>
             setCallOptions((prev: ICallOptions) => ({
@@ -112,12 +134,7 @@ const Dialer = () => {
       <CardFooter className="justify-center">
         <DialButton
           data-testid={hasActiveCall ? "btn-hangup" : "btn-call"}
-          disabled={
-            !hasActiveCall && (
-              callOptions.destinationNumber == "" ||
-              connectionStatus !== "registered"
-            )
-          }
+          disabled={isDialButtonDisabled}
           onClick={onStartCall}
           digit={hasActiveCall ? <PhoneOff /> : <Phone />}
           className={

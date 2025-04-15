@@ -28,22 +28,22 @@ import {
 } from "@/components/ui/select";
 
 import { useClientOptions, useClientProfiles } from "@/atoms/clientOptions";
+import { LoginMethod, useLoginMethod } from "@/atoms/loginMethod";
+import { useConnectionStatus } from "@/atoms/telnyxClient";
 import { Input } from "@/components/ui/input";
 import { IClientOptions } from "@telnyx/webrtc";
+import { useCallback } from "react";
 import { toast } from "sonner";
-import { Switch } from "./ui/switch";
-import { useConnectionStatus } from "@/atoms/telnyxClient";
-import { useCallback, useState } from "react";
 import FileUploadButton from "./FileUploadButton";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Switch } from "./ui/switch";
 
-type LoginMethod = "credentials" | "token";
 const ClientOptions = () => {
   const [profiles, setProfiles] = useClientProfiles();
   const [clientOptions, setClientOptions] = useClientOptions();
   const [connectionStatus] = useConnectionStatus();
-  const [loginMethod, _setLoginMethod] = useState<LoginMethod>("credentials");
+  const [loginMethod, _setLoginMethod] = useLoginMethod();
 
   const form = useForm<Partial<IClientOptions>>({
     values: clientOptions,
@@ -57,6 +57,10 @@ const ClientOptions = () => {
       forceRelayCandidate: false,
       ringbackFile: "/ringback.mp3",
       ringtoneFile: "/ringtone.mp3",
+      anonymous_login: {
+        target_type: "",
+        target_id: "",
+      },
     },
   });
 
@@ -65,9 +69,11 @@ const ClientOptions = () => {
       form.setValue("login_token", "");
       form.setValue("login", "");
       form.setValue("password", "");
+      form.setValue("anonymous_login.target_id", "");
+      form.setValue("anonymous_login.target_type", "ai_assistant");
       _setLoginMethod(method as LoginMethod);
     },
-    [form]
+    [_setLoginMethod, form]
   );
 
   const onSubmit = (values: Partial<IClientOptions>) => {
@@ -106,6 +112,102 @@ const ClientOptions = () => {
     return setClientOptions(profile);
   };
 
+  const loginMethodForm = () => {
+    if (loginMethod === "anonymous") {
+      return (
+        <FormField
+          rules={{ required: "AI Assistant ID is required" }}
+          control={form.control}
+          name="anonymous_login.target_id"
+          render={({ field }) => (
+            <FormItem className="mb-4">
+              <FormLabel>AI Assistant ID</FormLabel>
+              <FormControl>
+                <Input
+                  data-testid="input-anonymous-login-target-id"
+                  type="text"
+                  placeholder="AI Assistant ID"
+                  {...field}
+                />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
+    }
+    if (loginMethod === "credentials") {
+      return (
+        <>
+          <FormField
+            rules={{ required: "Login is required" }}
+            control={form.control}
+            name="login"
+            render={({ field }) => (
+              <FormItem className="mb-4">
+                <FormLabel>Login</FormLabel>
+                <FormControl>
+                  <Input
+                    data-testid="input-username"
+                    placeholder="Username"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>Enter your SIP username.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            rules={{ required: "Password is required" }}
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem className="mb-4">
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input
+                    data-testid="input-password"
+                    type="password"
+                    placeholder="Password"
+                    {...field}
+                  />
+                </FormControl>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
+      );
+    }
+    if (loginMethod === "token") {
+      return (
+        <FormField
+          rules={{ required: "Login token is required" }}
+          control={form.control}
+          name="login_token"
+          render={({ field }) => (
+            <FormItem className="mb-4">
+              <FormLabel>Login Token</FormLabel>
+              <FormControl>
+                <Input
+                  data-testid="input-login-token"
+                  type="text"
+                  placeholder="Login Token"
+                  {...field}
+                />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
+    }
+  };
   return (
     <Card>
       <CardHeader>
@@ -169,74 +271,19 @@ const ClientOptions = () => {
                 />
                 <Label htmlFor="radio-token">Token</Label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value="anonymous"
+                  id="radio-anonymous"
+                  data-testid="radio-anonymous"
+                />
+                <Label htmlFor="radio-anonymous">
+                  Anonymous-login (AI Assistant)
+                </Label>
+              </div>
             </RadioGroup>
-            {loginMethod === "credentials" ? (
-              <>
-                <FormField
-                  rules={{ required: "Login is required" }}
-                  control={form.control}
-                  name="login"
-                  render={({ field }) => (
-                    <FormItem className="mb-4">
-                      <FormLabel>Login</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-username"
-                          placeholder="Username"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Enter your SIP username.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  rules={{ required: "Password is required" }}
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem className="mb-4">
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-password"
-                          type="password"
-                          placeholder="Password"
-                          {...field}
-                        />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            ) : (
-              <FormField
-                rules={{ required: "Login token is required" }}
-                control={form.control}
-                name="login_token"
-                render={({ field }) => (
-                  <FormItem className="mb-4">
-                    <FormLabel>Login Token</FormLabel>
-                    <FormControl>
-                      <Input
-                        data-testid="input-login-token"
-                        type="text"
-                        placeholder="Login Token"
-                        {...field}
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {loginMethodForm()}
             <FormField
               control={form.control}
               name="debug"
