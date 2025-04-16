@@ -16,7 +16,12 @@ const RegionSelect = () => {
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="auto">AUTO</SelectItem>
+        <SelectItem value="eu">EU</SelectItem>
+        <SelectItem value="us-central">US-CENTRAL</SelectItem>
+        <SelectItem value="us-east">US-EAST</SelectItem>
+        <SelectItem value="us-west">US-WEST</SelectItem>
         <SelectItem value="ca-central">CA-CENTRAL</SelectItem>
+        <SelectItem value="apac">APAC</SelectItem>
       </SelectContent>
     </Select>
   );
