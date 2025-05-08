@@ -10,7 +10,7 @@ const profilesAtom = atomWithStorage<IClientOptions[]>(
 export const clientOptionsAtom = atomWithStorage<IClientOptions>(
   "telnyx_client_options",
   {
-    debug: true,
+    debug: false,
     debugOutput: "socket",
     login: "",
     password: "",
