@@ -29,11 +29,6 @@ const SDKVersionDropdown = () => {
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="latest">Latest</SelectItem>
-        <SelectItem value="2.22.4">2.22.4</SelectItem>
-        <SelectItem value="2.22.3">2.22.3</SelectItem>
-        <SelectItem value="2.22.2">2.22.2</SelectItem>
-        <SelectItem value="2.22.1">2.22.1</SelectItem>
-        <SelectItem value="2.22.0">2.22.0</SelectItem>
         <SelectItem value="2.21.2">2.21.2</SelectItem>
         <SelectItem value="2.21.1">2.21.1</SelectItem>
         <SelectItem value="2.20.0">2.20.0</SelectItem>
