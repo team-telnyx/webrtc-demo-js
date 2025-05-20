@@ -1,10 +1,7 @@
 import { useLog } from "@/atoms/log";
 import { useTelnyxClient } from "@/atoms/telnyxClient";
-import {
-  NotificationType,
-  useTelnyxNotification,
-} from "@/atoms/telnyxNotification";
-import { TelnyxRTC } from "@telnyx/webrtc";
+import { useTelnyxNotification } from "@/atoms/telnyxNotification";
+import { INotification, TelnyxRTC } from "@telnyx/webrtc";
 import { useEffect, useRef } from "react";
 
 const CallNotificationHandler = () => {
@@ -18,7 +15,7 @@ const CallNotificationHandler = () => {
   useEffect(() => {
     if (!client) return;
 
-    const onNotification = (notification: NotificationType) => {
+    const onNotification = (notification: INotification) => {
       if (notification.type !== "callUpdate") return;
       if (!notification.call) return;
 

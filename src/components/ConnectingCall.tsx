@@ -1,4 +1,4 @@
-import Call from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
+import { Call } from "@telnyx/webrtc";
 import { RadioTower } from "lucide-react";
 import { Button } from "./ui/button";
 

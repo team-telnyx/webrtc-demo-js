@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import Call from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
+import { Call } from "@telnyx/webrtc";
 import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import { Button } from "./ui/button";

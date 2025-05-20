@@ -14,9 +14,9 @@ import {
   CardTitle,
 } from "./ui/card";
 import { useEffect } from "react";
-import { NotificationType } from "@/atoms/telnyxNotification";
 import { Button } from "./ui/button";
 import List from "./List";
+import { INotification } from "@telnyx/webrtc";
 
 const CallDirectionIcon = (props: { direction: "inbound" | "outbound" }) => {
   return props.direction === "inbound" ? (
@@ -43,7 +43,7 @@ const CallHistory = () => {
 
   useEffect(() => {
     if (!client) return;
-    const onNotification = (notification: NotificationType) => {
+    const onNotification = (notification: INotification) => {
       if (notification.type !== "callUpdate") return;
       if (!notification.call) return;
       if (["hangup", "done"].includes(notification.call.state)) {

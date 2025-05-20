@@ -1,4 +1,4 @@
-import Call from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
+import { Call } from "@telnyx/webrtc";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { useCallback } from "react";

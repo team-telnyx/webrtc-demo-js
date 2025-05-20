@@ -1,10 +1,5 @@
+import { INotification } from "@telnyx/webrtc";
 import { atom, useAtom } from "jotai";
-import { Call } from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
 
-export type NotificationType = {
-  type: "callUpdate";
-  call: Call;
-};
-
-export const telnyxNotificationAtom = atom<NotificationType | null>(null);
+export const telnyxNotificationAtom = atom<INotification | null>(null);
 export const useTelnyxNotification = () => useAtom(telnyxNotificationAtom);
