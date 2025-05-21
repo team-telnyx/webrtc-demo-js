@@ -20,30 +20,7 @@ type Props = {
   call: Call;
 };
 
-const VideoDisplay = ({ stream }: { stream: MediaStream }) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  useEffect(() => {
-    if (!stream) return;
-    if (!videoRef.current) return;
 
-    videoRef.current.srcObject = stream;
-  }, [stream]);
-
-  if (stream.getVideoTracks().length === 0) {
-    return null;
-  }
-  return (
-    <div className="w-[240px] h-[120px] rounded overflow-hidden border-white border-2">
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="w-full h-full object-cover"
-      />
-    </div>
-  );
-};
 
 const ActiveCall = ({ call }: Props) => {
   const onDTMFClick = useCallback(
@@ -74,11 +51,9 @@ const ActiveCall = ({ call }: Props) => {
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto">
           <div className="flex flex-col space-y-4 items-center">
-            <VideoDisplay stream={call.remoteStream} />
             <h1>Inbound </h1>
             <AudioVisualizer mediaStream={call.remoteStream} />
 
-            <VideoDisplay stream={call.localStream} />
             <h1>Outbound</h1>
             <AudioVisualizer mediaStream={call.localStream} color="#fff" />
           </div>
