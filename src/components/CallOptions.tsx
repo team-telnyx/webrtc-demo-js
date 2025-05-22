@@ -23,7 +23,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCallback } from "react";
 import CodecSelectInput from "./CodecInput";
 import CustomHeadersInput from "./CustomHeadersInput";
-import { Switch } from "./ui/switch";
 
 const CallOptions = () => {
   const [callOptions, setCallOptions] = useCallOptions();

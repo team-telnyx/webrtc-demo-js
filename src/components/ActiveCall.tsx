@@ -6,21 +6,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { playDTMFTone } from "@/lib/dtmf";
 import { Call } from "@telnyx/webrtc";
+import { useCallback } from "react";
 import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
-import { Button } from "./ui/button";
-import { useCallback, useEffect, useRef } from "react";
-import Keyboard from "./Keyboard";
-import { playDTMFTone } from "@/lib/dtmf";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InCallQualityMetrics from "./InCallQualityMetrics";
+import Keyboard from "./Keyboard";
+import { Button } from "./ui/button";
 
 type Props = {
   call: Call;
 };
-
-
 
 const ActiveCall = ({ call }: Props) => {
   const onDTMFClick = useCallback(
