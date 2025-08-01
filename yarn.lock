@@ -950,10 +950,10 @@
   dependencies:
     "@swc/counter" "^0.1.3"
 
-"@telnyx/webrtc@^2.22.12":
-  version "2.22.12"
-  resolved "https://registry.yarnpkg.com/@telnyx/webrtc/-/webrtc-2.22.12.tgz#0efb792e2eb1a5eb6944caa68b77034c03fc8733"
-  integrity sha512-GfMjP1bfSmtgf6NfqJt4/IffsQwPn0pGk2Uv64ANYDiwtbvBuZhk4rD7GTT4W8IfoH6y/KWvfG4RRP7uecIAcA==
+"@telnyx/webrtc@^2.22.15":
+  version "2.22.15"
+  resolved "https://registry.yarnpkg.com/@telnyx/webrtc/-/webrtc-2.22.15.tgz#072bd81af2cd373ab1ab114dc2634c83499b6056"
+  integrity sha512-p16hz84zKFkOyjEthym6S9R2MFBM0sObug/vBz92SiLdtncxEBae75sRcMncwoSZaftzY+FQl8/KcBFGaafGGA==
   dependencies:
     "@peermetrics/webrtc-stats" "^5.7.1"
     loglevel "^1.6.8"

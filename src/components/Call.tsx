@@ -6,7 +6,7 @@ import HeldCall from "./HeldCall";
 
 export const Call = () => {
   const [notification] = useTelnyxNotification();
-  if (!notification) return null;
+  if (!notification || !notification.call) return null;
 
   switch (notification.call.state) {
     case "connecting":

@@ -25,11 +25,12 @@ const ClientAutoConnect = () => {
     };
 
     setStatus("connecting");
-    client.connect();
-    client.on("telnyx.ready", onReady);
-    client.on("telnyx.error", onError);
-    client.on("telnyx.socket.close", onSocketClose);
-    client.on("telnyx.socket.error", onSocketError);
+    client.connect().then(() => {
+      client.on("telnyx.ready", onReady);
+      client.on("telnyx.error", onError);
+      client.on("telnyx.socket.close", onSocketClose);
+      client.on("telnyx.socket.error", onSocketError);
+    });
 
     return () => {
       setStatus("disconnected");
