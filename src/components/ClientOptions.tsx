@@ -55,6 +55,7 @@ const ClientOptions = () => {
       login_token: "",
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
+      trickleIce: false,
       ringbackFile: "/ringback.mp3",
       ringtoneFile: "/ringtone.mp3",
       anonymous_login: {
@@ -77,6 +78,7 @@ const ClientOptions = () => {
   );
 
   const onSubmit = (values: Partial<IClientOptions>) => {
+    console.log('onSubmit values', values);
     setClientOptions(values);
     onSaveProfile(values);
   };
@@ -342,7 +344,7 @@ const ClientOptions = () => {
                   <div>
                     <FormLabel>Trickle Ice</FormLabel>
                     <FormDescription>
-                      Outgoing and incoming call flows using Trickle ICE
+                      Outgoing and incoming call flows using Trickle ICE.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -365,7 +367,7 @@ const ClientOptions = () => {
                   <div>
                     <FormLabel>Prefetch Ice Candidates</FormLabel>
                     <FormDescription>
-                      Allow the SDK to prefetch ICE candidates
+                      Allow the SDK to prefetch ICE candidates.
                     </FormDescription>
                   </div>
                   <FormControl>

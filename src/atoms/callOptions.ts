@@ -29,8 +29,6 @@ const callOptionsAtom = atom({
   callerNumber: "",
   clientState: undefined,
   customHeaders: [],
-  prefetchIceCandidates: false,
-  trickleIce: false,
   telnyxCallControlId: undefined,
   telnyxLegId: undefined,
   telnyxSessionId: undefined,
