@@ -17,6 +17,7 @@ export const clientOptionsAtom = atomWithStorage<IClientOptions>(
     login_token: "",
     prefetchIceCandidates: false,
     forceRelayCandidate: false,
+    trickleIce: false,
   }
 );
 

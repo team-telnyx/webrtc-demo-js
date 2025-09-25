@@ -20,6 +20,7 @@ export interface ICallOptions {
   debugOutput?: "socket" | "file";
   preferred_codecs?: RTCRtpCodec[];
   prefetchIceCandidates?: boolean;
+  trickleIce?: boolean;
 }
 
 const callOptionsAtom = atom({
@@ -29,6 +30,7 @@ const callOptionsAtom = atom({
   clientState: undefined,
   customHeaders: [],
   prefetchIceCandidates: false,
+  trickleIce: false,
   telnyxCallControlId: undefined,
   telnyxLegId: undefined,
   telnyxSessionId: undefined,

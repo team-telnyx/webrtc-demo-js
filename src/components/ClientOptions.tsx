@@ -336,6 +336,29 @@ const ClientOptions = () => {
             />
             <FormField
               control={form.control}
+              name="trickleIce"
+              render={({ field }) => (
+                <FormItem className="flex items-center mb-4 justify-between">
+                  <div>
+                    <FormLabel>Trickle Ice</FormLabel>
+                    <FormDescription>
+                      Outgoing and incoming call flows using Trickle ICE
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="prefetchIceCandidates"
               render={({ field }) => (
                 <FormItem className="flex items-center mb-4 justify-between">
