@@ -78,7 +78,6 @@ const ClientOptions = () => {
   );
 
   const onSubmit = (values: Partial<IClientOptions>) => {
-    console.log('onSubmit values', values);
     setClientOptions(values);
     onSaveProfile(values);
   };
