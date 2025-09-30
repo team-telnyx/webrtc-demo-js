@@ -1,6 +1,14 @@
 import { useConnectionStatus, useTelnyxClient } from "@/atoms/telnyxClient";
 import { useEffect } from "react";
 
+type SocketMessage = {
+  result: {
+    params: {
+      state: string;
+    };
+  };
+};
+
 const ClientAutoConnect = () => {
   const [client] = useTelnyxClient();
   const [, setStatus] = useConnectionStatus();
@@ -13,8 +21,18 @@ const ClientAutoConnect = () => {
     const onReady = () => {
       setStatus("registered");
     };
+    const onSocketMessage = (message: SocketMessage) => {
+      if (["REGISTER", "REGED"].includes(message.result?.params.state)) {
+        setStatus("registered");
+      }
+    };
+
     const onError = () => {
       setStatus("disconnected");
+    };
+
+    const onSocketOpen = () => {
+      setStatus("registering");
     };
 
     const onSocketClose = () => {
@@ -28,8 +46,17 @@ const ClientAutoConnect = () => {
     client.connect().then(() => {
       client.on("telnyx.ready", onReady);
       client.on("telnyx.error", onError);
+      client.on("telnyx.socket.message", onSocketMessage);
+      client.on("telnyx.socket.open", onSocketOpen);
       client.on("telnyx.socket.close", onSocketClose);
       client.on("telnyx.socket.error", onSocketError);
+
+
+      setInterval(async () => {
+        const isRegistered = await client.getIsRegistered();
+
+        console.log("isRegistered", isRegistered);
+      }, 3000);
     });
 
     return () => {
@@ -37,6 +64,8 @@ const ClientAutoConnect = () => {
       client.disconnect();
       client.off("telnyx.ready", onReady);
       client.off("telnyx.error", onError);
+      client.off("telnyx.socket.message", onSocketMessage);
+      client.off("telnyx.socket.open", onSocketOpen);
       client.off("telnyx.socket.close", onSocketClose);
       client.off("telnyx.socket.error", onSocketError);
     };
