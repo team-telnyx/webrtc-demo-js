@@ -50,13 +50,6 @@ const ClientAutoConnect = () => {
       client.on("telnyx.socket.open", onSocketOpen);
       client.on("telnyx.socket.close", onSocketClose);
       client.on("telnyx.socket.error", onSocketError);
-
-
-      setInterval(async () => {
-        const isRegistered = await client.getIsRegistered();
-
-        console.log("isRegistered", isRegistered);
-      }, 3000);
     });
 
     return () => {
