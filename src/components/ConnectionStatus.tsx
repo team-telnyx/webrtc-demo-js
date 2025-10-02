@@ -9,7 +9,7 @@ const ConnectionStatus = () => {
     <h3
       className={clsx({
         "text-red-500": status === "disconnected",
-        "text-yellow-500": status === "connecting",
+        "text-yellow-500": status === "connecting" || status === "registering",
         "text-green-500": status === "registered",
       })}
     >
