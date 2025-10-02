@@ -58,6 +58,8 @@ const ClientOptions = () => {
       trickleIce: false,
       ringbackFile: "/ringback.mp3",
       ringtoneFile: "/ringtone.mp3",
+      rtcIp: "",
+      rtcPort: 0,
       anonymous_login: {
         target_type: "",
         target_id: "",
@@ -216,7 +218,7 @@ const ClientOptions = () => {
         <CardDescription>
           Options passed to the client constructor.
           <a
-            className="underline inline-flex"
+            className="inline-flex underline"
             href="https://developers.telnyx.com/docs/voice/webrtc/js-sdk/interfaces/iclientoptions"
           >
             Reference <ExternalLinkIcon className="w-4" target="_blank" />
@@ -249,7 +251,47 @@ const ClientOptions = () => {
               <FormDescription>Select a saved profile</FormDescription>
               <FormMessage />
             </FormItem>
-            <Label className="mb-4 block">Login Method</Label>
+
+            <FormField
+              control={form.control}
+              name="rtcIp"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>RTC IP</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="input-rtc_ip"
+                      type="text"
+                      placeholder="RTC_IP"
+                      {...field}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="rtcPort"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>RTC PORT</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="input_rtc_port"
+                      type="text"
+                      placeholder="RTC PORT"
+                      {...field}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Label className="block mb-4">Login Method</Label>
             <RadioGroup
               defaultValue="credentials"
               value={loginMethod}
@@ -362,7 +404,7 @@ const ClientOptions = () => {
               control={form.control}
               name="prefetchIceCandidates"
               render={({ field }) => (
-                <FormItem className="flex items-center mb-4 justify-between">
+                <FormItem className="flex items-center justify-between mb-4">
                   <div>
                     <FormLabel>Prefetch Ice Candidates</FormLabel>
                     <FormDescription>
