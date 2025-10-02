@@ -35,8 +35,6 @@ const CallOptions = () => {
       customHeaders: [],
       preferred_codecs: [],
       debugOutput: "socket",
-      debug: false,
-      prefetchIceCandidates: false,
     },
     values: callOptions,
   });

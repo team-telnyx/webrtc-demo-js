@@ -55,6 +55,7 @@ const ClientOptions = () => {
       login_token: "",
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
+      trickleIce: false,
       ringbackFile: "/ringback.mp3",
       ringtoneFile: "/ringtone.mp3",
       anonymous_login: {
@@ -336,13 +337,36 @@ const ClientOptions = () => {
             />
             <FormField
               control={form.control}
+              name="trickleIce"
+              render={({ field }) => (
+                <FormItem className="flex items-center mb-4 justify-between">
+                  <div>
+                    <FormLabel>Trickle Ice</FormLabel>
+                    <FormDescription>
+                      Outgoing and incoming call flows using Trickle ICE.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="prefetchIceCandidates"
               render={({ field }) => (
                 <FormItem className="flex items-center mb-4 justify-between">
                   <div>
                     <FormLabel>Prefetch Ice Candidates</FormLabel>
                     <FormDescription>
-                      Allow the SDK to prefetch ICE candidates
+                      Allow the SDK to prefetch ICE candidates.
                     </FormDescription>
                   </div>
                   <FormControl>
