@@ -1,0 +1,28 @@
+name: Dev - Build
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Nodejs and npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup yarn
+        run: npm install -g yarn
+
+      - name: Install packages
+        run: yarn install --immutable
+
+      - name: Run build
+        run: yarn build:development
