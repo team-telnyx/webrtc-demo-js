@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTelnyxSDKVersion } from "@/atoms/telnyxClient";
 import {
   Select,
@@ -7,8 +8,76 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const fallbackVersions = [
+  "latest",
+  "2.22.17",
+  "2.21.2",
+  "2.21.1",
+  "2.20.0",
+  "2.19.0",
+  "2.18.0",
+];
+
 const SDKVersionDropdown = () => {
   const [{ version }, setVersion] = useTelnyxSDKVersion();
+  const [versions, setVersions] = useState<string[]>(fallbackVersions);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchVersions = async () => {
+      try {
+        const response = await fetch(
+          "https://registry.npmjs.org/@telnyx/webrtc"
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch versions: ${response.status}`);
+        }
+
+        type NpmRegistryResponse = {
+          time?: Record<string, string>;
+          "dist-tags"?: Record<string, string>;
+        };
+
+        const data = (await response.json()) as NpmRegistryResponse;
+        const timeEntries = Object.entries(data.time ?? {})
+          .filter(([release]) => release !== "created" && release !== "modified")
+          .sort(([, first], [, second]) => {
+            const firstTime = new Date(first).getTime();
+            const secondTime = new Date(second).getTime();
+            return secondTime - firstTime;
+          })
+          .map(([release]) => release);
+
+        const tagVersions = Object.values(data["dist-tags"] ?? {});
+
+        const nextVersions = Array.from(
+          new Set(["latest", ...tagVersions, ...timeEntries])
+        );
+
+        if (!cancelled) {
+          setVersions((current) => {
+            const extended = new Set([...nextVersions, ...current]);
+            return Array.from(extended).slice(0, 50);
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch Telnyx WebRTC versions from npm", error);
+      }
+    };
+
+    fetchVersions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setVersions((current) =>
+      current.includes(version) ? current : [...current, version]
+    );
+  }, [version]);
 
   const onVersionChange = async (nextVersion: string) => {
     try {
@@ -28,12 +97,11 @@ const SDKVersionDropdown = () => {
         <SelectValue placeholder="SDK version" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="latest">Latest</SelectItem>
-        <SelectItem value="2.21.2">2.21.2</SelectItem>
-        <SelectItem value="2.21.1">2.21.1</SelectItem>
-        <SelectItem value="2.20.0">2.20.0</SelectItem>
-        <SelectItem value="2.19.0">2.19.0</SelectItem>
-        <SelectItem value="2.18.0">2.18.0</SelectItem>
+        {versions.map((sdkVersion) => (
+          <SelectItem key={sdkVersion} value={sdkVersion}>
+            {sdkVersion === "latest" ? "Latest" : sdkVersion}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );
