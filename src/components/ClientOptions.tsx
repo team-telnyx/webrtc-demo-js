@@ -31,13 +31,13 @@ import { useClientOptions, useClientProfiles } from "@/atoms/clientOptions";
 import { LoginMethod, useLoginMethod } from "@/atoms/loginMethod";
 import { useConnectionStatus } from "@/atoms/telnyxClient";
 import { Input } from "@/components/ui/input";
-import { IClientOptions } from "@telnyx/webrtc";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import FileUploadButton from "./FileUploadButton";
 import { Label } from "./ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Switch } from "./ui/switch";
+import { IClientOptionsDemo } from "@/lib/types";
 
 const ClientOptions = () => {
   const [profiles, setProfiles] = useClientProfiles();
@@ -45,7 +45,7 @@ const ClientOptions = () => {
   const [connectionStatus] = useConnectionStatus();
   const [loginMethod, _setLoginMethod] = useLoginMethod();
 
-  const form = useForm<Partial<IClientOptions>>({
+  const form = useForm<Partial<IClientOptionsDemo>>({
     values: clientOptions,
     defaultValues: {
       debug: true,
@@ -59,7 +59,7 @@ const ClientOptions = () => {
       ringbackFile: "/ringback.mp3",
       ringtoneFile: "/ringtone.mp3",
       rtcIp: "",
-      rtcPort: 0,
+      rtcPort: undefined,
       anonymous_login: {
         target_type: "",
         target_id: "",
@@ -79,12 +79,12 @@ const ClientOptions = () => {
     [_setLoginMethod, form]
   );
 
-  const onSubmit = (values: Partial<IClientOptions>) => {
+  const onSubmit = (values: Partial<IClientOptionsDemo>) => {
     setClientOptions(values);
     onSaveProfile(values);
   };
 
-  const onSaveProfile = (values: Partial<IClientOptions>) => {
+  const onSaveProfile = (values: Partial<IClientOptionsDemo>) => {
     if (!values.login && !values.password) {
       return;
     }
