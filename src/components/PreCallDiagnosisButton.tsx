@@ -2,11 +2,12 @@
 import { useClientOptions } from "@/atoms/clientOptions";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader } from "./ui/dialog";
-import { IClientOptions, PreCallDiagnosis, Report } from "@telnyx/webrtc";
+import { PreCallDiagnosis, Report } from "@telnyx/webrtc";
 import { useState } from "react";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { IClientOptionsDemo } from "@/lib/types";
 
-function hasValidCredentials(options: IClientOptions) {
+function hasValidCredentials(options: IClientOptionsDemo) {
   const validCredentials = !!options.login && !!options.password;
   const validLoginToken = !!options.login_token;
 

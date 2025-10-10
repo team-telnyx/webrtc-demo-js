@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { atom, useAtom } from "jotai";
-import { IClientOptions, TelnyxRTC } from "@telnyx/webrtc";
+import { TelnyxRTC } from "@telnyx/webrtc";
 import { clientOptionsAtom } from "./clientOptions";
 import { hostAtom } from "./host";
 import { regionAtom } from "./region";
+import { IClientOptionsDemo } from "@/lib/types";
 
 type TelnyxRTCVersion = {
   version: string;
@@ -16,7 +17,7 @@ const telnyxRTCVersionAtom = atom<TelnyxRTCVersion>({
 
 const connectionStatusAtom = atom<string>("disconnected");
 
-function hasValidCredentials(options: IClientOptions) {
+function hasValidCredentials(options: IClientOptionsDemo) {
   const validCredentials = !!options.login && !!options.password;
   const validLoginToken = !!options.login_token;
   const validAnonymousLoginOptions =
