@@ -11,7 +11,8 @@ export const Call = () => {
 
   console.log("Call state:", notification.call.state, notification.call);
   console.log("Call options:", notification.call.options);
-
+  
+  // @ts-expect-error beta option
   if (notification.call.options.keepConnectionAliveOnSocketClose) {
     switch (notification.call.state) {
       case "trying":
