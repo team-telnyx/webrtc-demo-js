@@ -1,13 +1,14 @@
-import { IClientOptions } from "@telnyx/webrtc";
+
+import { IClientOptionsDemo } from "@/lib/types";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-const profilesAtom = atomWithStorage<IClientOptions[]>(
+const profilesAtom = atomWithStorage<IClientOptionsDemo[]>(
   "telnyx_client_profiles",
   []
 );
 
-export const clientOptionsAtom = atomWithStorage<IClientOptions>(
+export const clientOptionsAtom = atomWithStorage<IClientOptionsDemo>(
   "telnyx_client_options",
   {
     debug: false,
