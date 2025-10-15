@@ -21,6 +21,7 @@ export interface ICallOptions {
   preferred_codecs?: RTCRtpCodec[];
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
+  keepConnectionAliveOnSocketClose?: boolean;
 }
 
 const callOptionsAtom = atom({

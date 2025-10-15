@@ -18,9 +18,10 @@ import { Button } from "./ui/button";
 
 type Props = {
   call: Call;
+  title?: string;
 };
 
-const ActiveCall = ({ call }: Props) => {
+const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
       call.dtmf(digit);
@@ -40,7 +41,7 @@ const ActiveCall = ({ call }: Props) => {
     >
       <DialogContent className="overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Active Call</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             Talking To {call.options.remoteCallerNumber} (
             {call.options.remoteCallerName})
