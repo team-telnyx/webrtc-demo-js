@@ -9,9 +9,6 @@ export const Call = () => {
   const [notification] = useTelnyxNotification();
   if (!notification || !notification.call) return null;
 
-  console.log("Call state:", notification.call.state, notification.call);
-  console.log("Call options:", notification.call.options);
-  
   // @ts-expect-error beta option
   if (notification.call.options.keepConnectionAliveOnSocketClose) {
     switch (notification.call.state) {
@@ -41,8 +38,6 @@ export const Call = () => {
       }
     }
   }
-
-  console.log("Rendering call without keepConnectionAliveOnSocketClose");
 
   switch (notification.call.state) {
     case "trying": {
