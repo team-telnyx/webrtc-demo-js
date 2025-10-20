@@ -15,6 +15,7 @@ import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
 import Keyboard from "./Keyboard";
 import { Button } from "./ui/button";
+import CheckRegistrationButton from "./CheckRegistrationButton";
 
 type Props = {
   call: Call;
@@ -46,6 +47,7 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             Talking To {call.options.remoteCallerNumber} (
             {call.options.remoteCallerName})
           </DialogDescription>
+          <CheckRegistrationButton />
         </DialogHeader>
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto">
@@ -95,6 +97,8 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
           >
             Hold
           </Button>
+
+          
         </DialogFooter>
       </DialogContent>
     </Dialog>
