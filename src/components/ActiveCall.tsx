@@ -97,8 +97,6 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
           >
             Hold
           </Button>
-
-          
         </DialogFooter>
       </DialogContent>
     </Dialog>

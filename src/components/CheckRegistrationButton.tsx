@@ -7,7 +7,7 @@ const CheckRegistrationButton = () => {
   const onCheckRegistration = async () => {
     if (!client) return;
 
-    // @ts-expect-error getIsRegistered type support are in beta
+    // @ts-expect-error getIsRegistered type support is in beta
     await client.getIsRegistered();
   };
   return (
