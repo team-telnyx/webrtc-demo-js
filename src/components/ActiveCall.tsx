@@ -15,13 +15,14 @@ import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
 import Keyboard from "./Keyboard";
 import { Button } from "./ui/button";
+import CheckRegistrationButton from "./CheckRegistrationButton";
 
 type Props = {
   call: Call;
   title?: string;
 };
 
-const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
+const ActiveCall = ({ call, title = "Active Call" }: Props) => {
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
       call.dtmf(digit);
@@ -46,6 +47,10 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             Talking To {call.options.remoteCallerNumber} (
             {call.options.remoteCallerName})
           </DialogDescription>
+          {/* @ts-expect-error beta option */}
+          {call.options.keepConnectionAliveOnSocketClose && (
+            <CheckRegistrationButton showIndicator />
+          )}
         </DialogHeader>
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto">

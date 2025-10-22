@@ -33,7 +33,6 @@ export const Call = () => {
         return <HeldCall call={notification.call} />;
       }
       default: {
-        console.error("Unknown call state:", notification.call.state);
         return null;
       }
     }
