@@ -22,7 +22,7 @@ type Props = {
   title?: string;
 };
 
-const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
+const ActiveCall = ({ call, title = "Active Call" }: Props) => {
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
       call.dtmf(digit);
@@ -47,7 +47,10 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             Talking To {call.options.remoteCallerNumber} (
             {call.options.remoteCallerName})
           </DialogDescription>
-          <CheckRegistrationButton />
+          {/* @ts-expect-error beta option */}
+          {call.options.keepConnectionAliveOnSocketClose && (
+            <CheckRegistrationButton showIndicator />
+          )}
         </DialogHeader>
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto">
