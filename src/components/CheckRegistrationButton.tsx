@@ -14,7 +14,6 @@ const CheckRegistrationButton = ({ showIndicator }: Props) => {
   const onCheckRegistration = async () => {
     if (!client) return;
 
-    // @ts-expect-error getIsRegistered type support is in beta
     setIsRegistered(await client.getIsRegistered());
   };
   return (
