@@ -39,6 +39,7 @@ export const Call = () => {
   }
 
   switch (notification.call.state) {
+    case "connecting":
     case "trying": {
       return <ConnectingCall call={notification.call} />;
     }
