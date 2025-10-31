@@ -20,7 +20,6 @@ import { useForm } from "react-hook-form";
 import { ICallOptions, useCallOptions } from "@/atoms/callOptions";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { useCallback } from "react";
 import CodecSelectInput from "./CodecInput";
 import CustomHeadersInput from "./CustomHeadersInput";
@@ -157,29 +156,6 @@ const CallOptions = () => {
                   <FormControl>
                     <Textarea placeholder="Base 64 encoded string" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="keepConnectionAliveOnSocketClose"
-              render={({ field }) => (
-                <FormItem className="flex items-center mb-4 justify-between">
-                  <div>
-                    <FormLabel>Keep Connection Alive on Socket Close</FormLabel>
-                    <FormDescription>
-                      If set to true, the call will keep the WebRTC peer connection alive even when the socket is closed.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}

@@ -448,6 +448,30 @@ const ClientOptions = () => {
 
             <FormField
               control={form.control}
+              name="keepConnectionAliveOnSocketClose"
+              render={({ field }) => (
+                <FormItem className="flex items-center mb-4 justify-between">
+                  <div>
+                    <FormLabel>Keep Connection Alive on Socket Close</FormLabel>
+                    <FormDescription>
+                      If set to true, the call will keep the WebRTC peer
+                      connection alive even when the socket is closed.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="ringbackFile"
               render={({ field }) => (
                 <FormItem className="mb-4">

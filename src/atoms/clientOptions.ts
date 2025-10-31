@@ -19,6 +19,7 @@ export const clientOptionsAtom = atomWithStorage<IClientOptionsDemo>(
     prefetchIceCandidates: false,
     forceRelayCandidate: false,
     trickleIce: false,
+    keepConnectionAliveOnSocketClose: false,
   }
 );
 
