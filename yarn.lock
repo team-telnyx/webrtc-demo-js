@@ -950,7 +950,7 @@
   dependencies:
     "@swc/counter" "^0.1.3"
 
-"@telnyx/webrtc@>=2.22.18-0 <3.0.0-0":
+"@telnyx/webrtc@>=2.24.1-0 <3.0.0-0":
   version "2.24.1"
   resolved "https://registry.yarnpkg.com/@telnyx/webrtc/-/webrtc-2.24.1.tgz#6476619c9082c28c3f9706910d26a34b029ec722"
   integrity sha512-NbP+HKEs34PclMzj5tV5+bwacNMjya5qLgryUYgm70RSijLqFyXg4J0VgQxKB7d4sedK2DUUy33gQYcmwv1jpQ==
