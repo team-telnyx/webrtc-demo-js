@@ -17,8 +17,20 @@ export const Call = () => {
         return <IncomingCall call={notification.call} />;
       }
 
+      case "ringing": {
+        if (notification.call.direction === "inbound") {
+          return <IncomingCall call={notification.call} />;
+        }
+
+        return (
+          <ActiveCall
+            call={notification.call}
+            title={`${capitalizeFirstLetter(notification.call.state)} Call`}
+          />
+        );
+      }
+
       case "new":
-      case "ringing":
       case "connecting":
       case "active": {
         return (
