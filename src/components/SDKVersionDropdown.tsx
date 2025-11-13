@@ -15,6 +15,9 @@ const fallbackVersions = [
 const SDKVersionDropdown = () => {
   const [{ version }, setVersion] = useTelnyxSDKVersion();
   const [versions, setVersions] = useState<string[]>(fallbackVersions);
+  const [deprecatedVersions, setDeprecatedVersions] = useState<Set<string>>(
+    () => new Set()
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -31,9 +34,22 @@ const SDKVersionDropdown = () => {
         type NpmRegistryResponse = {
           time?: Record<string, string>;
           "dist-tags"?: Record<string, string>;
+          versions?: Record<string, { deprecated?: string }>;
         };
 
         const data = (await response.json()) as NpmRegistryResponse;
+
+        const deprecatedSet = new Set(
+          Object.entries(data.versions ?? {})
+            .filter(([, descriptor]) => {
+              const message = descriptor.deprecated?.trim();
+              return Boolean(message && message.length);
+            })
+            .map(([release]) => release)
+        );
+        const filterDeprecatedVersions = (items: string[]) =>
+          items.filter((value) => !deprecatedSet.has(value));
+
         const timeEntries = Object.entries(data.time ?? {})
           .filter(([release]) => release !== "created" && release !== "modified")
           .sort(([, first], [, second]) => {
@@ -46,14 +62,16 @@ const SDKVersionDropdown = () => {
         const tagVersions = Object.values(data["dist-tags"] ?? {});
 
         const nextVersions = Array.from(
-          new Set(["latest", ...tagVersions, ...timeEntries])
-        );
+          new Set([
+            "latest",
+            ...filterDeprecatedVersions(tagVersions),
+            ...filterDeprecatedVersions(timeEntries),
+          ])
+        ).slice(0, 50);
 
         if (!cancelled) {
-          setVersions((current) => {
-            const extended = new Set([...nextVersions, ...current]);
-            return Array.from(extended).slice(0, 50);
-          });
+          setDeprecatedVersions(deprecatedSet);
+          setVersions(nextVersions);
         }
       } catch (error) {
         console.error("Failed to fetch Telnyx WebRTC versions from npm", error);
@@ -68,10 +86,14 @@ const SDKVersionDropdown = () => {
   }, []);
 
   useEffect(() => {
-    setVersions((current) =>
-      current.includes(version) ? current : [...current, version]
-    );
-  }, [version]);
+    setVersions((current) => {
+      if (current.includes(version) || deprecatedVersions.has(version)) {
+        return current;
+      }
+      const next = [...current, version];
+      return next.slice(0, 50);
+    });
+  }, [version, deprecatedVersions]);
 
   const onVersionChange = async (nextVersion: string) => {
     try {
