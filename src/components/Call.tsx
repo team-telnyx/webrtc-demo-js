@@ -9,7 +9,6 @@ export const Call = () => {
   const [notification] = useTelnyxNotification();
   if (!notification || !notification.call) return null;
 
-  // @ts-expect-error beta option
   if (notification.call.options.keepConnectionAliveOnSocketClose) {
     switch (notification.call.state) {
       case "trying":

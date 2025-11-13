@@ -47,7 +47,6 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
             Talking To {call.options.remoteCallerNumber} (
             {call.options.remoteCallerName})
           </DialogDescription>
-          {/* @ts-expect-error beta option */}
           {call.options.keepConnectionAliveOnSocketClose && (
             <CheckRegistrationButton showIndicator />
           )}
