@@ -1,4 +1,5 @@
-import type { Call } from "@telnyx/webrtc/lib/src/Modules/Verto/webrtc/Call";
+
+import { Call } from "@telnyx/webrtc";
 import { useRive } from "@rive-app/react-canvas-lite";
 import { Button } from "./ui/button";
 import { useCallOptions } from "@/atoms/callOptions";
