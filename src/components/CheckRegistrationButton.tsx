@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { useTelnyxClient } from "@/atoms/telnyxClient";
+import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import clsx from "clsx";
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
 };
 
 const CheckRegistrationButton = ({ showIndicator }: Props) => {
-  const [client] = useTelnyxClient();
+  const [client] = useTelnyxSdkClient();
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
 
   const onCheckRegistration = async () => {
