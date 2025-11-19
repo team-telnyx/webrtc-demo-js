@@ -4,7 +4,7 @@ import {
   useCallHistory,
 } from "@/atoms/callHistory";
 import { useCallOptions } from "@/atoms/callOptions";
-import { useTelnyxClient } from "@/atoms/telnyxClient";
+import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import { PhoneIncoming, PhoneOutgoing, TrashIcon } from "lucide-react";
 import {
   Card,
@@ -28,7 +28,7 @@ const CallDirectionIcon = (props: { direction: "inbound" | "outbound" }) => {
 const CallHistory = () => {
   const [history, setHistory] = useCallHistory();
   const addCallHistory = useAddCallHistory();
-  const [client] = useTelnyxClient();
+  const [client] = useTelnyxSdkClient();
   const [callOptions, setCallOptions] = useCallOptions();
 
   const onItemClick = (item: CallHistoryEntry) => {

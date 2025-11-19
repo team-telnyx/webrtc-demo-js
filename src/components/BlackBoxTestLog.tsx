@@ -1,5 +1,5 @@
 import { useLog } from "@/atoms/log";
-import { useTelnyxClient } from "@/atoms/telnyxClient";
+import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import { useEffect } from "react";
 import { Button } from "./ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 // Legacy component that is only used for compatibility with the black box test suite.
 const BlackBoxTestLog = () => {
   const { logs, pushLog, clear } = useLog();
-  const [client] = useTelnyxClient();
+  const [client] = useTelnyxSdkClient();
   useEffect(() => {
     const onReady = () => {
       pushLog({ id: "registered", description: "registered" });

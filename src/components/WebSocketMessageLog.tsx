@@ -1,4 +1,4 @@
-import { useTelnyxClient } from "@/atoms/telnyxClient";
+import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import List from "./List";
@@ -37,7 +37,7 @@ function WebSocketMessage(props: { message: GenericMessage }) {
 }
 
 const WebSocketMessageLog = () => {
-  const [client] = useTelnyxClient();
+  const [client] = useTelnyxSdkClient();
   const [messages, setMessages] = useState<GenericMessage[]>([]);
   useEffect(() => {
     if (!client) {

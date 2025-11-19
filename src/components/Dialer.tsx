@@ -1,7 +1,7 @@
 import { ICallOptions, useCallOptions } from "@/atoms/callOptions";
 import { useLog } from "@/atoms/log";
 import { useLoginMethod } from "@/atoms/loginMethod";
-import { useConnectionStatus, useTelnyxClient } from "@/atoms/telnyxClient";
+import { useConnectionStatus, useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import { useTelnyxNotification } from "@/atoms/telnyxNotification";
 import {
   Card,
@@ -23,7 +23,7 @@ const Dialer = () => {
   const [notification] = useTelnyxNotification();
   const [loginMethod] = useLoginMethod();
 
-  const [client] = useTelnyxClient();
+  const [client] = useTelnyxSdkClient();
   const onDialButtonClick = useCallback(
     (data: DialButtonData) => {
       setCallOptions((prev: ICallOptions) => ({
