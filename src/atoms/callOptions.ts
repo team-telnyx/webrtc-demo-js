@@ -22,7 +22,6 @@ export interface ICallOptions {
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
-  useCanaryRtcServer?: boolean;
 }
 
 const callOptionsAtom = atom({
