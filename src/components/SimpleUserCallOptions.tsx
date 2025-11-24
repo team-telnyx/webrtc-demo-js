@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 const SimpleUserCallOptions = () => {
@@ -37,13 +36,6 @@ const SimpleUserCallOptions = () => {
               Automatically register after the WebSocket is connected.
             </p>
           </div>
-          <Switch
-            id="auto-register"
-            checked={callOptions.autoRegister}
-            onCheckedChange={(checked) =>
-              setCallOptions((prev) => ({ ...prev, autoRegister: checked }))
-            }
-          />
         </div>
         <div>
           <Label htmlFor="simple-user-extra-headers">Extra Headers</Label>
