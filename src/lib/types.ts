@@ -10,7 +10,7 @@ export interface IClientOptionsDemo extends IClientOptions {
 export type SipJsLogLevel = "debug" | "log" | "warn" | "error" | "off";
 
 export type SimpleUserTurnServer = {
-  urls: string;
+  urls?: string;
   username?: string;
   password?: string;
 };
@@ -32,5 +32,4 @@ export interface ISimpleUserClientOptions {
 export interface ISimpleUserCallOptions {
   destinationNumber: string;
   extraHeaders: string[];
-  autoRegister: boolean;
 }

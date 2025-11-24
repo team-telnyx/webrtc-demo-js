@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSimpleUserCallOptions } from "@/atoms/simpleUserCallOptions";
 import { useSimpleUserClientOptions } from "@/atoms/simpleUserClientOptions";
-import { useSipJsClient } from "@/atoms/telnyxClient";
+import {
+  useSipJsClient,
+  useSipJsWsStatus,
+  useSipJsRegistrationStatus,
+  useSipJsCallStatus,
+} from "@/atoms/telnyxClient";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -15,39 +19,16 @@ import { Button } from "@/components/ui/button";
 import { DialButton } from "./DialButton";
 import { toast } from "sonner";
 import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-
-type WsStatus = "idle" | "connecting" | "connected" | "disconnected";
-type RegistrationStatus = "unregistered" | "registering" | "registered";
-type CallStatus =
-  | "idle"
-  | "incoming"
-  | "dialing"
-  | "connecting"
-  | "connected"
-  | "ended"
-  | "failed";
-
-const statusCopy: Record<CallStatus, string> = {
-  idle: "Idle",
-  incoming: "Incoming call",
-  dialing: "Dialing…",
-  connecting: "Connecting…",
-  connected: "Call active",
-  ended: "Call ended",
-  failed: "Call failed",
-};
+import { DeviceEvent, CallEvent } from "@telnyx/rtc-sipjs-simple-user";
 
 const SimpleUserDialer = () => {
   const [client] = useSipJsClient();
   const [callOptions, setCallOptions] = useSimpleUserCallOptions();
   const [clientOptions] = useSimpleUserClientOptions();
-  const [wsStatus, setWsStatus] = useState<WsStatus>("idle");
+  const [wsStatus, setWsStatus] = useSipJsWsStatus();
   const [registrationStatus, setRegistrationStatus] =
-    useState<RegistrationStatus>("unregistered");
-  const [callStatus, setCallStatus] = useState<CallStatus>("idle");
-  const [callDirection, setCallDirection] = useState<
-    "incoming" | "outgoing" | null
-  >(null);
+    useSipJsRegistrationStatus();
+  const [callStatus, setCallStatus] = useSipJsCallStatus();
   const activeCallRef = useRef<TelnyxCall | null>(null);
   const callCleanupRef = useRef<(() => void) | null>(null);
 
@@ -63,12 +44,85 @@ const SimpleUserDialer = () => {
 
   const attachCallListeners = useCallback(
     (call: TelnyxCall, direction: "incoming" | "outgoing") => {
+      // Clean up previous call listeners
       callCleanupRef.current?.();
       activeCallRef.current = call;
-      setCallDirection(direction);
       setCallStatus(direction === "incoming" ? "incoming" : "dialing");
+
+      // Set up call event listeners
+      const handleConnecting = () => {
+        console.log("[Call] Connecting");
+        setCallStatus("connecting");
+      };
+
+      const handleAccepted = () => {
+        console.log("[Call] Accepted");
+        setCallStatus("connected");
+      };
+
+      const handleTerminated = () => {
+        console.log("[Call] Terminated");
+        setCallStatus("ended");
+        activeCallRef.current = null;
+        callCleanupRef.current = null;
+      };
+
+      const handleFailed = (error: Error) => {
+        console.error("[Call] Failed:", error);
+        setCallStatus("failed");
+        toast.error(`Call failed: ${error.message}`);
+        activeCallRef.current = null;
+        callCleanupRef.current = null;
+      };
+
+      const handleRejected = () => {
+        console.log("[Call] Rejected");
+        setCallStatus("ended");
+        activeCallRef.current = null;
+        callCleanupRef.current = null;
+      };
+
+      const handleMuted = () => {
+        console.log("[Call] Muted");
+      };
+
+      const handleUnmuted = () => {
+        console.log("[Call] Unmuted");
+      };
+
+      const handleHeld = () => {
+        console.log("[Call] Held");
+      };
+
+      const handleResumed = () => {
+        console.log("[Call] Resumed");
+      };
+
+      // Attach call event listeners
+      call.on(CallEvent.Connecting, handleConnecting);
+      call.on(CallEvent.Accepted, handleAccepted);
+      call.on(CallEvent.Terminated, handleTerminated);
+      call.on(CallEvent.Failed, handleFailed);
+      call.on(CallEvent.Rejected, handleRejected);
+      call.on(CallEvent.Muted, handleMuted);
+      call.on(CallEvent.Unmuted, handleUnmuted);
+      call.on(CallEvent.Held, handleHeld);
+      call.on(CallEvent.Resumed, handleResumed);
+
+      // Store cleanup function
+      callCleanupRef.current = () => {
+        call.off(CallEvent.Connecting, handleConnecting);
+        call.off(CallEvent.Accepted, handleAccepted);
+        call.off(CallEvent.Terminated, handleTerminated);
+        call.off(CallEvent.Failed, handleFailed);
+        call.off(CallEvent.Rejected, handleRejected);
+        call.off(CallEvent.Muted, handleMuted);
+        call.off(CallEvent.Unmuted, handleUnmuted);
+        call.off(CallEvent.Held, handleHeld);
+        call.off(CallEvent.Resumed, handleResumed);
+      };
     },
-    []
+    [setCallStatus]
   );
 
   useEffect(() => {
@@ -81,7 +135,71 @@ const SimpleUserDialer = () => {
       callCleanupRef.current = null;
       return;
     }
-  }, [attachCallListeners, client]);
+
+    // Set up device event listeners
+    const handleWsConnecting = ({ attempts }: { attempts: number }) => {
+      console.log(`[Device] WebSocket connecting (attempt ${attempts})`);
+      setWsStatus("connecting");
+    };
+
+    const handleWsConnected = () => {
+      console.log("[Device] WebSocket connected");
+      setWsStatus("connected");
+    };
+
+    const handleWsDisconnected = () => {
+      console.log("[Device] WebSocket disconnected");
+      setWsStatus("disconnected");
+    };
+
+    const handleRegistered = () => {
+      console.log("[Device] Registered");
+      setRegistrationStatus("registered");
+    };
+
+    const handleUnregistered = () => {
+      console.log("[Device] Unregistered");
+      setRegistrationStatus("unregistered");
+    };
+
+    const handleRegistrationFailed = ({ cause }: { cause: Error }) => {
+      console.error("[Device] Registration failed:", cause);
+      setRegistrationStatus("unregistered");
+      toast.error(`Registration failed: ${cause.message}`);
+    };
+
+    const handleIncomingInvite = ({ activeCall }: { activeCall: TelnyxCall }) => {
+      console.log("[Device] Incoming call");
+      toast("Incoming call");
+      attachCallListeners(activeCall, "incoming");
+    };
+
+    const handleMessage = ({ body }: { body: string }) => {
+      console.log("[Device] SIP message received:", body);
+    };
+
+    // Attach device event listeners
+    client.on(DeviceEvent.WsConnecting, handleWsConnecting);
+    client.on(DeviceEvent.WsConnected, handleWsConnected);
+    client.on(DeviceEvent.WsDisconnected, handleWsDisconnected);
+    client.on(DeviceEvent.Registered, handleRegistered);
+    client.on(DeviceEvent.Unregistered, handleUnregistered);
+    client.on(DeviceEvent.RegistrationFailed, handleRegistrationFailed);
+    client.on(DeviceEvent.IncomingInvite, handleIncomingInvite);
+    client.on(DeviceEvent.Message, handleMessage);
+
+    // Cleanup function
+    return () => {
+      client.off(DeviceEvent.WsConnecting, handleWsConnecting);
+      client.off(DeviceEvent.WsConnected, handleWsConnected);
+      client.off(DeviceEvent.WsDisconnected, handleWsDisconnected);
+      client.off(DeviceEvent.Registered, handleRegistered);
+      client.off(DeviceEvent.Unregistered, handleUnregistered);
+      client.off(DeviceEvent.RegistrationFailed, handleRegistrationFailed);
+      client.off(DeviceEvent.IncomingInvite, handleIncomingInvite);
+      client.off(DeviceEvent.Message, handleMessage);
+    };
+  }, [attachCallListeners, client, setWsStatus, setRegistrationStatus, setCallStatus]);
 
   useEffect(() => {
     return () => {
@@ -102,13 +220,11 @@ const SimpleUserDialer = () => {
     if (!client) return;
     try {
       await client.startWS();
-      if (callOptions.autoRegister) {
-        client.register({ extraHeaders: registerExtraHeaders });
-        setRegistrationStatus("registering");
-      }
+      // Status will be updated via DeviceEvent.WsConnected event
     } catch (error) {
       console.error("Failed to start WebSocket", error);
-      toast.error("Failed to start SIP.js client");
+      toast.error("Failed to connect WebSocket");
+      setWsStatus("disconnected");
     }
   };
 
@@ -116,23 +232,35 @@ const SimpleUserDialer = () => {
     if (!client) return;
     try {
       await client.stopWS();
+      // Status will be updated via DeviceEvent.WsDisconnected event
     } catch (error) {
       console.error("Failed to disconnect WebSocket", error);
-    } finally {
-      setWsStatus("idle");
+      toast.error("Failed to disconnect WebSocket");
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!client) return;
+    setRegistrationStatus("registering");
+    try {
+      await client.register({ extraHeaders: registerExtraHeaders });
+      // Status will be updated via DeviceEvent.Registered event
+    } catch (error) {
+      console.error("Failed to register", error);
+      toast.error("Failed to register");
       setRegistrationStatus("unregistered");
     }
   };
 
-  const handleRegister = () => {
+  const handleUnregister = async () => {
     if (!client) return;
-    setRegistrationStatus("registering");
-    client.register({ extraHeaders: registerExtraHeaders });
-  };
-
-  const handleUnregister = () => {
-    if (!client) return;
-    client.unregister({ extraHeaders: registerExtraHeaders });
+    try {
+      await client.unregister({ extraHeaders: registerExtraHeaders });
+      // Status will be updated via DeviceEvent.Unregistered event
+    } catch (error) {
+      console.error("Failed to unregister", error);
+      toast.error("Failed to unregister");
+    }
   };
 
   const handlePlaceCall = () => {
@@ -183,14 +311,6 @@ const SimpleUserDialer = () => {
     <Card>
       <CardHeader>
         <CardTitle>SIP.js Dialer</CardTitle>
-        <CardDescription className="space-y-1">
-          <div>WebSocket: {wsStatus}</div>
-          <div>Registration: {registrationStatus}</div>
-          <div>
-            Call: {statusCopy[callStatus]}
-            {callDirection ? ` (${callDirection})` : ""}
-          </div>
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Input

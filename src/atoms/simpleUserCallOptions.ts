@@ -5,7 +5,6 @@ import { atomWithStorage } from "jotai/utils";
 const defaultCallOptions: ISimpleUserCallOptions = {
   destinationNumber: "",
   extraHeaders: [],
-  autoRegister: false,
 };
 
 const simpleUserCallOptionsAtom = atomWithStorage<ISimpleUserCallOptions>(

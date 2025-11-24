@@ -26,6 +26,22 @@ const telnyxRTCVersionAtom = atom<TelnyxRTCVersion>({
 
 const connectionStatusAtom = atom<string>("disconnected");
 
+// SIP.js Simple User status atoms
+export type WsStatus = "idle" | "connecting" | "connected" | "disconnected";
+export type RegistrationStatus = "idle" | "unregistered" | "registering" | "registered";
+export type CallStatus =
+  | "idle"
+  | "incoming"
+  | "dialing"
+  | "connecting"
+  | "connected"
+  | "ended"
+  | "failed";
+
+const sipJsWsStatusAtom = atom<WsStatus>("idle");
+const sipJsRegistrationStatusAtom = atom<RegistrationStatus>("idle");
+const sipJsCallStatusAtom = atom<CallStatus>("idle");
+
 const clientAtom = atom<TelnyxClientInstance | null>((get) => {
   const mode = get(clientModeAtom);
   if (mode === "sipjs") {
@@ -64,6 +80,11 @@ export const useTelnyxSdkClient = () => useAtom(telnyxRtcClientAtom);
 export const useSipJsClient = () => useAtom(telnyxSipJsClientAtom);
 export const useConnectionStatus = () => useAtom(connectionStatusAtom);
 export const useTelnyxSDKVersion = () => useAtom(telnyxRTCVersionAtom);
+
+// SIP.js Simple User status hooks
+export const useSipJsWsStatus = () => useAtom(sipJsWsStatusAtom);
+export const useSipJsRegistrationStatus = () => useAtom(sipJsRegistrationStatusAtom);
+export const useSipJsCallStatus = () => useAtom(sipJsCallStatusAtom);
 
 function createTelnyxRTCClient(
   options: IClientOptionsDemo,

@@ -39,14 +39,19 @@ const SimpleUserClientOptions = () => {
   const onSubmit = (values: ISimpleUserClientOptions) => {
     setClientOptions({
       ...values,
-      stunServers: values.stunServers ? values.stunServers.filter(Boolean) : undefined,
-      turnServer: values.turnServer
-        ? {
-            urls: values.turnServer.urls.trim(),
-            username: values.turnServer.username?.trim(),
-            password: values.turnServer.password?.trim(),
-          }
+      stunServers: values.stunServers
+        ? values.stunServers.filter(Boolean)
         : undefined,
+      turnServer:
+        values.turnServer &&
+        values.turnServer.urls &&
+        values.turnServer.urls.length > 0
+          ? {
+              urls: values.turnServer.urls.trim(),
+              username: values.turnServer.username?.trim(),
+              password: values.turnServer.password?.trim(),
+            }
+          : undefined,
     });
   };
 
@@ -96,10 +101,7 @@ const SimpleUserClientOptions = () => {
                 <FormItem>
                   <FormLabel>WebSocket Servers</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="wss://sip.telnyx.com:7443"
-                      {...field}
-                    />
+                    <Input placeholder="wss://sip.telnyx.com:7443" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -264,7 +266,10 @@ const SimpleUserClientOptions = () => {
                 <FormItem>
                   <FormLabel>Remote Audio Element ID</FormLabel>
                   <FormControl>
-                    <Input placeholder="telnyx-simple-user-remote-audio" {...field} />
+                    <Input
+                      placeholder="telnyx-simple-user-remote-audio"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
