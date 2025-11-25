@@ -20,6 +20,7 @@ export const clientOptionsAtom = atomWithStorage<IClientOptionsDemo>(
     forceRelayCandidate: false,
     trickleIce: false,
     keepConnectionAliveOnSocketClose: false,
+    useCanaryRtcServer: false,
   }
 );
 

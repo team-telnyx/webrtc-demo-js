@@ -56,6 +56,7 @@ const ClientOptions = () => {
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
       trickleIce: false,
+      useCanaryRtcServer: false,
       ringbackFile: "/ringback.mp3",
       ringtoneFile: "/ringtone.mp3",
       rtcIp: "",
@@ -461,6 +462,30 @@ const ClientOptions = () => {
                   </div>
                   <FormControl>
                     <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="useCanaryRtcServer"
+              render={({ field }) => (
+                <FormItem className="flex items-center mb-4 justify-between">
+                  <div>
+                    <FormLabel>Canary RTC Server</FormLabel>
+                    <FormDescription>
+                      Outgoing and incoming call flows using the Canary RTC Server.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      data-testid="switch-canary-rtc-server"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
