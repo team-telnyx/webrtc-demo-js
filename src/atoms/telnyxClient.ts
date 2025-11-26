@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { atom, useAtom } from "jotai";
 import { TelnyxRTC } from "@telnyx/webrtc";
 import { TelnyxDevice } from "@telnyx/rtc-sipjs-simple-user";
@@ -98,9 +97,10 @@ function createTelnyxRTCClient(
 
   return new TelnyxRTCClass({
     ...options,
+    // @ts-expect-error internal option
     host,
     region: region !== "auto" ? region : undefined,
-  } as any);
+  });
 }
 
 function createSimpleUserClient(options: ISimpleUserClientOptions) {

@@ -15,6 +15,8 @@ import { useClientMode } from "./atoms/clientMode";
 import SimpleUserClientOptions from "./components/SimpleUserClientOptions";
 import SimpleUserDialer from "./components/SimpleUserDialer";
 import SimpleUserCallOptions from "./components/SimpleUserCallOptions";
+import SipJsCallNotificationHandler from "./components/SipJsCallNotificationHandler";
+import { SipJsCall } from "./components/SipJsCall";
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -54,12 +56,16 @@ const App = () => {
           </div>
         </PageLayout>
 
-        {mode === "sdk" && (
+        {mode === "sdk" ? (
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
           </>
+        ) : (
+          <SipJsCallNotificationHandler />
         )}
+
+        {mode === "sdk" ? null : <SipJsCall />}
       </TooltipProvider>
       <Toaster />
     </ThemeProvider>

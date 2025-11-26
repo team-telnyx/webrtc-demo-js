@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useSimpleUserCallOptions } from "@/atoms/simpleUserCallOptions";
 import { useSimpleUserClientOptions } from "@/atoms/simpleUserClientOptions";
 import {
@@ -7,6 +7,7 @@ import {
   useSipJsRegistrationStatus,
   useSipJsCallStatus,
 } from "@/atoms/telnyxClient";
+import { useSipJsCallNotification, useOutgoingCallHandler } from "@/atoms/sipJsCall";
 import {
   Card,
   CardContent,
@@ -18,8 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialButton } from "./DialButton";
 import { toast } from "sonner";
-import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-import { DeviceEvent, CallEvent } from "@telnyx/rtc-sipjs-simple-user";
+import { DeviceEvent } from "@telnyx/rtc-sipjs-simple-user";
 
 const SimpleUserDialer = () => {
   const [client] = useSipJsClient();
@@ -28,9 +28,9 @@ const SimpleUserDialer = () => {
   const [wsStatus, setWsStatus] = useSipJsWsStatus();
   const [registrationStatus, setRegistrationStatus] =
     useSipJsRegistrationStatus();
-  const [callStatus, setCallStatus] = useSipJsCallStatus();
-  const activeCallRef = useRef<TelnyxCall | null>(null);
-  const callCleanupRef = useRef<(() => void) | null>(null);
+  const [callStatus] = useSipJsCallStatus();
+  const [callNotification] = useSipJsCallNotification();
+  const [outgoingCallHandler] = useOutgoingCallHandler();
 
   const setDestination = useCallback(
     (value: string) => {
@@ -42,97 +42,10 @@ const SimpleUserDialer = () => {
     [setCallOptions]
   );
 
-  const attachCallListeners = useCallback(
-    (call: TelnyxCall, direction: "incoming" | "outgoing") => {
-      // Clean up previous call listeners
-      callCleanupRef.current?.();
-      activeCallRef.current = call;
-      setCallStatus(direction === "incoming" ? "incoming" : "dialing");
-
-      // Set up call event listeners
-      const handleConnecting = () => {
-        console.log("[Call] Connecting");
-        setCallStatus("connecting");
-      };
-
-      const handleAccepted = () => {
-        console.log("[Call] Accepted");
-        setCallStatus("connected");
-      };
-
-      const handleTerminated = () => {
-        console.log("[Call] Terminated");
-        setCallStatus("ended");
-        activeCallRef.current = null;
-        callCleanupRef.current = null;
-      };
-
-      const handleFailed = (error: Error) => {
-        console.error("[Call] Failed:", error);
-        setCallStatus("failed");
-        toast.error(`Call failed: ${error.message}`);
-        activeCallRef.current = null;
-        callCleanupRef.current = null;
-      };
-
-      const handleRejected = () => {
-        console.log("[Call] Rejected");
-        setCallStatus("ended");
-        activeCallRef.current = null;
-        callCleanupRef.current = null;
-      };
-
-      const handleMuted = () => {
-        console.log("[Call] Muted");
-      };
-
-      const handleUnmuted = () => {
-        console.log("[Call] Unmuted");
-      };
-
-      const handleHeld = () => {
-        console.log("[Call] Held");
-      };
-
-      const handleResumed = () => {
-        console.log("[Call] Resumed");
-      };
-
-      // Attach call event listeners
-      call.on(CallEvent.Connecting, handleConnecting);
-      call.on(CallEvent.Accepted, handleAccepted);
-      call.on(CallEvent.Terminated, handleTerminated);
-      call.on(CallEvent.Failed, handleFailed);
-      call.on(CallEvent.Rejected, handleRejected);
-      call.on(CallEvent.Muted, handleMuted);
-      call.on(CallEvent.Unmuted, handleUnmuted);
-      call.on(CallEvent.Held, handleHeld);
-      call.on(CallEvent.Resumed, handleResumed);
-
-      // Store cleanup function
-      callCleanupRef.current = () => {
-        call.off(CallEvent.Connecting, handleConnecting);
-        call.off(CallEvent.Accepted, handleAccepted);
-        call.off(CallEvent.Terminated, handleTerminated);
-        call.off(CallEvent.Failed, handleFailed);
-        call.off(CallEvent.Rejected, handleRejected);
-        call.off(CallEvent.Muted, handleMuted);
-        call.off(CallEvent.Unmuted, handleUnmuted);
-        call.off(CallEvent.Held, handleHeld);
-        call.off(CallEvent.Resumed, handleResumed);
-      };
-    },
-    [setCallStatus]
-  );
-
   useEffect(() => {
     if (!client) {
       setWsStatus("idle");
       setRegistrationStatus("unregistered");
-      setCallStatus("idle");
-      activeCallRef.current = null;
-      callCleanupRef.current?.();
-      callCleanupRef.current = null;
       return;
     }
 
@@ -168,12 +81,6 @@ const SimpleUserDialer = () => {
       toast.error(`Registration failed: ${cause.message}`);
     };
 
-    const handleIncomingInvite = ({ activeCall }: { activeCall: TelnyxCall }) => {
-      console.log("[Device] Incoming call");
-      toast("Incoming call");
-      attachCallListeners(activeCall, "incoming");
-    };
-
     const handleMessage = ({ body }: { body: string }) => {
       console.log("[Device] SIP message received:", body);
     };
@@ -185,7 +92,6 @@ const SimpleUserDialer = () => {
     client.on(DeviceEvent.Registered, handleRegistered);
     client.on(DeviceEvent.Unregistered, handleUnregistered);
     client.on(DeviceEvent.RegistrationFailed, handleRegistrationFailed);
-    client.on(DeviceEvent.IncomingInvite, handleIncomingInvite);
     client.on(DeviceEvent.Message, handleMessage);
 
     // Cleanup function
@@ -196,17 +102,9 @@ const SimpleUserDialer = () => {
       client.off(DeviceEvent.Registered, handleRegistered);
       client.off(DeviceEvent.Unregistered, handleUnregistered);
       client.off(DeviceEvent.RegistrationFailed, handleRegistrationFailed);
-      client.off(DeviceEvent.IncomingInvite, handleIncomingInvite);
       client.off(DeviceEvent.Message, handleMessage);
     };
-  }, [attachCallListeners, client, setWsStatus, setRegistrationStatus, setCallStatus]);
-
-  useEffect(() => {
-    return () => {
-      callCleanupRef.current?.();
-      callCleanupRef.current = null;
-    };
-  }, []);
+  }, [client, setWsStatus, setRegistrationStatus]);
 
   const registerExtraHeaders = useMemo(
     () =>
@@ -270,7 +168,9 @@ const SimpleUserDialer = () => {
     }
     try {
       const call = client.initiateCall(callOptions.destinationNumber);
-      attachCallListeners(call, "outgoing");
+      if (outgoingCallHandler) {
+        outgoingCallHandler(call);
+      }
     } catch (error) {
       console.error("Failed to start call", error);
       toast.error("Failed to start call");
@@ -278,19 +178,19 @@ const SimpleUserDialer = () => {
   };
 
   const handleHangup = () => {
-    const call = activeCallRef.current;
+    const call = callNotification.call;
     if (!call) return;
     call.disconnect();
   };
 
   const handleAccept = () => {
-    const call = activeCallRef.current;
+    const call = callNotification.call;
     if (!call) return;
     call.accept();
   };
 
   const handleReject = () => {
-    const call = activeCallRef.current;
+    const call = callNotification.call;
     if (!call) return;
     call.reject();
   };

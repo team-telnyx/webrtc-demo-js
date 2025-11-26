@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import { SwEvent } from "@telnyx/webrtc";
 import { useEffect, useState } from "react";
@@ -8,7 +7,12 @@ function formatMS(s: number) {
 }
 const InCallQualityMetrics = () => {
   const [client] = useTelnyxSdkClient();
-  const [frame, setFrame] = useState<any>({
+  const [frame, setFrame] = useState<{
+    rtt: number;
+    quality: string;
+    jitter: number;
+    mos: number;
+  }>({
     rtt: 0,
     quality: "bad",
     jitter: 0,
