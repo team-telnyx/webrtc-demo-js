@@ -26,7 +26,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@rive-app/react-canvas-lite": "^4.16.7",
     "@telnyx/webrtc": ">=2.25.6-0 <3.0.0-0",
-    "@telnyx/rtc-sipjs-simple-user": "^0.0.7",
+    "@telnyx/rtc-sipjs-simple-user": "^0.0.8",
     "@types/lodash-es": "^4.17.12",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

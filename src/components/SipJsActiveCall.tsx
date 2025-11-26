@@ -103,7 +103,7 @@ const SipJsActiveCall = ({ call, title = "Active Call" }: Props) => {
             size="lg"
             variant={call.isMuted() ? "default" : "outline"}
             className="w-full"
-            onClick={() => call.mute(!call.isMuted())}
+            onClick={() => call.toggleMute(!call.isMuted())}
           >
             {call.isMuted() ? "Unmute" : "Mute"}
           </Button>

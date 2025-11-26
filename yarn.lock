@@ -950,10 +950,10 @@
   dependencies:
     "@swc/counter" "^0.1.3"
 
-"@telnyx/rtc-sipjs-simple-user@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@telnyx/rtc-sipjs-simple-user/-/rtc-sipjs-simple-user-0.0.7.tgz#feac9ed962d54f1d6c7547a8f2cb953618853a37"
-  integrity sha512-Kok0EMQDNKlyLVVqYlClSDx88hFZYpc0/KZ+8uSMG5RwAnW2KfPSYFE9HiVnuIlxV8KwbPB6ZOJUiCSOXbGRIA==
+"@telnyx/rtc-sipjs-simple-user@^0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@telnyx/rtc-sipjs-simple-user/-/rtc-sipjs-simple-user-0.0.8.tgz#b5bdf5decd65944140050df73625ea16dad86cb8"
+  integrity sha512-mc5UH1i0OL9gMWYJeqNmbBUUSOly6RE7l9g+vEvJf4z1OsKmwRjsSiT/Yv2Lvqpjxgaj45RBTRQme1y+qhF7iw==
   dependencies:
     "@peermetrics/webrtc-stats" "^5.6.0"
     babel-runtime "^6.26.0"
