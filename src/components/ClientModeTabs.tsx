@@ -9,10 +9,11 @@ const ClientModeTabs = () => {
       value={mode}
       onValueChange={(value) => setMode(value as typeof mode)}
       className="w-full"
+      data-testid="client-mode-tabs"
     >
-      <TabsList className="grid grid-cols-2 w-full">
-        <TabsTrigger value="sdk">Telnyx SDK</TabsTrigger>
-        <TabsTrigger value="sipjs">SIP.js Simple User</TabsTrigger>
+      <TabsList className="grid grid-cols-2 w-full" data-testid="client-mode-tabs-list">
+        <TabsTrigger value="sdk" data-testid="client-mode-tab-sdk">Telnyx SDK</TabsTrigger>
+        <TabsTrigger value="sipjs" data-testid="client-mode-tab-sipjs">SIP.js Simple User</TabsTrigger>
       </TabsList>
     </Tabs>
   );
