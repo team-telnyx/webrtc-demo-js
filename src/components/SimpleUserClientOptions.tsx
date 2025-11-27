@@ -69,7 +69,11 @@ const SimpleUserClientOptions = () => {
                   <FormItem>
                     <FormLabel>Host</FormLabel>
                     <FormControl>
-                      <Input placeholder="sip.telnyx.com" {...field} />
+                      <Input
+                        data-testid="input-host"
+                        placeholder="sip.telnyx.com"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -82,7 +86,11 @@ const SimpleUserClientOptions = () => {
                   <FormItem>
                     <FormLabel>Port</FormLabel>
                     <FormControl>
-                      <Input placeholder="7443" {...field} />
+                      <Input
+                        data-testid="input-port"
+                        placeholder="7443"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -96,7 +104,11 @@ const SimpleUserClientOptions = () => {
                 <FormItem>
                   <FormLabel>WebSocket Servers</FormLabel>
                   <FormControl>
-                    <Input placeholder="wss://sip.telnyx.com:7443" {...field} />
+                    <Input
+                      data-testid="input-ws-servers"
+                      placeholder="wss://sip.telnyx.com:7443"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -110,7 +122,11 @@ const SimpleUserClientOptions = () => {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="SIP username" {...field} />
+                      <Input
+                        data-testid="input-username"
+                        placeholder="SIP username"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -123,7 +139,12 @@ const SimpleUserClientOptions = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <Input
+                        data-testid="input-password"
+                        type="password"
+                        placeholder="••••••"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -138,7 +159,11 @@ const SimpleUserClientOptions = () => {
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Phone User" {...field} />
+                      <Input
+                        data-testid="input-display-name"
+                        placeholder="Phone User"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -151,7 +176,11 @@ const SimpleUserClientOptions = () => {
                   <FormItem>
                     <FormLabel>Registrar Server</FormLabel>
                     <FormControl>
-                      <Input placeholder="sip:sip.telnyx.com:7443" {...field} />
+                      <Input
+                        data-testid="input-registrar-server"
+                        placeholder="sip:sip.telnyx.com:7443"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -166,6 +195,7 @@ const SimpleUserClientOptions = () => {
                   <FormLabel>STUN Servers</FormLabel>
                   <FormControl>
                     <Textarea
+                      data-testid="input-stun-servers"
                       placeholder="One server per line"
                       value={(field.value ?? []).join("\n")}
                       onChange={(event) =>
@@ -202,6 +232,7 @@ const SimpleUserClientOptions = () => {
                       <FormLabel>TURN Server URL</FormLabel>
                       <FormControl>
                         <Input
+                          data-testid="input-turn-server-url"
                           placeholder="turn:turn.telnyx.com:3478?transport=tcp"
                           value={(turnServer?.urls as string) ?? ""}
                           onChange={(e) =>
@@ -215,6 +246,7 @@ const SimpleUserClientOptions = () => {
                       <FormLabel>TURN Username</FormLabel>
                       <FormControl>
                         <Input
+                          data-testid="input-turn-username"
                           placeholder="Username"
                           value={turnServer?.username ?? ""}
                           onChange={(e) =>
@@ -228,6 +260,7 @@ const SimpleUserClientOptions = () => {
                       <FormLabel>TURN Password</FormLabel>
                       <FormControl>
                         <Input
+                          data-testid="input-turn-password"
                           placeholder="Password"
                           value={turnServer?.password ?? ""}
                           onChange={(e) =>
@@ -249,6 +282,7 @@ const SimpleUserClientOptions = () => {
                   <FormLabel>Remote Audio Element ID</FormLabel>
                   <FormControl>
                     <Input
+                      data-testid="input-remote-audio-element-id"
                       placeholder="telnyx-simple-user-remote-audio"
                       {...field}
                     />
@@ -259,7 +293,9 @@ const SimpleUserClientOptions = () => {
             />
           </CardContent>
           <CardFooter className="justify-end">
-            <Button type="submit">Save Client Options</Button>
+            <Button data-testid="btn-save-client-options" type="submit">
+              Save Client Options
+            </Button>
           </CardFooter>
         </form>
       </Form>
