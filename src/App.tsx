@@ -17,6 +17,7 @@ import SimpleUserDialer from "./components/SimpleUserDialer";
 import SimpleUserCallOptions from "./components/SimpleUserCallOptions";
 import SipJsCallNotificationHandler from "./components/SipJsCallNotificationHandler";
 import { SipJsCall } from "./components/SipJsCall";
+import AiAgentView from "./components/AiAgentView";
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -52,7 +53,13 @@ const App = () => {
         <PageLayout>
           <div className="p-4 space-y-4">
             <ClientModeTabs />
-            {mode === "sipjs" ? <SipJsDemoView /> : <SdkDemoView />}
+            {mode === "sipjs" ? (
+              <SipJsDemoView />
+            ) : mode === "aiagent" ? (
+              <AiAgentView />
+            ) : (
+              <SdkDemoView />
+            )}
           </div>
         </PageLayout>
 
