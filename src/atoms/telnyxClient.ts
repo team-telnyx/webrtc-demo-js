@@ -41,6 +41,9 @@ const clientAtom = atom<TelnyxRTC | null>((get) => {
     ...clientOptions,
     host,
     region: region !== "auto" ? region : undefined,
+
+    // We can not set iceServers explicitly here, because WebRTC SDK use Telnyx STUN/TURN servers internally based on environment
+    env: import.meta.env.DEV ? "development" : "production",
   } as any);
 });
 
