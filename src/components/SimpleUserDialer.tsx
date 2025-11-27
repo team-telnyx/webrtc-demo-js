@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useSimpleUserCallOptions } from "@/atoms/simpleUserCallOptions";
-import { useSimpleUserClientOptions } from "@/atoms/simpleUserClientOptions";
 import {
   useSipJsClient,
   useSipJsWsStatus,
@@ -24,7 +23,6 @@ import { DeviceEvent } from "@telnyx/rtc-sipjs-simple-user";
 const SimpleUserDialer = () => {
   const [client] = useSipJsClient();
   const [callOptions, setCallOptions] = useSimpleUserCallOptions();
-  const [clientOptions] = useSimpleUserClientOptions();
   const [wsStatus, setWsStatus] = useSipJsWsStatus();
   const [registrationStatus, setRegistrationStatus] =
     useSipJsRegistrationStatus();
@@ -232,13 +230,6 @@ const SimpleUserDialer = () => {
           <DialButton onClick={onDialButtonClick} digit="0" />
           <DialButton onClick={onDialButtonClick} digit="#" />
         </div>
-        {clientOptions.remoteAudioElementId && (
-          <audio
-            id={clientOptions.remoteAudioElementId}
-            autoPlay
-            className="hidden"
-          />
-        )}
       </CardContent>
       <CardFooter className="flex flex-col gap-2">
         <div className="grid grid-cols-2 gap-2 w-full">

@@ -1,13 +1,10 @@
 import { atom, useAtom } from "jotai";
 import { TelnyxRTC } from "@telnyx/webrtc";
-import { TelnyxDevice } from "@telnyx/rtc-sipjs-simple-user";
+import { TelnyxDevice, TelnyxDeviceConfig } from "@telnyx/rtc-sipjs-simple-user";
 import { clientOptionsAtom } from "./clientOptions";
 import { hostAtom } from "./host";
 import { regionAtom } from "./region";
-import {
-  IClientOptionsDemo,
-  ISimpleUserClientOptions,
-} from "@/lib/types";
+import { IClientOptionsDemo } from "@/lib/types";
 import { clientModeAtom } from "./clientMode";
 import { simpleUserClientOptionsAtom } from "./simpleUserClientOptions";
 
@@ -27,7 +24,11 @@ const connectionStatusAtom = atom<string>("disconnected");
 
 // SIP.js Simple User status atoms
 export type WsStatus = "idle" | "connecting" | "connected" | "disconnected";
-export type RegistrationStatus = "idle" | "unregistered" | "registering" | "registered";
+export type RegistrationStatus =
+  | "idle"
+  | "unregistered"
+  | "registering"
+  | "registered";
 export type CallStatus =
   | "idle"
   | "incoming"
@@ -82,7 +83,8 @@ export const useTelnyxSDKVersion = () => useAtom(telnyxRTCVersionAtom);
 
 // SIP.js Simple User status hooks
 export const useSipJsWsStatus = () => useAtom(sipJsWsStatusAtom);
-export const useSipJsRegistrationStatus = () => useAtom(sipJsRegistrationStatusAtom);
+export const useSipJsRegistrationStatus = () =>
+  useAtom(sipJsRegistrationStatusAtom);
 export const useSipJsCallStatus = () => useAtom(sipJsCallStatusAtom);
 
 function createTelnyxRTCClient(
@@ -103,19 +105,12 @@ function createTelnyxRTCClient(
   });
 }
 
-function createSimpleUserClient(options: ISimpleUserClientOptions) {
+function createSimpleUserClient(options: TelnyxDeviceConfig) {
   if (!hasValidSimpleUserCredentials(options)) {
     return null;
   }
 
-  const remoteAudioElement =
-    typeof document !== "undefined"
-      ? (document.getElementById(
-          options.remoteAudioElementId
-        ) as HTMLAudioElement | null)
-      : null;
-
-  const wsServers = splitCommaSeparatedList(options.wsServers);
+  const wsServers = splitCommaSeparatedList(options.wsServers?.toString() || "");
 
   return new TelnyxDevice({
     host: options.host,
@@ -124,8 +119,8 @@ function createSimpleUserClient(options: ISimpleUserClientOptions) {
       wsServers.length === 0
         ? undefined
         : wsServers.length === 1
-          ? wsServers[0]
-          : wsServers,
+        ? wsServers[0]
+        : wsServers,
     username: options.username,
     password: options.password,
     displayName: options.displayName,
@@ -134,17 +129,8 @@ function createSimpleUserClient(options: ISimpleUserClientOptions) {
       options.stunServers && options.stunServers.length > 0
         ? options.stunServers
         : undefined,
-    turnServers: options.turnServer?.urls
-      ? [
-          {
-            urls: options.turnServer.urls,
-            username: options.turnServer.username,
-            password: options.turnServer.password,
-          },
-        ]
-      : undefined,
-    logLevel: options.logLevel,
-    remoteAudioElement: remoteAudioElement ?? undefined,
+    turnServers: options.turnServers ? options.turnServers : undefined,
+    remoteAudioElement: options.remoteAudioElement ?? undefined,
   });
 }
 
@@ -159,7 +145,7 @@ function hasValidCredentials(options: IClientOptionsDemo) {
   return validCredentials || validLoginToken || validAnonymousLoginOptions;
 }
 
-function hasValidSimpleUserCredentials(options: ISimpleUserClientOptions) {
+function hasValidSimpleUserCredentials(options: TelnyxDeviceConfig) {
   return Boolean(
     options.host &&
       options.port &&

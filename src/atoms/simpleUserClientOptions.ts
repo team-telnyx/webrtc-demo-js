@@ -1,10 +1,11 @@
-import { ISimpleUserClientOptions } from "@/lib/types";
+
+import { TelnyxDeviceConfig } from "@telnyx/rtc-sipjs-simple-user";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 const sipHost = import.meta.env.VITE_SIP_HOST || "sip.telnyx.com";
 
-const defaultSimpleUserOptions: ISimpleUserClientOptions = {
+const defaultSimpleUserOptions: TelnyxDeviceConfig = {
   host: sipHost,
   port: "7443",
   wsServers: `wss://${sipHost}:7443`,
@@ -12,12 +13,10 @@ const defaultSimpleUserOptions: ISimpleUserClientOptions = {
   password: "",
   displayName: "Phone User",
   registrarServer: `sip:${sipHost}:7443`,
-  logLevel: "error",
-  remoteAudioElementId: "telnyx-simple-user-remote-audio",
 };
 
 export const simpleUserClientOptionsAtom =
-  atomWithStorage<ISimpleUserClientOptions>(
+  atomWithStorage<TelnyxDeviceConfig>(
     "telnyx_simple_user_client_options",
     defaultSimpleUserOptions
   );

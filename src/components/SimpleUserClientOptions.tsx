@@ -1,5 +1,4 @@
 import { useSimpleUserClientOptions } from "@/atoms/simpleUserClientOptions";
-import { ISimpleUserClientOptions, SipJsLogLevel } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -20,38 +19,34 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { TelnyxDeviceConfig } from "@telnyx/rtc-sipjs-simple-user";
 
-const logLevels: SipJsLogLevel[] = ["debug", "log", "warn", "error", "off"];
+type FormValues = Omit<TelnyxDeviceConfig, "remoteAudioElement"> & {
+  remoteAudioElementId?: string;
+};
 
 const SimpleUserClientOptions = () => {
   const [clientOptions, setClientOptions] = useSimpleUserClientOptions();
-  const form = useForm<ISimpleUserClientOptions>({
-    values: clientOptions,
+  const form = useForm<FormValues>({
+    values: {
+      ...clientOptions,
+      remoteAudioElementId: clientOptions.remoteAudioElement?.id,
+    },
   });
 
-  const onSubmit = (values: ISimpleUserClientOptions) => {
+  const onSubmit = (values: FormValues) => {
+    const { remoteAudioElementId, ...rest } = values;
+    const remoteAudioElement = remoteAudioElementId
+      ? (document.getElementById(remoteAudioElementId) as HTMLAudioElement | null)
+      : undefined;
+
     setClientOptions({
-      ...values,
+      ...rest,
       stunServers: values.stunServers
-        ? values.stunServers.filter(Boolean)
+        ? (values.stunServers as string[]).filter(Boolean)
         : undefined,
-      turnServer:
-        values.turnServer &&
-        values.turnServer.urls &&
-        values.turnServer.urls.length > 0
-          ? {
-              urls: values.turnServer.urls.trim(),
-              username: values.turnServer.username?.trim(),
-              password: values.turnServer.password?.trim(),
-            }
-          : undefined,
+      turnServers: values.turnServers ?? undefined,
+      remoteAudioElement: remoteAudioElement ?? undefined,
     });
   };
 
@@ -165,34 +160,6 @@ const SimpleUserClientOptions = () => {
             </div>
             <FormField
               control={form.control}
-              name="logLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Log Level</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a level" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {logLevels.map((level) => (
-                        <SelectItem key={level} value={level}>
-                          {level.toUpperCase()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="stunServers"
               render={({ field }) => (
                 <FormItem>
@@ -215,50 +182,65 @@ const SimpleUserClientOptions = () => {
                 </FormItem>
               )}
             />
-            <div className="grid md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="turnServer.urls"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>TURN Server URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="turn:turn.telnyx.com:3478?transport=tcp"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="turnServer.username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>TURN Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Username" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="turnServer.password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>TURN Password</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="turnServers"
+              render={({ field }) => {
+                const turnServer =
+                  Array.isArray(field.value) ? field.value[0] : field.value;
+                const updateTurnServer = (
+                  key: "urls" | "username" | "password",
+                  value: string
+                ) => {
+                  const current =
+                    Array.isArray(field.value) ? field.value[0] : field.value;
+                  field.onChange({ ...current, [key]: value });
+                };
+                return (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <FormItem>
+                      <FormLabel>TURN Server URL</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="turn:turn.telnyx.com:3478?transport=tcp"
+                          value={(turnServer?.urls as string) ?? ""}
+                          onChange={(e) =>
+                            updateTurnServer("urls", e.target.value)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                    <FormItem>
+                      <FormLabel>TURN Username</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Username"
+                          value={turnServer?.username ?? ""}
+                          onChange={(e) =>
+                            updateTurnServer("username", e.target.value)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                    <FormItem>
+                      <FormLabel>TURN Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Password"
+                          value={turnServer?.password ?? ""}
+                          onChange={(e) =>
+                            updateTurnServer("password", e.target.value)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  </div>
+                );
+              }}
+            />
             <FormField
               control={form.control}
               name="remoteAudioElementId"
