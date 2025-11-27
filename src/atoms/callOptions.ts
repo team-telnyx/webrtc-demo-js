@@ -22,6 +22,7 @@ export interface ICallOptions {
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
+  mutedMicOnStart?: boolean;
 }
 
 const callOptionsAtom = atom({
