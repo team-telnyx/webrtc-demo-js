@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useClientOptions } from "@/atoms/clientOptions";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader } from "./ui/dialog";
@@ -126,9 +125,10 @@ function ReportDisplay(props: { report: Report }) {
       <div className="p-2 rounded border col-span-2">
         <h4>ICE candidates</h4>
 
-        {props.report.iceCandidateStats.map((candidate: any, index) => {
+        {props.report.iceCandidateStats.map((candidate, index) => {
           return (
             <p className="text-xs mb-2" key={index}>
+              {/* @ts-expect-error internal property */}
               <b>Candidate</b>: {candidate.candidate} <br />
             </p>
           );

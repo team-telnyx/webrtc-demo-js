@@ -1,4 +1,4 @@
-import { useConnectionStatus, useTelnyxClient } from "@/atoms/telnyxClient";
+import { useConnectionStatus, useTelnyxSdkClient } from "@/atoms/telnyxClient";
 import { useEffect } from "react";
 
 type SocketMessage = {
@@ -10,7 +10,7 @@ type SocketMessage = {
 };
 
 const ClientAutoConnect = () => {
-  const [client] = useTelnyxClient();
+  const [client] = useTelnyxSdkClient();
   const [, setStatus] = useConnectionStatus();
 
   useEffect(() => {

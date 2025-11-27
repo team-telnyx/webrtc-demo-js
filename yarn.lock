@@ -305,7 +305,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@peermetrics/webrtc-stats@^5.7.1":
+"@peermetrics/webrtc-stats@^5.6.0", "@peermetrics/webrtc-stats@^5.7.1":
   version "5.7.1"
   resolved "https://registry.yarnpkg.com/@peermetrics/webrtc-stats/-/webrtc-stats-5.7.1.tgz#9de6dc9aedb8c21f399a60a501a816d76abdcafc"
   integrity sha512-yRnGuCBcs4r6JWUt1MgF/FE4+DJonyncuPcij+BYkQt3IO7EcIgHN27pvR989GInPvlT8poNOq70tan1rcaAgw==
@@ -950,6 +950,15 @@
   dependencies:
     "@swc/counter" "^0.1.3"
 
+"@telnyx/rtc-sipjs-simple-user@^0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@telnyx/rtc-sipjs-simple-user/-/rtc-sipjs-simple-user-0.0.8.tgz#b5bdf5decd65944140050df73625ea16dad86cb8"
+  integrity sha512-mc5UH1i0OL9gMWYJeqNmbBUUSOly6RE7l9g+vEvJf4z1OsKmwRjsSiT/Yv2Lvqpjxgaj45RBTRQme1y+qhF7iw==
+  dependencies:
+    "@peermetrics/webrtc-stats" "^5.6.0"
+    babel-runtime "^6.26.0"
+    sip.js "0.21.2"
+
 "@telnyx/webrtc@>=2.25.6-0 <3.0.0-0":
   version "2.25.6"
   resolved "https://registry.yarnpkg.com/@telnyx/webrtc/-/webrtc-2.25.6.tgz#c0ddfd362df6bdf227dc5a5c1a0507f48adabd8a"
@@ -1180,6 +1189,14 @@ autoprefixer@^10.4.20:
     picocolors "^1.0.1"
     postcss-value-parser "^4.2.0"
 
+babel-runtime@^6.26.0:
+  version "6.26.0"
+  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-6.26.0.tgz#965c7058668e82b55d7bfe04ff2337bc8b5647fe"
+  integrity sha512-ITKNuq2wKlW1fJg9sSW52eepoYgZBggvOAHC0u/CYu/qxQ9EVzThCgR69BnSXLHjy2f7SY5zaQ4yt7H9ZVxY2g==
+  dependencies:
+    core-js "^2.4.0"
+    regenerator-runtime "^0.11.0"
+
 balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
@@ -1298,6 +1315,11 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==
+
+core-js@^2.4.0:
+  version "2.6.12"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
+  integrity sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==
 
 cross-spawn@^7.0.0, cross-spawn@^7.0.5:
   version "7.0.6"
@@ -2142,6 +2164,11 @@ readdirp@~3.6.0:
   dependencies:
     picomatch "^2.2.1"
 
+regenerator-runtime@^0.11.0:
+  version "0.11.1"
+  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.11.1.tgz#be05ad7f9bf7d22e056f9726cee5017fbf19e2e9"
+  integrity sha512-MguG95oij0fC3QV3URf4V2SDYGJhJnJGqvIIgdECeODCT98wSWDAJ94SSuVpYQUoTcGUIL6L4yNB7j1DFFHSBg==
+
 resolve-from@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
@@ -2223,6 +2250,11 @@ signal-exit@^4.0.1:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-4.1.0.tgz#952188c1cbd546070e2dd20d0f41c0ae0530cb04"
   integrity sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==
+
+sip.js@0.21.2:
+  version "0.21.2"
+  resolved "https://registry.yarnpkg.com/sip.js/-/sip.js-0.21.2.tgz#621a2c996472042d5554db655ed1767bc7a865ea"
+  integrity sha512-tSqTcIgrOd2IhP/rd70JablvAp+fSfLSxO4hGNY6LkWRY1SKygTO7OtJEV/BQb8oIxtMRx0LE7nUF2MaqGbFzA==
 
 sonner@^1.7.0:
   version "1.7.0"
