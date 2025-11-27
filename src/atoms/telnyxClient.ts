@@ -7,6 +7,7 @@ import { regionAtom } from "./region";
 import { IClientOptionsDemo } from "@/lib/types";
 import { clientModeAtom } from "./clientMode";
 import { simpleUserClientOptionsAtom } from "./simpleUserClientOptions";
+import { splitCommaSeparatedList } from "@/lib/string";
 
 type TelnyxRTCVersion = {
   version: string;
@@ -155,9 +156,3 @@ function hasValidSimpleUserCredentials(options: TelnyxDeviceConfig) {
   );
 }
 
-function splitCommaSeparatedList(value: string) {
-  return value
-    .split(/[\s,]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
