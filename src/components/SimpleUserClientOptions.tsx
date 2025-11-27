@@ -197,7 +197,7 @@ const SimpleUserClientOptions = () => {
                     <Textarea
                       data-testid="input-stun-servers"
                       placeholder="One server per line"
-                      value={(field.value ?? []).join("\n")}
+                      value={Array.isArray(field.value) ? field.value.join("\n") : (field.value ?? "")}
                       onChange={(event) =>
                         field.onChange(
                           event.target.value
