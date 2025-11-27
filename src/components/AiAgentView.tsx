@@ -65,8 +65,8 @@ const AiAgentView = () => {
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <Card>
+    <div className="grid md:grid-cols-2 gap-4 h-[calc(100vh-8rem)]">
+      <Card className="h-fit">
         <CardHeader>
           <CardTitle>AI Agent Widget</CardTitle>
           <CardDescription>
@@ -114,7 +114,7 @@ const AiAgentView = () => {
         </Form>
       </Card>
 
-      <Card>
+      <Card className="flex flex-col h-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle>Widget Preview</CardTitle>
@@ -134,10 +134,10 @@ const AiAgentView = () => {
             {invertBackground ? "Dark Background" : "Light Background"}
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           <div
             ref={widgetContainerRef}
-            className={`min-h-[400px] flex items-center justify-center border rounded-md transition-colors ${
+            className={`h-full flex items-center justify-center border rounded-md transition-colors ${
               invertBackground ? "bg-white" : "bg-zinc-900"
             }`}
             data-testid="widget-container"
@@ -145,6 +145,7 @@ const AiAgentView = () => {
             {isEmbedded && currentAgentId ? (
               <div
                 key={currentAgentId}
+                className="h-full w-full"
                 dangerouslySetInnerHTML={{
                   __html: `<telnyx-ai-agent agent-id="${currentAgentId}"></telnyx-ai-agent>`,
                 }}
