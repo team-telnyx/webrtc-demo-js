@@ -8,9 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const fallbackVersions = [
-  "latest",
-];
+const fallbackVersions = ["latest"];
 
 const SDKVersionDropdown = () => {
   const [{ version }, setVersion] = useTelnyxSDKVersion();
@@ -51,7 +49,9 @@ const SDKVersionDropdown = () => {
           items.filter((value) => !deprecatedSet.has(value));
 
         const timeEntries = Object.entries(data.time ?? {})
-          .filter(([release]) => release !== "created" && release !== "modified")
+          .filter(
+            ([release]) => release !== "created" && release !== "modified"
+          )
           .sort(([, first], [, second]) => {
             const firstTime = new Date(first).getTime();
             const secondTime = new Date(second).getTime();
@@ -101,6 +101,11 @@ const SDKVersionDropdown = () => {
         /* @vite-ignore Dependency is loaded at runtime */
         `https://esm.sh/@telnyx/webrtc@${nextVersion}`
       );
+
+      if (!TelnyxRTC || typeof TelnyxRTC !== "function") {
+        throw new Error("Invalid Telnyx SDK module");
+      }
+
       setVersion({ version: nextVersion, Class: TelnyxRTC });
     } catch (error) {
       alert("Invalid version");
