@@ -1,6 +1,9 @@
 import { atom, useAtom } from "jotai";
 import { TelnyxRTC } from "@telnyx/webrtc";
-import { TelnyxDevice, TelnyxDeviceConfig } from "@telnyx/rtc-sipjs-simple-user";
+import {
+  TelnyxDevice,
+  TelnyxDeviceConfig,
+} from "@telnyx/rtc-sipjs-simple-user";
 import { clientOptionsAtom } from "./clientOptions";
 import { hostAtom } from "./host";
 import { regionAtom } from "./region";
@@ -64,7 +67,9 @@ const telnyxRtcClientAtom = atom<TelnyxRTC | null>((get) => {
     return null;
   }
   const client = get(clientAtom);
-  return client instanceof TelnyxRTC ? client : null;
+
+  // Since we load TelnyxRTC dynamically, when change version, we can't rely on instanceof here. So we perform additional checks.
+  return ensureClientIsTelnyxRTC(client) ? client : null;
 });
 
 const telnyxSipJsClientAtom = atom<TelnyxDevice | null>((get) => {
@@ -111,7 +116,9 @@ function createSimpleUserClient(options: TelnyxDeviceConfig) {
     return null;
   }
 
-  const wsServers = splitCommaSeparatedList(options.wsServers?.toString() || "");
+  const wsServers = splitCommaSeparatedList(
+    options.wsServers?.toString() || ""
+  );
 
   return new TelnyxDevice({
     host: options.host,
@@ -156,3 +163,21 @@ function hasValidSimpleUserCredentials(options: TelnyxDeviceConfig) {
   );
 }
 
+const ensureClientIsTelnyxRTC = (
+  client: TelnyxClientInstance | null
+): client is TelnyxRTC => {
+  const assumeClientIsTelnyxRTC = client as TelnyxRTC;
+  if (!assumeClientIsTelnyxRTC) {
+    return false;
+  }
+
+  // Check for unique properties/methods of TelnyxRTC to confirm type. The list may be expanded as needed.
+  const hasConnectMethod =
+    typeof assumeClientIsTelnyxRTC?.connect === "function";
+  const hasNewCallMethod =
+    typeof assumeClientIsTelnyxRTC?.newCall === "function";
+  const hasOptionsProperty =
+    typeof assumeClientIsTelnyxRTC?.options === "object";
+
+  return hasConnectMethod && hasNewCallMethod && hasOptionsProperty;
+};
