@@ -9,7 +9,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { playDTMFTone } from "@/lib/dtmf";
 import { Call } from "@telnyx/webrtc";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
@@ -23,6 +23,8 @@ type Props = {
 };
 
 const ActiveCall = ({ call, title = "Active Call" }: Props) => {
+  const [isMuted, setIsMuted] = useState<boolean>(call.isAudioMuted);
+
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
       call.dtmf(digit);
@@ -98,6 +100,19 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
             onClick={() => call.hold()}
           >
             Hold
+          </Button>
+
+          <Button
+            data-testid="btn-toggle-mute"
+            size="lg"
+            variant={"outline"}
+            className="w-full"
+            onClick={() => {
+              call.toggleAudioMute();
+              setIsMuted(call.isAudioMuted);
+            }}
+          >
+            {isMuted ? "Unmute" : "Mute"}
           </Button>
         </DialogFooter>
       </DialogContent>
