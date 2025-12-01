@@ -21,7 +21,11 @@ const Header = () => {
         <PreCallDiagnosisButton />
         <CheckRegistrationButton />
         <div className="flex justify-end flex-1 py-1">
-          {mode === "sipjs" ? <SipJsConnectionStatus /> : <ConnectionStatus />}
+          {mode === "sipjs" ? (
+            <SipJsConnectionStatus />
+          ) : mode === "aiagent" ? null : (
+            <ConnectionStatus />
+          )}
         </div>
       </div>
     </header>
