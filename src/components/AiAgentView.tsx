@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -18,43 +18,104 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FormValues {
   agentId: string;
+  trickleIce: boolean;
+  version: string;
 }
 
 const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
+  const [currentTrickleIce, setCurrentTrickleIce] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState("latest");
   const [invertBackground, setInvertBackground] = useState(false);
-  const widgetContainerRef = useRef<HTMLDivElement>(null);
-  const scriptLoadedRef = useRef(false);
+  const [availableVersions, setAvailableVersions] = useState<string[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(true);
 
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: "",
+      trickleIce: false,
+      version: "latest",
     },
   });
 
   useEffect(() => {
-    if (!scriptLoadedRef.current) {
-      const existingScript = document.querySelector(
-        'script[src="https://unpkg.com/@telnyx/ai-agent-widget"]'
-      );
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/@telnyx/ai-agent-widget";
-        script.async = true;
-        document.body.appendChild(script);
+    const fetchVersions = async () => {
+      try {
+        const response = await fetch(
+          "https://registry.npmjs.org/@telnyx/ai-agent-widget"
+        );
+        const data = await response.json();
+        const versions = Object.keys(data.versions).sort((a, b) => {
+          const parseVersion = (v: string) => {
+            const [main, prerelease] = v.split("-");
+            const parts = main.split(".").map(Number);
+            return { parts, prerelease };
+          };
+          const vA = parseVersion(a);
+          const vB = parseVersion(b);
+          for (let i = 0; i < Math.max(vA.parts.length, vB.parts.length); i++) {
+            const diff = (vB.parts[i] || 0) - (vA.parts[i] || 0);
+            if (diff !== 0) return diff;
+          }
+          // Same base version: stable > prerelease, then sort prereleases alphabetically descending
+          if (!vA.prerelease && vB.prerelease) return -1;
+          if (vA.prerelease && !vB.prerelease) return 1;
+          if (vA.prerelease && vB.prerelease) {
+            return vB.prerelease.localeCompare(vA.prerelease);
+          }
+          return 0;
+        });
+        setAvailableVersions(versions);
+      } catch (error) {
+        console.error("Failed to fetch widget versions:", error);
+      } finally {
+        setVersionsLoading(false);
       }
-      scriptLoadedRef.current = true;
-    }
+    };
+    fetchVersions();
   }, []);
+
+  const getIframeSrcDoc = (
+    agentId: string,
+    version: string,
+    trickleIce: boolean
+  ) => {
+    const versionSuffix = version === "latest" ? "" : `@${version}`;
+    const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : "";
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+          </style>
+          <script src="https://unpkg.com/@telnyx/ai-agent-widget${versionSuffix}"></script>
+        </head>
+        <body>
+          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}></telnyx-ai-agent>
+        </body>
+      </html>
+    `;
+  };
 
   const onSubmit = (values: FormValues) => {
     if (!values.agentId.trim()) return;
 
     setCurrentAgentId(values.agentId.trim());
+    setCurrentTrickleIce(values.trickleIce);
+    setCurrentVersion(values.version);
     setIsEmbedded(true);
   };
 
@@ -91,6 +152,60 @@ const AiAgentView = () => {
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="version"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Widget Version</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={versionsLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-widget-version">
+                          <SelectValue
+                            placeholder={
+                              versionsLoading ? "Loading versions..." : "Select a version"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="latest">Latest</SelectItem>
+                        {availableVersions.map((version) => (
+                          <SelectItem key={version} value={version}>
+                            {version}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="trickleIce"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Trickle ICE</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Enable trickle ICE for faster connection establishment
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        data-testid="switch-trickle-ice"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -131,24 +246,27 @@ const AiAgentView = () => {
             onClick={() => setInvertBackground(!invertBackground)}
             data-testid="btn-invert-background"
           >
-            {invertBackground ? "Dark Background" : "Light Background"}
+            Invert background {invertBackground ? "(Dark)" : "(Light)"}
           </Button>
         </CardHeader>
         <CardContent className="flex-1">
           <div
-            ref={widgetContainerRef}
             className={`h-full flex items-center justify-center border rounded-md transition-colors ${
               invertBackground ? "bg-white" : "bg-zinc-900"
             }`}
             data-testid="widget-container"
           >
             {isEmbedded && currentAgentId ? (
-              <div
-                key={currentAgentId}
-                className="h-full w-full"
-                dangerouslySetInnerHTML={{
-                  __html: `<telnyx-ai-agent agent-id="${currentAgentId}"></telnyx-ai-agent>`,
-                }}
+              <iframe
+                key={`${currentAgentId}-${currentTrickleIce}-${currentVersion}`}
+                srcDoc={getIframeSrcDoc(
+                  currentAgentId,
+                  currentVersion,
+                  currentTrickleIce
+                )}
+                className="h-full w-full border-0"
+                allow="microphone; camera; autoplay"
+                title="AI Agent Widget"
               />
             ) : (
               <p className={invertBackground ? "text-zinc-500" : "text-zinc-400"}>
