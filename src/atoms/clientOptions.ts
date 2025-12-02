@@ -1,4 +1,3 @@
-
 import { IClientOptionsDemo } from "@/lib/types";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
@@ -21,6 +20,7 @@ export const clientOptionsAtom = atomWithStorage<IClientOptionsDemo>(
     trickleIce: false,
     keepConnectionAliveOnSocketClose: false,
     useCanaryRtcServer: false,
+    mutedMicOnStart: true,
   }
 );
 

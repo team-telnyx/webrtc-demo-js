@@ -23,7 +23,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCallback } from "react";
 import CodecSelectInput from "./CodecInput";
 import CustomHeadersInput from "./CustomHeadersInput";
-import { Switch } from "./ui/switch";
 
 const CallOptions = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -37,7 +36,6 @@ const CallOptions = () => {
       preferred_codecs: [],
       debugOutput: "socket",
       keepConnectionAliveOnSocketClose: false,
-      mutedMicOnStart: false,
     },
     values: callOptions,
   });
@@ -157,28 +155,6 @@ const CallOptions = () => {
                   <FormLabel>Client State</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Base 64 encoded string" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="mutedMicOnStart"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between mb-4">
-                  <div>
-                    <FormLabel>Mute microphone</FormLabel>
-                    <FormDescription>
-                      Start the call with microphone is muted
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

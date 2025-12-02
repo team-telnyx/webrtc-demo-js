@@ -61,6 +61,7 @@ const ClientOptions = () => {
       ringtoneFile: "/ringtone.mp3",
       rtcIp: "",
       rtcPort: undefined,
+      mutedMicOnStart: false,
       anonymous_login: {
         target_type: "",
         target_id: "",
@@ -480,7 +481,8 @@ const ClientOptions = () => {
                   <div>
                     <FormLabel>Canary RTC Server</FormLabel>
                     <FormDescription>
-                      Outgoing and incoming call flows using the Canary RTC Server.
+                      Outgoing and incoming call flows using the Canary RTC
+                      Server.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -491,6 +493,28 @@ const ClientOptions = () => {
                     />
                   </FormControl>
 
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="mutedMicOnStart"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Mute microphone</FormLabel>
+                    <FormDescription>
+                      Start the call with microphone is muted
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
