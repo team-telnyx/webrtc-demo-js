@@ -13,7 +13,7 @@ const Header = () => {
 
   return (
     <header className="border-b bg-background z-10">
-      <div className="p-4 h-20 mx-auto flex flex-wrap items-center gap-2">
+      <div className="p-4 mx-auto flex flex-wrap items-center gap-2">
         <TelnyxLogo />
         <H4>WebRTC Demo</H4>
         <SDKVersionDropdown />
@@ -21,7 +21,11 @@ const Header = () => {
         <PreCallDiagnosisButton />
         <CheckRegistrationButton />
         <div className="flex justify-end flex-1 py-1">
-          {mode === "sipjs" ? <SipJsConnectionStatus /> : <ConnectionStatus />}
+          {mode === "sipjs" ? (
+            <SipJsConnectionStatus />
+          ) : mode === "aiagent" ? null : (
+            <ConnectionStatus />
+          )}
         </div>
       </div>
     </header>
