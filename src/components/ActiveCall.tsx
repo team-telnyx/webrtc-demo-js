@@ -48,9 +48,9 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
     [call]
   );
 
-  const switchAudioInput = async (deviceId: string, muted: boolean) => {
+  const switchAudioInput = async () => {
     try {
-      await call.setAudioInDevice(deviceId, muted);
+      await call.setAudioInDevice(selectedAudioInputId, newAudioInDeviceMuted);
       setIsMuted(call.isAudioMuted);
     } catch (error) {
       console.error("Failed to switch audio input", error);
@@ -135,12 +135,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
                 <Button
                   size="sm"
                   variant={"default"}
-                  onClick={() =>
-                    switchAudioInput(
-                      selectedAudioInputId,
-                      newAudioInDeviceMuted
-                    )
-                  }
+                  onClick={switchAudioInput}
                 >
                   Apply
                 </Button>
