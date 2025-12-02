@@ -9,13 +9,22 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { playDTMFTone } from "@/lib/dtmf";
 import { Call } from "@telnyx/webrtc";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
 import Keyboard from "./Keyboard";
 import { Button } from "./ui/button";
 import CheckRegistrationButton from "./CheckRegistrationButton";
+import { Switch } from "./ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { useDevices } from "@/hooks/useDevices";
 
 type Props = {
   call: Call;
@@ -24,6 +33,12 @@ type Props = {
 
 const ActiveCall = ({ call, title = "Active Call" }: Props) => {
   const [isMuted, setIsMuted] = useState<boolean>(call.isAudioMuted);
+  const [selectedAudioInputId, setSelectedAudioInputId] = useState<string>("");
+  const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
+    call.isAudioMuted
+  );
+
+  const audioInDevices = useDevices(["audioinput"]);
 
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
@@ -32,6 +47,32 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
     },
     [call]
   );
+
+  const switchAudioInput = async (deviceId: string, muted: boolean) => {
+    try {
+      await call.setAudioInDevice(deviceId, muted);
+      setIsMuted(call.isAudioMuted);
+    } catch (error) {
+      console.error("Failed to switch audio input", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!audioInDevices.length || selectedAudioInputId) return;
+
+    const currentAudioTracksIds = call.localStream
+      .getAudioTracks()
+      .map((track) => track.getSettings().deviceId);
+
+    const defaultDevice = audioInDevices.find((device) =>
+      currentAudioTracksIds.includes(device.deviceId)
+    );
+
+    const initialDeviceId =
+      defaultDevice?.deviceId || audioInDevices[0].deviceId;
+
+    setSelectedAudioInputId(initialDeviceId);
+  }, [call, audioInDevices, selectedAudioInputId]);
 
   return (
     <Dialog
@@ -54,31 +95,84 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
           )}
         </DialogHeader>
 
-        <div className="flex-1 max-h-[60vh] overflow-y-auto">
-          <div className="flex flex-col space-y-4 items-center">
-            <h1>Inbound </h1>
-            <AudioVisualizer mediaStream={call.remoteStream} />
+        <div className="flex-1 max-h-[60vh] overflow-y-auto space-y-4">
+          {audioInDevices.length > 0 && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">Audio Input</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pick a microphone to switch immediately with audio
+                    {newAudioInDeviceMuted ? " off" : " on"}.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Mute</span>
+                  <Switch
+                    checked={newAudioInDeviceMuted}
+                    onCheckedChange={setNewAudioInDeviceMuted}
+                  />
+                </div>
+              </div>
 
-            <h1>Outbound</h1>
-            <AudioVisualizer mediaStream={call.localStream} color="#fff" />
-          </div>
-          <AudioPlayer mediaStream={call.remoteStream} />
-          <Tabs defaultValue="keyboard">
-            <div className="flex justify-center">
-              <TabsList>
-                <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
-                <TabsTrigger value="metrics">Metrics</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between gap-3">
+                <Select
+                  value={selectedAudioInputId || undefined}
+                  onValueChange={setSelectedAudioInputId}
+                >
+                  <SelectTrigger data-testid="select-audio-input">
+                    <SelectValue placeholder={"Select audio input"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {audioInDevices.map((device, index) => (
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
+                        {device.label || `Microphone ${index + 1}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  size="sm"
+                  variant={"default"}
+                  onClick={() =>
+                    switchAudioInput(
+                      selectedAudioInputId,
+                      newAudioInDeviceMuted
+                    )
+                  }
+                >
+                  Apply
+                </Button>
+              </div>
             </div>
+          )}
+          <div>
+            <div className="flex flex-col space-y-4 items-center">
+              <h1>Inbound </h1>
+              <AudioVisualizer mediaStream={call.remoteStream} />
 
-            <TabsContent value="keyboard">
-              <Keyboard onDialButtonClick={onDTMFClick} />
-            </TabsContent>
+              <h1>Outbound</h1>
+              <AudioVisualizer mediaStream={call.localStream} color="#fff" />
+            </div>
+            <AudioPlayer mediaStream={call.remoteStream} />
+            <Tabs defaultValue="keyboard">
+              <div className="flex justify-center">
+                <TabsList>
+                  <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
+                  <TabsTrigger value="metrics">Metrics</TabsTrigger>
+                </TabsList>
+              </div>
 
-            <TabsContent value="metrics">
-              <InCallQualityMetrics />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="keyboard">
+                <Keyboard onDialButtonClick={onDTMFClick} />
+              </TabsContent>
+
+              <TabsContent value="metrics">
+                <InCallQualityMetrics />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
 
         <DialogFooter>
