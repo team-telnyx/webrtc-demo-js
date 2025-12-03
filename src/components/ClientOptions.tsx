@@ -38,6 +38,31 @@ import { Label } from "./ui/label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Switch } from "./ui/switch";
 import { IClientOptionsDemo } from "@/lib/types";
+import { TurnServersFormField } from "./TurnServersFormField";
+import { StunServersFormField } from "./StunServersFormField";
+
+const configureIceServers = (
+  stunServers: IClientOptionsDemo["stunServers"],
+  turnServers: IClientOptionsDemo["turnServers"]
+): IClientOptionsDemo["iceServers"] => {
+  const iceServers: RTCIceServer[] = [];
+
+  if (stunServers) {
+    iceServers.push(
+      ...stunServers.filter(Boolean).map((value) => ({ urls: value }))
+    );
+  }
+
+  if (turnServers && turnServers.urls) {
+    iceServers.push({
+      urls: turnServers.urls,
+      username: turnServers.username,
+      credential: turnServers.password,
+    });
+  }
+
+  return iceServers.length > 0 ? iceServers : undefined;
+};
 
 const ClientOptions = () => {
   const [profiles, setProfiles] = useClientProfiles();
@@ -82,6 +107,11 @@ const ClientOptions = () => {
   );
 
   const onSubmit = (values: Partial<IClientOptionsDemo>) => {
+    values.iceServers = configureIceServers(
+      values.stunServers,
+      values.turnServers
+    );
+
     setClientOptions(values);
     onSaveProfile(values);
   };
@@ -378,6 +408,16 @@ const ClientOptions = () => {
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <StunServersFormField
+              control={form.control}
+              name="stunServers"
+              wrapperClassName="mb-4"
+            />
+            <TurnServersFormField
+              control={form.control}
+              name="turnServers"
+              wrapperClassName="mb-4"
             />
             <FormField
               control={form.control}

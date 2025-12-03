@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { TelnyxDeviceConfig } from "@telnyx/rtc-sipjs-simple-user";
+import { TurnServersFormField } from "./TurnServersFormField";
+import { StunServersFormField } from "./StunServersFormField";
 
 type FormValues = Omit<TelnyxDeviceConfig, "remoteAudioElement"> & {
   remoteAudioElementId?: string;
@@ -37,7 +38,9 @@ const SimpleUserClientOptions = () => {
   const onSubmit = (values: FormValues) => {
     const { remoteAudioElementId, ...rest } = values;
     const remoteAudioElement = remoteAudioElementId
-      ? (document.getElementById(remoteAudioElementId) as HTMLAudioElement | null)
+      ? (document.getElementById(
+          remoteAudioElementId
+        ) as HTMLAudioElement | null)
       : undefined;
 
     setClientOptions({
@@ -187,93 +190,8 @@ const SimpleUserClientOptions = () => {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="stunServers"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>STUN Servers</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      data-testid="input-stun-servers"
-                      placeholder="One server per line"
-                      value={Array.isArray(field.value) ? field.value.join("\n") : (field.value ?? "")}
-                      onChange={(event) =>
-                        field.onChange(
-                          event.target.value
-                            .split("\n")
-                            .map((line) => line.trim())
-                            .filter(Boolean)
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="turnServers"
-              render={({ field }) => {
-                const turnServer =
-                  Array.isArray(field.value) ? field.value[0] : field.value;
-                const updateTurnServer = (
-                  key: "urls" | "username" | "password",
-                  value: string
-                ) => {
-                  const current =
-                    Array.isArray(field.value) ? field.value[0] : field.value;
-                  field.onChange({ ...current, [key]: value });
-                };
-                return (
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <FormItem>
-                      <FormLabel>TURN Server URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-turn-server-url"
-                          placeholder="turn:turn.telnyx.com:3478?transport=tcp"
-                          value={(turnServer?.urls as string) ?? ""}
-                          onChange={(e) =>
-                            updateTurnServer("urls", e.target.value)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                    <FormItem>
-                      <FormLabel>TURN Username</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-turn-username"
-                          placeholder="Username"
-                          value={turnServer?.username ?? ""}
-                          onChange={(e) =>
-                            updateTurnServer("username", e.target.value)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                    <FormItem>
-                      <FormLabel>TURN Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-turn-password"
-                          placeholder="Password"
-                          value={turnServer?.password ?? ""}
-                          onChange={(e) =>
-                            updateTurnServer("password", e.target.value)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  </div>
-                );
-              }}
-            />
+            <StunServersFormField control={form.control} name="stunServers" />
+            <TurnServersFormField control={form.control} name="turnServers" />
             <FormField
               control={form.control}
               name="remoteAudioElementId"
