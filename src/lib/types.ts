@@ -7,10 +7,10 @@ export interface IClientOptionsDemo extends IClientOptions {
   useCanaryRtcServer?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
   stunServers?: string[];
-  turnServers?: SimpleUserTurnServer;
+  turnServers?: TurnServer;
 }
 
-export type SimpleUserTurnServer = {
+export type TurnServer = {
   urls?: string;
   username?: string;
   password?: string;
