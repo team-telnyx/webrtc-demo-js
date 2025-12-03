@@ -11,13 +11,17 @@ import { Textarea } from "./ui/textarea";
 export function StunServersFormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({ ...props }: Partial<ControllerProps<TFieldValues, TName>>) {
+>({
+  ...props
+}: Partial<ControllerProps<TFieldValues, TName>> & {
+  wrapperClassName?: string;
+}) {
   return (
     <FormField
       {...props}
       name={props.name || ("stunServers" as TName)}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className={props.wrapperClassName}>
           <FormLabel>STUN Servers</FormLabel>
           <FormControl>
             <Textarea

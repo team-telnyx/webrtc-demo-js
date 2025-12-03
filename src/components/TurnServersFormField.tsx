@@ -7,11 +7,16 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
+import { cn } from "@/lib/utils";
 
 export function TurnServersFormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({ ...props }: Partial<ControllerProps<TFieldValues, TName>>) {
+>({
+  ...props
+}: Partial<ControllerProps<TFieldValues, TName>> & {
+  wrapperClassName?: string;
+}) {
   return (
     <FormField
       {...props}
@@ -30,7 +35,9 @@ export function TurnServersFormField<
           field.onChange({ ...current, [key]: value });
         };
         return (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div
+            className={cn("grid md:grid-cols-3 gap-4", props.wrapperClassName)}
+          >
             <FormItem>
               <FormLabel>TURN Server URL</FormLabel>
               <FormControl>
