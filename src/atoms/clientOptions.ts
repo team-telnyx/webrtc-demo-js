@@ -20,7 +20,7 @@ export const clientOptionsAtom = atomWithStorage<IClientOptionsDemo>(
     trickleIce: false,
     keepConnectionAliveOnSocketClose: false,
     useCanaryRtcServer: false,
-    mutedMicOnStart: true,
+    mutedMicOnStart: false,
   }
 );
 
