@@ -58,7 +58,9 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
   };
 
   useEffect(() => {
-    if (!audioInDevices.length || selectedAudioInputId) return;
+    if (!audioInDevices.length || selectedAudioInputId || !call.localStream) {
+      return;
+    }
 
     const currentAudioTracksIds = call.localStream
       .getAudioTracks()
