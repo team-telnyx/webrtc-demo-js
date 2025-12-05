@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { playDTMFTone } from "@/lib/dtmf";
 import { Call } from "@telnyx/webrtc";
 import { useCallback, useEffect, useState } from "react";
-import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
 import Keyboard from "./Keyboard";
@@ -25,6 +24,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { useDevices } from "@/hooks/useDevices";
+import VideoPlayer from "./VideoPlayer";
 
 type Props = {
   call: Call;
@@ -59,7 +59,8 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
 
   useEffect(() => {
     if (!audioInDevices.length || selectedAudioInputId) return;
-
+    console.log("call ", call);
+    console.log("Audio input devices:", audioInDevices);
     const currentAudioTracksIds = call.localStream
       .getAudioTracks()
       .map((track) => track.getSettings().deviceId);
@@ -142,6 +143,20 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
               </div>
             </div>
           )}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Video</p>
+            <div className="relative overflow-hidden rounded-lg border bg-black">
+              <VideoPlayer
+                mediaStream={call.remoteStream}
+                className="w-full aspect-video object-cover"
+              />
+              <VideoPlayer
+                mediaStream={call.localStream}
+                muted
+                className="absolute bottom-3 right-3 w-40 aspect-video rounded-md border border-white/20 bg-black/70 object-cover shadow-lg"
+              />
+            </div>
+          </div>
           <div>
             <div className="flex flex-col space-y-4 items-center">
               <h1>Inbound </h1>
@@ -150,7 +165,6 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
               <h1>Outbound</h1>
               <AudioVisualizer mediaStream={call.localStream} color="#fff" />
             </div>
-            <AudioPlayer mediaStream={call.remoteStream} />
             <Tabs defaultValue="keyboard">
               <div className="flex justify-center">
                 <TabsList>
