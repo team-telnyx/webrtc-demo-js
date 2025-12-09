@@ -9,7 +9,6 @@ const VideoPlayer = ({ mediaStream, ...props }: Props) => {
 
   useEffect(() => {
     if (!mediaStream || !videoRef.current) return;
-    console.log("Attaching media stream to video element", mediaStream);
     videoRef.current.srcObject = mediaStream;
   }, [mediaStream]);
 
