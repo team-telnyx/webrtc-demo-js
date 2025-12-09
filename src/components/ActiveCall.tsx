@@ -25,6 +25,7 @@ import {
 } from "./ui/select";
 import { useDevices } from "@/hooks/useDevices";
 import VideoPlayer from "./VideoPlayer";
+import AudioPlayer from "./AudioPlayer";
 
 type Props = {
   call: Call;
@@ -143,20 +144,22 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
               </div>
             </div>
           )}
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Video</p>
-            <div className="relative overflow-hidden rounded-lg border bg-black">
-              <VideoPlayer
-                mediaStream={call.remoteStream}
-                className="w-full aspect-video object-cover"
-              />
-              <VideoPlayer
-                mediaStream={call.localStream}
-                muted
-                className="absolute bottom-3 right-3 w-40 aspect-video rounded-md border border-white/20 bg-black/70 object-cover shadow-lg"
-              />
+          {call.isVideoCall && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Video</p>
+              <div className="relative overflow-hidden rounded-lg border bg-black">
+                <VideoPlayer
+                  mediaStream={call.remoteStream}
+                  className="w-full aspect-video object-cover"
+                />
+                <VideoPlayer
+                  mediaStream={call.localStream}
+                  muted
+                  className="absolute bottom-3 right-3 w-40 aspect-video rounded-md border border-white/20 bg-black/70 object-cover shadow-lg"
+                />
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <div className="flex flex-col space-y-4 items-center">
               <h1>Inbound </h1>
@@ -165,6 +168,9 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
               <h1>Outbound</h1>
               <AudioVisualizer mediaStream={call.localStream} color="#fff" />
             </div>
+            {!call.isVideoCall && (
+              <AudioPlayer mediaStream={call.remoteStream} />
+            )}
             <Tabs defaultValue="keyboard">
               <div className="flex justify-center">
                 <TabsList>

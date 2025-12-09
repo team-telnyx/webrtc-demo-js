@@ -22,6 +22,7 @@ export interface ICallOptions {
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
+  video?: boolean;
 }
 
 const callOptionsAtom = atom({
@@ -34,6 +35,7 @@ const callOptionsAtom = atom({
   telnyxLegId: undefined,
   telnyxSessionId: undefined,
   useStereo: false,
+  video: false,
 } as ICallOptions);
 
 export const useCallOptions = () => useAtom(callOptionsAtom);
