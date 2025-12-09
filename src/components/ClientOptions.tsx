@@ -41,6 +41,8 @@ import { IClientOptionsDemo } from "@/lib/types";
 import { TurnServersFormField } from "./TurnServersFormField";
 import { StunServersFormField } from "./StunServersFormField";
 
+const IS_DEV_ENV = import.meta.env.DEV ? "development" : "production";
+
 const configureIceServers = (
   stunServers: IClientOptionsDemo["stunServers"],
   turnServers: IClientOptionsDemo["turnServers"]
@@ -87,6 +89,7 @@ const ClientOptions = () => {
       rtcIp: "",
       rtcPort: undefined,
       mutedMicOnStart: false,
+      isVideoCallsEnabled: false,
       anonymous_login: {
         target_type: "",
         target_id: "",
@@ -559,6 +562,31 @@ const ClientOptions = () => {
                 </FormItem>
               )}
             />
+
+            {IS_DEV_ENV && (
+              <FormField
+                control={form.control}
+                name="isVideoCallsEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between mb-4">
+                    <div>
+                      <FormLabel>Video call</FormLabel>
+                      <FormDescription>
+                        Make and receive a video call. Be aware this feature
+                        enables video for all incoming and outgoing calls.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

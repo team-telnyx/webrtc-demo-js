@@ -17,11 +17,17 @@ type Checked = DropdownMenuCheckboxItemProps["checked"];
 interface Props {
   value: RTCRtpCodec[];
   onChange: (value: RTCRtpCodec[]) => void;
+  isVideoCallsEnabled?: boolean;
 }
-function CodecSelectInput({ value = [], onChange }: Props) {
+function CodecSelectInput({
+  value = [],
+  onChange,
+  isVideoCallsEnabled = false,
+}: Props) {
   const onUncheckCodec = (codec: RTCRtpCodec) => {
     onChange(value.filter((c) => c.mimeType !== codec.mimeType));
   };
+
   const onCheckCodec = (codec: RTCRtpCodec) => {
     onChange([...value, codec]);
   };
@@ -32,10 +38,23 @@ function CodecSelectInput({ value = [], onChange }: Props) {
     }
     return onCheckCodec(codecList[index]);
   };
-  const codecList = React.useMemo(() => {
-    const codecs = RTCRtpSender?.getCapabilities?.("audio")?.codecs || [];
-    return uniqueBy(codecs, (codec) => codec.mimeType);
+
+  const audioCodecsList = React.useMemo(() => {
+    const audioCodecs = RTCRtpSender?.getCapabilities?.("audio")?.codecs || [];
+    return uniqueBy(audioCodecs, (codec) => codec.mimeType);
   }, []);
+
+  const videoCodecsList = React.useMemo(() => {
+    if (!isVideoCallsEnabled) return [];
+
+    const videoCodecs = RTCRtpSender?.getCapabilities?.("video")?.codecs || [];
+    return uniqueBy(videoCodecs, (codec) => codec.mimeType);
+  }, [isVideoCallsEnabled]);
+
+  const codecList = React.useMemo(() => {
+    return [...audioCodecsList, ...videoCodecsList];
+  }, [audioCodecsList, videoCodecsList]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="w-full" asChild>
@@ -48,7 +67,7 @@ function CodecSelectInput({ value = [], onChange }: Props) {
       <DropdownMenuContent className="w-[300px]">
         <DropdownMenuLabel>Audio Codecs</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {codecList.map((codec, index) => (
+        {audioCodecsList.map((codec, index) => (
           <DropdownMenuCheckboxItem
             key={codec.mimeType}
             checked={!!value.find((c) => c.mimeType === codec.mimeType)}
@@ -57,6 +76,22 @@ function CodecSelectInput({ value = [], onChange }: Props) {
             {codec.mimeType}
           </DropdownMenuCheckboxItem>
         ))}
+        {isVideoCallsEnabled && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Video Codecs</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {videoCodecsList.map((codec, index) => (
+              <DropdownMenuCheckboxItem
+                key={codec.mimeType}
+                checked={!!value.find((c) => c.mimeType === codec.mimeType)}
+                onCheckedChange={(checked) => onCheck(checked, index)}
+              >
+                {codec.mimeType}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -168,9 +168,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
               <h1>Outbound</h1>
               <AudioVisualizer mediaStream={call.localStream} color="#fff" />
             </div>
-            {!call.isVideoCall && (
-              <AudioPlayer mediaStream={call.remoteStream} />
-            )}
+            <AudioPlayer mediaStream={call.remoteStream} />
             <Tabs defaultValue="keyboard">
               <div className="flex justify-center">
                 <TabsList>

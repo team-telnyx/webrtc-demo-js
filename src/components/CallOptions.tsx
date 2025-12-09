@@ -23,15 +23,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCallback } from "react";
 import CodecSelectInput from "./CodecInput";
 import CustomHeadersInput from "./CustomHeadersInput";
-import { Switch } from "./ui/switch";
-
-const IS_DEV_ENV = import.meta.env.DEV ? "development" : "production";
+import { useClientOptions } from "@/atoms/clientOptions";
 
 const CallOptions = () => {
+  const [clientOptions] = useClientOptions();
   const [callOptions, setCallOptions] = useCallOptions();
   const form = useForm({
     defaultValues: {
-      video: false,
       callerName: "",
       destinationNumber: "",
       callerNumber: "",
@@ -143,6 +141,7 @@ const CallOptions = () => {
                     <CodecSelectInput
                       value={field.value ?? []}
                       onChange={field.onChange}
+                      isVideoCallsEnabled={clientOptions.isVideoCallsEnabled}
                     />
                   </FormControl>
 
@@ -164,28 +163,6 @@ const CallOptions = () => {
                 </FormItem>
               )}
             />
-
-            {IS_DEV_ENV && (
-              <FormField
-                control={form.control}
-                name="video"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between mb-4">
-                    <div>
-                      <FormLabel>Video call</FormLabel>
-                      <FormDescription>Make a video call</FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
           </form>
         </Form>
       </CardContent>
