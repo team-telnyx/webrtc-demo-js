@@ -8,7 +8,7 @@ export interface IClientOptionsDemo extends IClientOptions {
   keepConnectionAliveOnSocketClose?: boolean;
   stunServers?: string[];
   turnServers?: TurnServer;
-  isVideoCallsEnabled?: boolean;
+  video?: boolean;
 }
 
 export type TurnServer = {

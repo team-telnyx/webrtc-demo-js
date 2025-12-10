@@ -89,7 +89,7 @@ const ClientOptions = () => {
       rtcIp: "",
       rtcPort: undefined,
       mutedMicOnStart: false,
-      isVideoCallsEnabled: false,
+      video: false,
       anonymous_login: {
         target_type: "",
         target_id: "",
@@ -566,7 +566,7 @@ const ClientOptions = () => {
             {IS_DEV_ENV && (
               <FormField
                 control={form.control}
-                name="isVideoCallsEnabled"
+                name="video"
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between mb-4">
                     <div>

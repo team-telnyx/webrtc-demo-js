@@ -17,13 +17,9 @@ type Checked = DropdownMenuCheckboxItemProps["checked"];
 interface Props {
   value: RTCRtpCodec[];
   onChange: (value: RTCRtpCodec[]) => void;
-  isVideoCallsEnabled?: boolean;
+  video?: boolean;
 }
-function CodecSelectInput({
-  value = [],
-  onChange,
-  isVideoCallsEnabled = false,
-}: Props) {
+function CodecSelectInput({ value = [], onChange, video = false }: Props) {
   const onUncheckCodec = (codec: RTCRtpCodec) => {
     onChange(value.filter((c) => c.mimeType !== codec.mimeType));
   };
@@ -45,11 +41,11 @@ function CodecSelectInput({
   }, []);
 
   const videoCodecsList = React.useMemo(() => {
-    if (!isVideoCallsEnabled) return [];
+    if (!video) return [];
 
     const videoCodecs = RTCRtpSender?.getCapabilities?.("video")?.codecs || [];
     return uniqueBy(videoCodecs, (codec) => codec.mimeType);
-  }, [isVideoCallsEnabled]);
+  }, [video]);
 
   const codecList = React.useMemo(() => {
     return [...audioCodecsList, ...videoCodecsList];
@@ -76,7 +72,7 @@ function CodecSelectInput({
             {codec.mimeType}
           </DropdownMenuCheckboxItem>
         ))}
-        {isVideoCallsEnabled && (
+        {video && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Video Codecs</DropdownMenuLabel>

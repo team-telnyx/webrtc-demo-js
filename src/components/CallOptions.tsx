@@ -141,7 +141,7 @@ const CallOptions = () => {
                     <CodecSelectInput
                       value={field.value ?? []}
                       onChange={field.onChange}
-                      isVideoCallsEnabled={clientOptions.isVideoCallsEnabled}
+                      video={clientOptions.video}
                     />
                   </FormControl>
 
