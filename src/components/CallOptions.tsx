@@ -23,8 +23,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCallback } from "react";
 import CodecSelectInput from "./CodecInput";
 import CustomHeadersInput from "./CustomHeadersInput";
+import { useClientOptions } from "@/atoms/clientOptions";
 
 const CallOptions = () => {
+  const [clientOptions] = useClientOptions();
   const [callOptions, setCallOptions] = useCallOptions();
   const form = useForm({
     defaultValues: {
@@ -139,6 +141,7 @@ const CallOptions = () => {
                     <CodecSelectInput
                       value={field.value ?? []}
                       onChange={field.onChange}
+                      video={clientOptions.video}
                     />
                   </FormControl>
 

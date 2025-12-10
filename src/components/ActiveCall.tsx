@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { playDTMFTone } from "@/lib/dtmf";
 import { Call } from "@telnyx/webrtc";
 import { useCallback, useEffect, useState } from "react";
-import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
 import Keyboard from "./Keyboard";
@@ -25,6 +24,8 @@ import {
   SelectValue,
 } from "./ui/select";
 import { useDevices } from "@/hooks/useDevices";
+import VideoPlayer from "./VideoPlayer";
+import AudioPlayer from "./AudioPlayer";
 
 type Props = {
   call: Call;
@@ -141,6 +142,22 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
                 >
                   Apply
                 </Button>
+              </div>
+            </div>
+          )}
+          {call.isVideoCall && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Video</p>
+              <div className="relative overflow-hidden rounded-lg border bg-black">
+                <VideoPlayer
+                  mediaStream={call.remoteStream}
+                  className="w-full aspect-video object-cover"
+                />
+                <VideoPlayer
+                  mediaStream={call.localStream}
+                  muted
+                  className="absolute bottom-3 right-3 w-40 aspect-video rounded-md border border-white/20 bg-black/70 object-cover shadow-lg"
+                />
               </div>
             </div>
           )}
