@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-export const useDevices = (kinds?: MediaDeviceKind[]) => {
+export const useDevices = (video = false) => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 
   const loadDevices = useCallback(async () => {
@@ -12,18 +12,14 @@ export const useDevices = (kinds?: MediaDeviceKind[]) => {
     }
 
     try {
+      await navigator.mediaDevices.getUserMedia({ audio: true, video });
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const filteredDevices =
-        kinds && kinds.length
-          ? devices.filter((device) => kinds.includes(device.kind))
-          : devices;
-
-      setDevices(filteredDevices);
+      setDevices(devices);
     } catch (error) {
       console.error("Failed to load audio devices", error);
       setDevices([]);
     }
-  }, [setDevices, kinds]);
+  }, [setDevices, video]);
 
   useEffect(() => {
     loadDevices();
