@@ -9,7 +9,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { playDTMFTone } from "@/lib/dtmf";
 import { Call } from "@telnyx/webrtc";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import AudioPlayer from "./AudioPlayer";
 import AudioVisualizer from "./AudioVisualizer";
 import InCallQualityMetrics from "./InCallQualityMetrics";
 import Keyboard from "./Keyboard";
@@ -25,7 +26,6 @@ import {
 } from "./ui/select";
 import { useDevices } from "@/hooks/useDevices";
 import VideoPlayer from "./VideoPlayer";
-import AudioPlayer from "./AudioPlayer";
 
 type Props = {
   call: Call;
@@ -33,13 +33,16 @@ type Props = {
 };
 
 const ActiveCall = ({ call, title = "Active Call" }: Props) => {
+  const devices = useDevices();
   const [isMuted, setIsMuted] = useState<boolean>(call.isAudioMuted);
   const [selectedAudioInputId, setSelectedAudioInputId] = useState<string>("");
   const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
     call.isAudioMuted
   );
 
-  const audioInDevices = useDevices(["audioinput"]);
+  const audioInDevices = useMemo(() => {
+    return devices.filter((device) => device.kind === "audioinput");
+  }, [devices]);
 
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
