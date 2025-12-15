@@ -152,8 +152,10 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
             <div className="space-y-2">
               <p className="text-sm font-semibold">Video</p>
               <div className="relative overflow-hidden rounded-lg border bg-black">
+                {/* Mute both video players because we use AudioPlayer for getting audio from the remote stream */}
                 <VideoPlayer
                   mediaStream={call.remoteStream}
+                  muted
                   className="w-full aspect-video object-cover"
                 />
                 <VideoPlayer

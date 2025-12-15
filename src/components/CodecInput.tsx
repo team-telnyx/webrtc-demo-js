@@ -28,13 +28,6 @@ function CodecSelectInput({ value = [], onChange, video = false }: Props) {
     onChange([...value, codec]);
   };
 
-  const onCheck = (check: Checked, index: number) => {
-    if (!check) {
-      return onUncheckCodec(codecList[index]);
-    }
-    return onCheckCodec(codecList[index]);
-  };
-
   const audioCodecsList = React.useMemo(() => {
     const audioCodecs = RTCRtpSender?.getCapabilities?.("audio")?.codecs || [];
     return uniqueBy(audioCodecs, (codec) => codec.mimeType);
@@ -50,6 +43,13 @@ function CodecSelectInput({ value = [], onChange, video = false }: Props) {
   const codecList = React.useMemo(() => {
     return [...audioCodecsList, ...videoCodecsList];
   }, [audioCodecsList, videoCodecsList]);
+
+  const onCheck = (check: Checked, index: number) => {
+    if (!check) {
+      return onUncheckCodec(codecList[index]);
+    }
+    return onCheckCodec(codecList[index]);
+  };
 
   return (
     <DropdownMenu>
