@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AiAgentEventLog, { type AiAgentEvent } from "./AiAgentEventLog";
 
 interface FormValues {
   agentId: string;
@@ -33,22 +34,56 @@ interface FormValues {
   version: string;
 }
 
+const WIDGET_EVENTS = [
+  "agent.connected",
+  "agent.disconnected",
+  "conversation.update",
+  "transcript.item",
+  "conversation.agent.state",
+  "agent.audio.mute",
+  "agent.error",
+];
+
 const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
   const [currentTrickleIce, setCurrentTrickleIce] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState("latest");
+  const [currentVersion, setCurrentVersion] = useState("next");
   const [invertBackground, setInvertBackground] = useState(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
+  const [events, setEvents] = useState<AiAgentEvent[]>([]);
 
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: "",
       trickleIce: false,
-      version: "latest",
+      version: "next",
     },
   });
+
+  const handleWidgetEvent = useCallback((event: MessageEvent) => {
+    if (
+      event.data &&
+      event.data.type === "telnyx-ai-agent-event" &&
+      event.data.eventType
+    ) {
+      const newEvent: AiAgentEvent = {
+        id: crypto.randomUUID(),
+        eventType: event.data.eventType,
+        detail: event.data.detail,
+        timestamp: new Date(),
+      };
+      setEvents((prev) => [newEvent, ...prev]);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("message", handleWidgetEvent);
+    return () => {
+      window.removeEventListener("message", handleWidgetEvent);
+    };
+  }, [handleWidgetEvent]);
 
   useEffect(() => {
     const fetchVersions = async () => {
@@ -57,23 +92,30 @@ const AiAgentView = () => {
           "https://registry.npmjs.org/@telnyx/ai-agent-widget"
         );
         const data = await response.json();
-        const versions = Object.keys(data.versions).sort((a, b) => {
+
+        // Filter out deprecated and beta versions
+        const filteredVersions = Object.entries(
+          data.versions as Record<string, { deprecated?: string }>
+        )
+          .filter(([version, metadata]) => {
+            // Exclude deprecated versions
+            if (metadata.deprecated) return false;
+            // Exclude beta/prerelease versions (contain "-")
+            if (version.includes("-")) return false;
+            return true;
+          })
+          .map(([version]) => version);
+
+        const versions = filteredVersions.sort((a, b) => {
           const parseVersion = (v: string) => {
-            const [main, prerelease] = v.split("-");
-            const parts = main.split(".").map(Number);
-            return { parts, prerelease };
+            const parts = v.split(".").map(Number);
+            return { parts };
           };
           const vA = parseVersion(a);
           const vB = parseVersion(b);
           for (let i = 0; i < Math.max(vA.parts.length, vB.parts.length); i++) {
             const diff = (vB.parts[i] || 0) - (vA.parts[i] || 0);
             if (diff !== 0) return diff;
-          }
-          // Same base version: stable > prerelease, then sort prereleases alphabetically descending
-          if (!vA.prerelease && vB.prerelease) return -1;
-          if (vA.prerelease && !vB.prerelease) return 1;
-          if (vA.prerelease && vB.prerelease) {
-            return vB.prerelease.localeCompare(vA.prerelease);
           }
           return 0;
         });
@@ -92,8 +134,35 @@ const AiAgentView = () => {
     version: string,
     trickleIce: boolean
   ) => {
-    const versionSuffix = version === "latest" ? "" : `@${version}`;
+    const versionSuffix = `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : "";
+    const eventListenersScript = `
+      const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
+
+      function setupEventListeners() {
+        const widget = document.querySelector('telnyx-ai-agent');
+        if (!widget) {
+          setTimeout(setupEventListeners, 100);
+          return;
+        }
+
+        WIDGET_EVENTS.forEach(eventType => {
+          widget.addEventListener(eventType, (e) => {
+            window.parent.postMessage({
+              type: 'telnyx-ai-agent-event',
+              eventType: eventType,
+              detail: e.detail
+            }, '*');
+          });
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupEventListeners);
+      } else {
+        setupEventListeners();
+      }
+    `;
     return `
       <!DOCTYPE html>
       <html>
@@ -105,6 +174,7 @@ const AiAgentView = () => {
         </head>
         <body>
           <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}></telnyx-ai-agent>
+          <script>${eventListenersScript}</script>
         </body>
       </html>
     `;
@@ -122,12 +192,14 @@ const AiAgentView = () => {
   const handleReset = () => {
     setIsEmbedded(false);
     setCurrentAgentId(null);
+    setEvents([]);
     form.reset();
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-4 h-[calc(100vh-8rem)]">
-      <Card className="h-fit">
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="space-y-4">
+        <Card className="h-fit">
         <CardHeader>
           <CardTitle>AI Agent Widget</CardTitle>
           <CardDescription>
@@ -176,6 +248,7 @@ const AiAgentView = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="next">Next</SelectItem>
                         <SelectItem value="latest">Latest</SelectItem>
                         {availableVersions.map((version) => (
                           <SelectItem key={version} value={version}>
@@ -228,8 +301,10 @@ const AiAgentView = () => {
           </form>
         </Form>
       </Card>
+      <AiAgentEventLog events={events} />
+      </div>
 
-      <Card className="flex flex-col h-full">
+      <Card className="flex flex-col min-h-[600px]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle>Widget Preview</CardTitle>
