@@ -28,9 +28,11 @@ function AiAgentEventItem(props: { event: AiAgentEvent }) {
         >
           {props.event.eventType}
         </span>
-        <pre className="font-mono text-xs overflow-x-auto whitespace-pre-wrap break-all">
-          {JSON.stringify(props.event.detail, null, 2)}
-        </pre>
+        {props.event.detail != null && (
+          <pre className="font-mono text-xs overflow-x-auto whitespace-pre-wrap break-all">
+            {JSON.stringify(props.event.detail, null, 2)}
+          </pre>
+        )}
       </div>
     </div>
   );

@@ -48,7 +48,7 @@ const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
   const [currentTrickleIce, setCurrentTrickleIce] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState("latest");
+  const [currentVersion, setCurrentVersion] = useState("next");
   const [invertBackground, setInvertBackground] = useState(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
@@ -58,7 +58,7 @@ const AiAgentView = () => {
     defaultValues: {
       agentId: "",
       trickleIce: false,
-      version: "latest",
+      version: "next",
     },
   });
 
@@ -92,23 +92,28 @@ const AiAgentView = () => {
           "https://registry.npmjs.org/@telnyx/ai-agent-widget"
         );
         const data = await response.json();
-        const versions = Object.keys(data.versions).sort((a, b) => {
+
+        // Filter out deprecated and beta versions
+        const filteredVersions = Object.entries(data.versions)
+          .filter(([version, metadata]: [string, { deprecated?: string }]) => {
+            // Exclude deprecated versions
+            if (metadata.deprecated) return false;
+            // Exclude beta/prerelease versions (contain "-")
+            if (version.includes("-")) return false;
+            return true;
+          })
+          .map(([version]) => version);
+
+        const versions = filteredVersions.sort((a, b) => {
           const parseVersion = (v: string) => {
-            const [main, prerelease] = v.split("-");
-            const parts = main.split(".").map(Number);
-            return { parts, prerelease };
+            const parts = v.split(".").map(Number);
+            return { parts };
           };
           const vA = parseVersion(a);
           const vB = parseVersion(b);
           for (let i = 0; i < Math.max(vA.parts.length, vB.parts.length); i++) {
             const diff = (vB.parts[i] || 0) - (vA.parts[i] || 0);
             if (diff !== 0) return diff;
-          }
-          // Same base version: stable > prerelease, then sort prereleases alphabetically descending
-          if (!vA.prerelease && vB.prerelease) return -1;
-          if (vA.prerelease && !vB.prerelease) return 1;
-          if (vA.prerelease && vB.prerelease) {
-            return vB.prerelease.localeCompare(vA.prerelease);
           }
           return 0;
         });
@@ -127,7 +132,7 @@ const AiAgentView = () => {
     version: string,
     trickleIce: boolean
   ) => {
-    const versionSuffix = version === "latest" ? "" : `@${version}`;
+    const versionSuffix = version === "next" ? "@next" : `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : "";
     const eventListenersScript = `
       const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
@@ -241,7 +246,7 @@ const AiAgentView = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="latest">Latest</SelectItem>
+                        <SelectItem value="next">Next</SelectItem>
                         {availableVersions.map((version) => (
                           <SelectItem key={version} value={version}>
                             {version}
