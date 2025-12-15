@@ -94,8 +94,10 @@ const AiAgentView = () => {
         const data = await response.json();
 
         // Filter out deprecated and beta versions
-        const filteredVersions = Object.entries(data.versions)
-          .filter(([version, metadata]: [string, { deprecated?: string }]) => {
+        const filteredVersions = Object.entries(
+          data.versions as Record<string, { deprecated?: string }>
+        )
+          .filter(([version, metadata]) => {
             // Exclude deprecated versions
             if (metadata.deprecated) return false;
             // Exclude beta/prerelease versions (contain "-")
