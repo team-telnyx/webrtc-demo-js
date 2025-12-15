@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -26,12 +26,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AiAgentEventLog, { type AiAgentEvent } from "./AiAgentEventLog";
 
 interface FormValues {
   agentId: string;
   trickleIce: boolean;
   version: string;
 }
+
+const WIDGET_EVENTS = [
+  "agent.connected",
+  "agent.disconnected",
+  "conversation.update",
+  "transcript.item",
+  "conversation.agent.state",
+  "agent.audio.mute",
+  "agent.error",
+];
 
 const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
@@ -41,6 +52,7 @@ const AiAgentView = () => {
   const [invertBackground, setInvertBackground] = useState(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
+  const [events, setEvents] = useState<AiAgentEvent[]>([]);
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -49,6 +61,29 @@ const AiAgentView = () => {
       version: "latest",
     },
   });
+
+  const handleWidgetEvent = useCallback((event: MessageEvent) => {
+    if (
+      event.data &&
+      event.data.type === "telnyx-ai-agent-event" &&
+      event.data.eventType
+    ) {
+      const newEvent: AiAgentEvent = {
+        id: crypto.randomUUID(),
+        eventType: event.data.eventType,
+        detail: event.data.detail,
+        timestamp: new Date(),
+      };
+      setEvents((prev) => [newEvent, ...prev]);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("message", handleWidgetEvent);
+    return () => {
+      window.removeEventListener("message", handleWidgetEvent);
+    };
+  }, [handleWidgetEvent]);
 
   useEffect(() => {
     const fetchVersions = async () => {
@@ -94,6 +129,33 @@ const AiAgentView = () => {
   ) => {
     const versionSuffix = version === "latest" ? "" : `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : "";
+    const eventListenersScript = `
+      const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
+
+      function setupEventListeners() {
+        const widget = document.querySelector('telnyx-ai-agent');
+        if (!widget) {
+          setTimeout(setupEventListeners, 100);
+          return;
+        }
+
+        WIDGET_EVENTS.forEach(eventType => {
+          widget.addEventListener(eventType, (e) => {
+            window.parent.postMessage({
+              type: 'telnyx-ai-agent-event',
+              eventType: eventType,
+              detail: e.detail
+            }, '*');
+          });
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupEventListeners);
+      } else {
+        setupEventListeners();
+      }
+    `;
     return `
       <!DOCTYPE html>
       <html>
@@ -105,6 +167,7 @@ const AiAgentView = () => {
         </head>
         <body>
           <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}></telnyx-ai-agent>
+          <script>${eventListenersScript}</script>
         </body>
       </html>
     `;
@@ -122,12 +185,14 @@ const AiAgentView = () => {
   const handleReset = () => {
     setIsEmbedded(false);
     setCurrentAgentId(null);
+    setEvents([]);
     form.reset();
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-4 h-[calc(100vh-8rem)]">
-      <Card className="h-fit">
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="space-y-4">
+        <Card className="h-fit">
         <CardHeader>
           <CardTitle>AI Agent Widget</CardTitle>
           <CardDescription>
@@ -228,8 +293,10 @@ const AiAgentView = () => {
           </form>
         </Form>
       </Card>
+      <AiAgentEventLog events={events} />
+      </div>
 
-      <Card className="flex flex-col h-full">
+      <Card className="flex flex-col min-h-[600px]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle>Widget Preview</CardTitle>
