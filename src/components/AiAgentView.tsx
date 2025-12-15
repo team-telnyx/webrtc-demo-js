@@ -134,7 +134,7 @@ const AiAgentView = () => {
     version: string,
     trickleIce: boolean
   ) => {
-    const versionSuffix = version === "next" ? "@next" : `@${version}`;
+    const versionSuffix = `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : "";
     const eventListenersScript = `
       const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
@@ -249,6 +249,7 @@ const AiAgentView = () => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="next">Next</SelectItem>
+                        <SelectItem value="latest">Latest</SelectItem>
                         {availableVersions.map((version) => (
                           <SelectItem key={version} value={version}>
                             {version}
