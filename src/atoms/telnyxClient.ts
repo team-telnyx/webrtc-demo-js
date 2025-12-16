@@ -11,6 +11,7 @@ import { IClientOptionsDemo } from "@/lib/types";
 import { clientModeAtom } from "./clientMode";
 import { simpleUserClientOptionsAtom } from "./simpleUserClientOptions";
 import { splitCommaSeparatedList } from "@/lib/string";
+import { IS_DEV_ENV } from "@/lib/vite";
 
 type TelnyxRTCVersion = {
   version: string;
@@ -110,7 +111,7 @@ function createTelnyxRTCClient(
     region: region !== "auto" ? region : undefined,
 
     // We can not set iceServers explicitly here, because WebRTC SDK use Telnyx STUN/TURN servers internally based on environment
-    env: import.meta.env.DEV ? "development" : "production",
+    env: IS_DEV_ENV ? "development" : "production",
   });
 }
 
