@@ -5,23 +5,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { playDTMFTone } from "@/lib/dtmf";
-import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-import { useCallback, useEffect, useState } from "react";
-import Keyboard from "./Keyboard";
-import { Button } from "./ui/button";
-import AudioPlayer from "./AudioPlayer";
-import AudioVisualizer from "./AudioVisualizer";
-import SipJsCallQualityMetrics from "./SipJsCallQualityMetrics";
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { playDTMFTone } from '@/lib/dtmf';
+import type { TelnyxCall } from '@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call';
+import { useCallback, useEffect, useState } from 'react';
+import Keyboard from './Keyboard';
+import { Button } from './ui/button';
+import AudioPlayer from './AudioPlayer';
+import AudioVisualizer from './AudioVisualizer';
+import SipJsCallQualityMetrics from './SipJsCallQualityMetrics';
 
 type Props = {
   call: TelnyxCall;
   title?: string;
 };
 
-const SipJsActiveCall = ({ call, title = "Active Call" }: Props) => {
+const SipJsActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const [remoteStream, setRemoteStream] = useState<MediaStream | undefined>();
   const [localStream, setLocalStream] = useState<MediaStream | undefined>();
 
@@ -48,7 +48,7 @@ const SipJsActiveCall = ({ call, title = "Active Call" }: Props) => {
       await call.sendDigits(digit);
       playDTMFTone(digit);
     },
-    [call]
+    [call],
   );
 
   return (
@@ -64,7 +64,7 @@ const SipJsActiveCall = ({ call, title = "Active Call" }: Props) => {
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            SIP.js Call {call.isIncoming() ? "(Incoming)" : "(Outgoing)"}
+            SIP.js Call {call.isIncoming() ? '(Incoming)' : '(Outgoing)'}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,17 +101,17 @@ const SipJsActiveCall = ({ call, title = "Active Call" }: Props) => {
           <Button
             data-testid="btn-mute-call"
             size="lg"
-            variant={call.isMuted() ? "default" : "outline"}
+            variant={call.isMuted() ? 'default' : 'outline'}
             className="w-full"
             onClick={() => call.toggleMute(!call.isMuted())}
           >
-            {call.isMuted() ? "Unmute" : "Mute"}
+            {call.isMuted() ? 'Unmute' : 'Mute'}
           </Button>
 
           <Button
             data-testid="btn-end-call"
             size="lg"
-            variant={"destructive"}
+            variant={'destructive'}
             className="w-full"
             onClick={() => call.disconnect()}
           >

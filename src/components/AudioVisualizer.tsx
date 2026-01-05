@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import { LiveAudioVisualizer } from "react-audio-visualize";
+import { useEffect, useState } from 'react';
+import { LiveAudioVisualizer } from 'react-audio-visualize';
 
 type Props = {
   mediaStream: MediaStream;
   color?: string;
 };
 
-const AudioVisualizer = ({ mediaStream, color = "#00E3AA" }: Props) => {
+const AudioVisualizer = ({ mediaStream, color = '#00E3AA' }: Props) => {
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
 
   useEffect(() => {

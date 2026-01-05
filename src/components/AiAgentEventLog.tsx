@@ -1,12 +1,12 @@
-import { format } from "date-fns";
-import List from "./List";
+import { format } from 'date-fns';
+import List from './List';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from './ui/card';
 
 export type AiAgentEvent = {
   id: string;
@@ -19,7 +19,7 @@ function AiAgentEventItem(props: { event: AiAgentEvent }) {
   return (
     <div className="flex border-b items-start p-2 gap-2">
       <div className="text-gray-500 text-xs whitespace-nowrap">
-        {format(props.event.timestamp, "HH:mm:ss:SSS")}
+        {format(props.event.timestamp, 'HH:mm:ss:SSS')}
       </div>
       <div className="flex flex-col gap-1 overflow-hidden">
         <span
@@ -47,9 +47,7 @@ const AiAgentEventLog = ({ events }: AiAgentEventLogProps) => {
     <Card data-testid="aiAgentEventLog">
       <CardHeader>
         <CardTitle>Widget Event Log</CardTitle>
-        <CardDescription>
-          Events emitted by the AI Agent widget
-        </CardDescription>
+        <CardDescription>Events emitted by the AI Agent widget</CardDescription>
       </CardHeader>
       <CardContent className="h-[400px] max-h-full overflow-y-auto">
         <List

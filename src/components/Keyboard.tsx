@@ -1,9 +1,9 @@
-import { DialButton, DialButtonData } from "./DialButton";
+import { DialButton, DialButtonData } from './DialButton';
 
 type Props = {
   onDialButtonClick: (data: DialButtonData) => void;
 };
-const Keyboard = ({onDialButtonClick}: Props) => {
+const Keyboard = ({ onDialButtonClick }: Props) => {
   return (
     <div
       data-testid="dialpad"

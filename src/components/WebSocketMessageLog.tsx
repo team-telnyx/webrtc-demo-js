@@ -1,14 +1,14 @@
-import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
-import List from "./List";
+import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
+import List from './List';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from './ui/card';
 
 type GenericMessage = {
   id: string;
@@ -22,7 +22,7 @@ function WebSocketMessage(props: { message: GenericMessage }) {
   return (
     <div className="flex border-b items-center p-2 gap-2">
       <div className="text-gray-500">
-        {format(props.message.timestamp, "HH:mm:ss:SSS")}
+        {format(props.message.timestamp, 'HH:mm:ss:SSS')}
       </div>
       <div className="flex flex-col gap-2">
         <pre
@@ -49,9 +49,9 @@ const WebSocketMessageLog = () => {
       setMessages((prev) => [payload, ...prev]);
     };
 
-    client.on("telnyx.socket.message", onSocketMessage);
+    client.on('telnyx.socket.message', onSocketMessage);
     return () => {
-      client.off("telnyx.socket.message", onSocketMessage);
+      client.off('telnyx.socket.message', onSocketMessage);
     };
   }, [client]);
   return (

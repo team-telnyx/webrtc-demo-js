@@ -1,16 +1,16 @@
-import { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
+import { ControllerProps, FieldPath, FieldValues } from 'react-hook-form';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Textarea } from "./ui/textarea";
+} from './ui/form';
+import { Textarea } from './ui/textarea';
 
 export function StunServersFormField<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
 }: Partial<ControllerProps<TFieldValues, TName>> & {
@@ -19,7 +19,7 @@ export function StunServersFormField<
   return (
     <FormField
       {...props}
-      name={props.name || ("stunServers" as TName)}
+      name={props.name || ('stunServers' as TName)}
       render={({ field }) => (
         <FormItem className={props.wrapperClassName}>
           <FormLabel>STUN Servers</FormLabel>
@@ -29,12 +29,12 @@ export function StunServersFormField<
               placeholder="One server per line"
               value={
                 Array.isArray(field.value)
-                  ? field.value.join("\n")
-                  : field.value ?? ""
+                  ? field.value.join('\n')
+                  : (field.value ?? '')
               }
               onChange={(event) =>
                 field.onChange(
-                  event.target.value.split("\n").map((line) => line.trim())
+                  event.target.value.split('\n').map((line) => line.trim()),
                 )
               }
             />

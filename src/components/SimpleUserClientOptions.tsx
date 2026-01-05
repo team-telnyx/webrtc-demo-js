@@ -1,4 +1,4 @@
-import { useSimpleUserClientOptions } from "@/atoms/simpleUserClientOptions";
+import { useSimpleUserClientOptions } from '@/atoms/simpleUserClientOptions';
 import {
   Card,
   CardContent,
@@ -6,8 +6,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { useForm } from "react-hook-form";
+} from '@/components/ui/card';
+import { useForm } from 'react-hook-form';
 import {
   Form,
   FormControl,
@@ -15,14 +15,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { TelnyxDeviceConfig } from "@telnyx/rtc-sipjs-simple-user";
-import { TurnServersFormField } from "./TurnServersFormField";
-import { StunServersFormField } from "./StunServersFormField";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { TelnyxDeviceConfig } from '@telnyx/rtc-sipjs-simple-user';
+import { TurnServersFormField } from './TurnServersFormField';
+import { StunServersFormField } from './StunServersFormField';
 
-type FormValues = Omit<TelnyxDeviceConfig, "remoteAudioElement"> & {
+type FormValues = Omit<TelnyxDeviceConfig, 'remoteAudioElement'> & {
   remoteAudioElementId?: string;
 };
 
@@ -39,7 +39,7 @@ const SimpleUserClientOptions = () => {
     const { remoteAudioElementId, ...rest } = values;
     const remoteAudioElement = remoteAudioElementId
       ? (document.getElementById(
-          remoteAudioElementId
+          remoteAudioElementId,
         ) as HTMLAudioElement | null)
       : undefined;
 

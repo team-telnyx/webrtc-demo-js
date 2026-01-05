@@ -1,10 +1,10 @@
-import { useClientOptions } from "@/atoms/clientOptions";
-import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader } from "./ui/dialog";
-import { PreCallDiagnosis, Report } from "@telnyx/webrtc";
-import { useState } from "react";
-import { DialogTitle } from "@radix-ui/react-dialog";
-import { IClientOptionsDemo } from "@/lib/types";
+import { useClientOptions } from '@/atoms/clientOptions';
+import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader } from './ui/dialog';
+import { PreCallDiagnosis, Report } from '@telnyx/webrtc';
+import { useState } from 'react';
+import { DialogTitle } from '@radix-ui/react-dialog';
+import { IClientOptionsDemo } from '@/lib/types';
 
 function hasValidCredentials(options: IClientOptionsDemo) {
   const validCredentials = !!options.login && !!options.password;
@@ -35,7 +35,7 @@ const PreCallDiagnosisButton = () => {
           password: clientOptions.password,
           loginToken: clientOptions.login_token,
         },
-        texMLApplicationNumber: "+1-240-775-8982",
+        texMLApplicationNumber: '+1-240-775-8982',
       });
 
       setReport(_report);
@@ -53,16 +53,13 @@ const PreCallDiagnosisButton = () => {
       >
         Run pre-call diagnosis
       </Button>
-      <Dialog
-        onOpenChange={(open) => (!open ? onClose() : null)}
-        open={isOpen}
-      >
+      <Dialog onOpenChange={(open) => (!open ? onClose() : null)} open={isOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {!report
-                ? "Running pre-call diagnosis..."
-                : "Pre-call diagnosis report"}
+                ? 'Running pre-call diagnosis...'
+                : 'Pre-call diagnosis report'}
             </DialogTitle>
           </DialogHeader>
           {report && (
@@ -103,7 +100,7 @@ function ReportDisplay(props: { report: Report }) {
         </p>
 
         <p className="text-xs">
-          <b>RTT</b>: min: {formatToMS(props.report.summaryStats.rtt.min)}{" "}
+          <b>RTT</b>: min: {formatToMS(props.report.summaryStats.rtt.min)}{' '}
           <br />
           max: {formatToMS(props.report.summaryStats.rtt.max)} <br />
           avg: {formatToMS(props.report.summaryStats.rtt.average)}
@@ -114,7 +111,7 @@ function ReportDisplay(props: { report: Report }) {
         <h4>Session Statistics</h4>
         <p className="text-xs mb-2">
           <b>Bytes Sent</b>: {props.report.sessionStats.bytesSent} <br />
-          <b>Bytes Received</b>: {props.report.sessionStats.bytesReceived}{" "}
+          <b>Bytes Received</b>: {props.report.sessionStats.bytesReceived}{' '}
           <br />
           <b>Packets Sent</b>: {props.report.sessionStats.packetsSent} <br />
           <b>Packets Received</b>: {props.report.sessionStats.packetsReceived}

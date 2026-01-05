@@ -1,9 +1,9 @@
-import { useTelnyxNotification } from "@/atoms/telnyxNotification";
-import IncomingCall from "./IncomingCall";
-import ActiveCall from "./ActiveCall";
-import ConnectingCall from "./ConnectingCall";
-import HeldCall from "./HeldCall";
-import { capitalizeFirstLetter } from "@/lib/string";
+import { useTelnyxNotification } from '@/atoms/telnyxNotification';
+import IncomingCall from './IncomingCall';
+import ActiveCall from './ActiveCall';
+import ConnectingCall from './ConnectingCall';
+import HeldCall from './HeldCall';
+import { capitalizeFirstLetter } from '@/lib/string';
 
 export const Call = () => {
   const [notification] = useTelnyxNotification();
@@ -11,13 +11,13 @@ export const Call = () => {
 
   if (notification.call.options.keepConnectionAliveOnSocketClose) {
     switch (notification.call.state) {
-      case "trying":
-      case "requesting": {
+      case 'trying':
+      case 'requesting': {
         return <IncomingCall call={notification.call} />;
       }
 
-      case "ringing": {
-        if (notification.call.direction === "inbound") {
+      case 'ringing': {
+        if (notification.call.direction === 'inbound') {
           return <IncomingCall call={notification.call} />;
         }
 
@@ -29,9 +29,9 @@ export const Call = () => {
         );
       }
 
-      case "new":
-      case "connecting":
-      case "active": {
+      case 'new':
+      case 'connecting':
+      case 'active': {
         return (
           <ActiveCall
             call={notification.call}
@@ -40,7 +40,7 @@ export const Call = () => {
         );
       }
 
-      case "held": {
+      case 'held': {
         return <HeldCall call={notification.call} />;
       }
       default: {
@@ -50,20 +50,20 @@ export const Call = () => {
   }
 
   switch (notification.call.state) {
-    case "connecting":
-    case "trying": {
+    case 'connecting':
+    case 'trying': {
       return <ConnectingCall call={notification.call} />;
     }
-    case "ringing":
-    case "requesting": {
+    case 'ringing':
+    case 'requesting': {
       return <IncomingCall call={notification.call} />;
     }
 
-    case "active": {
+    case 'active': {
       return <ActiveCall call={notification.call} />;
     }
 
-    case "held": {
+    case 'held': {
       return <HeldCall call={notification.call} />;
     }
     default: {

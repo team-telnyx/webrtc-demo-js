@@ -1,7 +1,6 @@
-
-import { CallEvent } from "@telnyx/rtc-sipjs-simple-user";
-import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-import { useEffect, useState } from "react";
+import { CallEvent } from '@telnyx/rtc-sipjs-simple-user';
+import type { TelnyxCall } from '@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call';
+import { useEffect, useState } from 'react';
 
 type Props = {
   call: TelnyxCall;
@@ -19,11 +18,11 @@ function formatMS(s: number) {
 }
 
 function getQuality(mos: number): string {
-  if (mos >= 4.0) return "excellent";
-  if (mos >= 3.5) return "good";
-  if (mos >= 3.0) return "fair";
-  if (mos >= 2.5) return "poor";
-  return "bad";
+  if (mos >= 4.0) return 'excellent';
+  if (mos >= 3.5) return 'good';
+  if (mos >= 3.0) return 'fair';
+  if (mos >= 2.5) return 'poor';
+  return 'bad';
 }
 
 function calculateMOS(jitter: number, rtt: number, packetLoss: number): number {
@@ -61,7 +60,7 @@ const SipJsCallQualityMetrics = ({ call }: Props) => {
     rtt: 0,
     jitter: 0,
     mos: 0,
-    quality: "bad",
+    quality: 'bad',
   });
 
   useEffect(() => {

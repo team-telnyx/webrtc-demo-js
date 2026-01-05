@@ -1,6 +1,6 @@
-import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-import { RadioTower } from "lucide-react";
-import { Button } from "./ui/button";
+import type { TelnyxCall } from '@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call';
+import { RadioTower } from 'lucide-react';
+import { Button } from './ui/button';
 
 type Props = {
   call: TelnyxCall;
@@ -13,7 +13,7 @@ const SipJsConnectingCall = ({ call }: Props) => {
       <div>
         <h1 className="font-medium">Call is connecting...</h1>
         <p className="text-xs text-muted-foreground">
-          SIP.js {call.isIncoming() ? "Incoming" : "Outgoing"} Call
+          SIP.js {call.isIncoming() ? 'Incoming' : 'Outgoing'} Call
         </p>
       </div>
       <Button

@@ -1,8 +1,8 @@
-import { useLog } from "@/atoms/log";
-import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { useTelnyxNotification } from "@/atoms/telnyxNotification";
-import { INotification, TelnyxRTC } from "@telnyx/webrtc";
-import { useEffect, useRef } from "react";
+import { useLog } from '@/atoms/log';
+import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { useTelnyxNotification } from '@/atoms/telnyxNotification';
+import { INotification, TelnyxRTC } from '@telnyx/webrtc';
+import { useEffect, useRef } from 'react';
 
 const CallNotificationHandler = () => {
   const [client] = useTelnyxSdkClient();
@@ -16,7 +16,7 @@ const CallNotificationHandler = () => {
     if (!client) return;
 
     const onNotification = (notification: INotification) => {
-      if (notification.type !== "callUpdate") return;
+      if (notification.type !== 'callUpdate') return;
       if (!notification.call) return;
 
       notification.call = TelnyxRTC.telnyxStateCall(notification.call);
@@ -27,7 +27,7 @@ const CallNotificationHandler = () => {
 
       if (sipReason) {
         pushLog({
-          id: "sipCallId",
+          id: 'sipCallId',
           description: `Sip CallId: ${sipCallId}`,
         });
 
@@ -39,7 +39,7 @@ const CallNotificationHandler = () => {
         pushLog({
           id: notification.call.state,
           description: `Call State: ${notification.call.state}${
-            notification.call.cause ? ` (${notification.call.cause})` : ""
+            notification.call.cause ? ` (${notification.call.cause})` : ''
           }`,
         });
       }
@@ -47,9 +47,9 @@ const CallNotificationHandler = () => {
       setNotification(notification);
     };
 
-    client.on("telnyx.notification", onNotification);
+    client.on('telnyx.notification', onNotification);
     return () => {
-      client.off("telnyx.notification", onNotification);
+      client.off('telnyx.notification', onNotification);
     };
   }, [client, pushLog, setNotification]);
   return null;

@@ -1,6 +1,6 @@
-import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { SwEvent } from "@telnyx/webrtc";
-import { useEffect, useState } from "react";
+import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { SwEvent } from '@telnyx/webrtc';
+import { useEffect, useState } from 'react';
 
 function formatMS(s: number) {
   return `${(s * 1000).toFixed(2)}ms`;
@@ -14,7 +14,7 @@ const InCallQualityMetrics = () => {
     mos: number;
   }>({
     rtt: 0,
-    quality: "bad",
+    quality: 'bad',
     jitter: 0,
     mos: 0,
   });
@@ -22,7 +22,7 @@ const InCallQualityMetrics = () => {
     if (!client) {
       return;
     }
-    
+
     client.on(SwEvent.StatsFrame, setFrame);
 
     return () => {

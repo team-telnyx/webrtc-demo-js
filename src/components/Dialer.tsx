@@ -1,20 +1,20 @@
-import { ICallOptions, useCallOptions } from "@/atoms/callOptions";
-import { useLog } from "@/atoms/log";
-import { useLoginMethod } from "@/atoms/loginMethod";
-import { useConnectionStatus, useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { useTelnyxNotification } from "@/atoms/telnyxNotification";
+import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import { useLog } from '@/atoms/log';
+import { useLoginMethod } from '@/atoms/loginMethod';
+import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { useTelnyxNotification } from '@/atoms/telnyxNotification';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Phone, PhoneOff } from "lucide-react";
-import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
-import { DialButton, DialButtonData } from "./DialButton";
-import { Input } from "./ui/input";
+} from '@/components/ui/card';
+import { Phone, PhoneOff } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
+import { DialButton, DialButtonData } from './DialButton';
+import { Input } from './ui/input';
 
 const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -31,25 +31,25 @@ const Dialer = () => {
         destinationNumber: prev.destinationNumber + data.digit,
       }));
     },
-    [setCallOptions]
+    [setCallOptions],
   );
 
   const hasActiveCall =
     notification?.call &&
     [
-      "active",
-      "held",
-      "connecting",
-      "trying",
-      "ringing",
-      "requesting",
+      'active',
+      'held',
+      'connecting',
+      'trying',
+      'ringing',
+      'requesting',
     ].includes(notification.call.state);
 
   const onHangupCall = () => {
     if (notification?.call) {
       pushLog({
-        id: "hangingUpCall",
-        description: "Hanging up call",
+        id: 'hangingUpCall',
+        description: 'Hanging up call',
       });
       notification.call.hangup();
     }
@@ -62,21 +62,21 @@ const Dialer = () => {
     }
 
     if (!client) {
-      toast("Telnyx client not initialized");
+      toast('Telnyx client not initialized');
       return;
     }
-    if (connectionStatus !== "registered") {
-      toast("Telnyx is not registered yet");
+    if (connectionStatus !== 'registered') {
+      toast('Telnyx is not registered yet');
       return;
     }
 
-    if (loginMethod !== "anonymous" && !callOptions.destinationNumber) {
-      toast("Please enter a destination number");
+    if (loginMethod !== 'anonymous' && !callOptions.destinationNumber) {
+      toast('Please enter a destination number');
       return;
     }
 
     pushLog({
-      id: "callingDestination",
+      id: 'callingDestination',
       description: `Calling: ${callOptions.destinationNumber}`,
     });
 
@@ -87,7 +87,7 @@ const Dialer = () => {
     if (hasActiveCall) {
       return false;
     }
-    if (connectionStatus !== "registered") {
+    if (connectionStatus !== 'registered') {
       return true;
     }
     return false;
@@ -99,7 +99,7 @@ const Dialer = () => {
       </CardHeader>
       <CardContent>
         <Input
-          disabled={loginMethod === "anonymous"}
+          disabled={loginMethod === 'anonymous'}
           data-testid="input-destination"
           onChange={(e) =>
             setCallOptions((prev: ICallOptions) => ({
@@ -133,14 +133,14 @@ const Dialer = () => {
       </CardContent>
       <CardFooter className="justify-center">
         <DialButton
-          data-testid={hasActiveCall ? "btn-hangup" : "btn-call"}
+          data-testid={hasActiveCall ? 'btn-hangup' : 'btn-call'}
           disabled={isDialButtonDisabled}
           onClick={onStartCall}
           digit={hasActiveCall ? <PhoneOff /> : <Phone />}
           className={
             hasActiveCall
-              ? "bg-red-500 text-white hover:bg-red-600 w-10 h-10"
-              : "bg-[#00E3AA] text-black hover:bg-[#00C99B] disabled:opacity-75 disabled:cursor-not-allowed w-10 h-10"
+              ? 'bg-red-500 text-white hover:bg-red-600 w-10 h-10'
+              : 'bg-[#00E3AA] text-black hover:bg-[#00C99B] disabled:opacity-75 disabled:cursor-not-allowed w-10 h-10'
           }
         ></DialButton>
       </CardFooter>

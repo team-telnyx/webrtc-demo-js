@@ -1,11 +1,11 @@
-import { useRegion } from "@/atoms/region";
+import { useRegion } from '@/atoms/region';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 const RegionSelect = () => {
   const [region, setRegion] = useRegion();

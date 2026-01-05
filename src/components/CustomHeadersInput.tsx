@@ -1,7 +1,7 @@
-import { CustomHeader } from "@/atoms/callOptions";
-import { PlusIcon, TrashIcon } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { CustomHeader } from '@/atoms/callOptions';
+import { PlusIcon, TrashIcon } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface CustomHeadersInputProps {
   value: CustomHeader[];
@@ -12,12 +12,12 @@ const CustomHeadersInput = ({
   onChange,
 }: CustomHeadersInputProps) => {
   const onAdd = () => {
-    onChange([...value, { name: "", value: "" }]);
+    onChange([...value, { name: '', value: '' }]);
   };
 
   const onInputChange = (
     event: React.ChangeEvent<HTMLInputElement>,
-    index: number
+    index: number,
   ) => {
     const { name, value: inputValue } = event.target;
 
@@ -53,19 +53,19 @@ const CustomHeadersInput = ({
             onClick={() => onRemove(index)}
             className="flex-shrink-0"
             size="icon"
-            variant={"outline"}
+            variant={'outline'}
           >
             <TrashIcon />
           </Button>
         </div>
       );
-    }
+    },
   );
 
   return (
     <div className="flex flex-col">
       {headers}
-      <Button type="button" onClick={onAdd} variant={"outline"}>
+      <Button type="button" onClick={onAdd} variant={'outline'}>
         <PlusIcon />
       </Button>
     </div>

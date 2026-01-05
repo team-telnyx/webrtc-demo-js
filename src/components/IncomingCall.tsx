@@ -1,8 +1,7 @@
-
-import { Call } from "@telnyx/webrtc";
-import { useRive } from "@rive-app/react-canvas-lite";
-import { Button } from "./ui/button";
-import { useCallOptions } from "@/atoms/callOptions";
+import { Call } from '@telnyx/webrtc';
+import { useRive } from '@rive-app/react-canvas-lite';
+import { Button } from './ui/button';
+import { useCallOptions } from '@/atoms/callOptions';
 type Props = {
   call: Call;
 };
@@ -10,7 +9,7 @@ type Props = {
 const IncomingCall = ({ call }: Props) => {
   const { RiveComponent: Animation } = useRive({
     autoplay: true,
-    src: "/incoming.riv",
+    src: '/incoming.riv',
   });
   const [callOptions] = useCallOptions();
   return (
@@ -31,7 +30,7 @@ const IncomingCall = ({ call }: Props) => {
         >
           Answer
         </Button>
-        <Button onClick={() => call.hangup()} variant={"outline"}>
+        <Button onClick={() => call.hangup()} variant={'outline'}>
           Reject
         </Button>
       </div>

@@ -1,20 +1,20 @@
-import { useSimpleUserCallOptions } from "@/atoms/simpleUserCallOptions";
+import { useSimpleUserCallOptions } from '@/atoms/simpleUserCallOptions';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const SimpleUserCallOptions = () => {
   const [callOptions, setCallOptions] = useSimpleUserCallOptions();
 
   const onSetExtraHeaders = (value: string) => {
     const headers = value
-      .split("\n")
+      .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
     setCallOptions((prev) => ({ ...prev, extraHeaders: headers }));
@@ -42,7 +42,7 @@ const SimpleUserCallOptions = () => {
           <Textarea
             id="simple-user-extra-headers"
             placeholder="X-Custom-Header: value"
-            value={callOptions.extraHeaders.join("\n")}
+            value={callOptions.extraHeaders.join('\n')}
             onChange={(event) => onSetExtraHeaders(event.target.value)}
             rows={4}
           />

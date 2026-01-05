@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 type Props = React.HTMLAttributes<HTMLAudioElement> & {
   mediaStream: MediaStream;

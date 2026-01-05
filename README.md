@@ -1,11 +1,11 @@
 # Telnyx JS Voice SDK Demo Application
+
 [![NPM Version](https://img.shields.io/npm/v/@telnyx/webrtc.svg)](https://www.npmjs.com/package/@telnyx/webrtc)
 [![License](https://img.shields.io/github/license/team-telnyx/webrtc-demo-js.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
 
 An open source reference implementation of Telnyx's Voice SDK for web browsers. This project demonstrates how to use the Telnyx JS Voice SDK to make and receive calls in a web browser. 📞 🔥
-
 
 ## Project Structure
 
@@ -16,17 +16,20 @@ An open source reference implementation of Telnyx's Voice SDK for web browsers. 
 ## Project Setup
 
 1. Clone the repository
+
    ```bash
    git clone https://github.com/team-telnyx/webrtc-demo-js.git
    cd webrtc-demo-js
    ```
 
 2. Install dependencies
+
    ```bash
    yarn install
    ```
 
 3. Start the development server
+
    ```bash
    yarn dev
    ```

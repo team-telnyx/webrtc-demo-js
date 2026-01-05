@@ -1,23 +1,23 @@
-import BlackBoxTestLog from "./components/BlackBoxTestLog";
-import CallHistory from "./components/CallHistory";
-import CallNotificationHandler from "./components/CallNotificationHandler";
-import CallOptions from "./components/CallOptions";
-import ClientAutoConnect from "./components/ClientAutoConnect";
-import ClientOptions from "./components/ClientOptions";
-import Dialer from "./components/Dialer";
-import PageLayout from "./components/PageLayout";
-import { Toaster } from "./components/ui/toaster";
-import { TooltipProvider } from "./components/ui/tooltip";
-import WebSocketMessageLog from "./components/WebSocketMessageLog";
-import { ThemeProvider } from "./providers/ThemeProvider";
-import ClientModeTabs from "./components/ClientModeTabs";
-import { useClientMode } from "./atoms/clientMode";
-import SimpleUserClientOptions from "./components/SimpleUserClientOptions";
-import SimpleUserDialer from "./components/SimpleUserDialer";
-import SimpleUserCallOptions from "./components/SimpleUserCallOptions";
-import SipJsCallNotificationHandler from "./components/SipJsCallNotificationHandler";
-import { SipJsCall } from "./components/SipJsCall";
-import AiAgentView from "./components/AiAgentView";
+import BlackBoxTestLog from './components/BlackBoxTestLog';
+import CallHistory from './components/CallHistory';
+import CallNotificationHandler from './components/CallNotificationHandler';
+import CallOptions from './components/CallOptions';
+import ClientAutoConnect from './components/ClientAutoConnect';
+import ClientOptions from './components/ClientOptions';
+import Dialer from './components/Dialer';
+import PageLayout from './components/PageLayout';
+import { Toaster } from './components/ui/toaster';
+import { TooltipProvider } from './components/ui/tooltip';
+import WebSocketMessageLog from './components/WebSocketMessageLog';
+import { ThemeProvider } from './providers/ThemeProvider';
+import ClientModeTabs from './components/ClientModeTabs';
+import { useClientMode } from './atoms/clientMode';
+import SimpleUserClientOptions from './components/SimpleUserClientOptions';
+import SimpleUserDialer from './components/SimpleUserDialer';
+import SimpleUserCallOptions from './components/SimpleUserCallOptions';
+import SipJsCallNotificationHandler from './components/SipJsCallNotificationHandler';
+import { SipJsCall } from './components/SipJsCall';
+import AiAgentView from './components/AiAgentView';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -53,9 +53,9 @@ const App = () => {
         <PageLayout>
           <div className="p-4 space-y-4">
             <ClientModeTabs />
-            {mode === "sipjs" ? (
+            {mode === 'sipjs' ? (
               <SipJsDemoView />
-            ) : mode === "aiagent" ? (
+            ) : mode === 'aiagent' ? (
               <AiAgentView />
             ) : (
               <SdkDemoView />
@@ -63,7 +63,7 @@ const App = () => {
           </div>
         </PageLayout>
 
-        {mode === "sdk" ? (
+        {mode === 'sdk' ? (
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
@@ -72,7 +72,7 @@ const App = () => {
           <SipJsCallNotificationHandler />
         )}
 
-        {mode === "sdk" ? null : <SipJsCall />}
+        {mode === 'sdk' ? null : <SipJsCall />}
       </TooltipProvider>
       <Toaster />
     </ThemeProvider>

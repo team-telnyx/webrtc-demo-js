@@ -1,6 +1,6 @@
-import { Upload } from "lucide-react";
-import { useRef } from "react";
-import { Button } from "./ui/button";
+import { Upload } from 'lucide-react';
+import { useRef } from 'react';
+import { Button } from './ui/button';
 
 type Props = {
   accept: string;
@@ -39,7 +39,7 @@ const FileUploadButton = ({ id, accept, onChange, value }: Props) => {
         variant="outline"
       >
         <Upload className="h-4 w-4" />
-        {value ? "Change File" : "Select File"}
+        {value ? 'Change File' : 'Select File'}
       </Button>
     </label>
   );

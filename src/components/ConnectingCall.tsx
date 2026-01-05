@@ -1,6 +1,6 @@
-import { Call } from "@telnyx/webrtc";
-import { RadioTower } from "lucide-react";
-import { Button } from "./ui/button";
+import { Call } from '@telnyx/webrtc';
+import { RadioTower } from 'lucide-react';
+import { Button } from './ui/button';
 
 type Props = {
   call: Call;

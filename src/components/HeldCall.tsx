@@ -5,9 +5,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Call } from "@telnyx/webrtc";
-import { Button } from "./ui/button";
+} from '@/components/ui/dialog';
+import { Call } from '@telnyx/webrtc';
+import { Button } from './ui/button';
 
 type Props = {
   call: Call;
@@ -35,7 +35,7 @@ const HeldCall = ({ call }: Props) => {
           <Button
             data-testid="btn-end-call"
             size="lg"
-            variant={"outline"}
+            variant={'outline'}
             className="w-full"
             onClick={() => call.unhold()}
           >
@@ -45,7 +45,7 @@ const HeldCall = ({ call }: Props) => {
           <Button
             data-testid="btn-end-call"
             size="lg"
-            variant={"destructive"}
+            variant={'destructive'}
             className="w-full"
             onClick={() => call.hangup()}
           >

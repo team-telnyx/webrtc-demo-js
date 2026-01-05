@@ -1,17 +1,17 @@
-import { atom, useAtom } from "jotai";
-import { TelnyxRTC } from "@telnyx/webrtc";
+import { atom, useAtom } from 'jotai';
+import { TelnyxRTC } from '@telnyx/webrtc';
 import {
   TelnyxDevice,
   TelnyxDeviceConfig,
-} from "@telnyx/rtc-sipjs-simple-user";
-import { clientOptionsAtom } from "./clientOptions";
-import { hostAtom } from "./host";
-import { regionAtom } from "./region";
-import { IClientOptionsDemo } from "@/lib/types";
-import { clientModeAtom } from "./clientMode";
-import { simpleUserClientOptionsAtom } from "./simpleUserClientOptions";
-import { splitCommaSeparatedList } from "@/lib/string";
-import { IS_DEV_ENV } from "@/lib/vite";
+} from '@telnyx/rtc-sipjs-simple-user';
+import { clientOptionsAtom } from './clientOptions';
+import { hostAtom } from './host';
+import { regionAtom } from './region';
+import { IClientOptionsDemo } from '@/lib/types';
+import { clientModeAtom } from './clientMode';
+import { simpleUserClientOptionsAtom } from './simpleUserClientOptions';
+import { splitCommaSeparatedList } from '@/lib/string';
+import { IS_DEV_ENV } from '@/lib/vite';
 
 type TelnyxRTCVersion = {
   version: string;
@@ -21,35 +21,35 @@ type TelnyxRTCVersion = {
 type TelnyxClientInstance = TelnyxRTC | TelnyxDevice;
 
 const telnyxRTCVersionAtom = atom<TelnyxRTCVersion>({
-  version: "latest",
+  version: 'latest',
   Class: TelnyxRTC,
 });
 
-const connectionStatusAtom = atom<string>("disconnected");
+const connectionStatusAtom = atom<string>('disconnected');
 
 // SIP.js Simple User status atoms
-export type WsStatus = "idle" | "connecting" | "connected" | "disconnected";
+export type WsStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
 export type RegistrationStatus =
-  | "idle"
-  | "unregistered"
-  | "registering"
-  | "registered";
+  | 'idle'
+  | 'unregistered'
+  | 'registering'
+  | 'registered';
 export type CallStatus =
-  | "idle"
-  | "incoming"
-  | "dialing"
-  | "connecting"
-  | "connected"
-  | "ended"
-  | "failed";
+  | 'idle'
+  | 'incoming'
+  | 'dialing'
+  | 'connecting'
+  | 'connected'
+  | 'ended'
+  | 'failed';
 
-const sipJsWsStatusAtom = atom<WsStatus>("idle");
-const sipJsRegistrationStatusAtom = atom<RegistrationStatus>("idle");
-const sipJsCallStatusAtom = atom<CallStatus>("idle");
+const sipJsWsStatusAtom = atom<WsStatus>('idle');
+const sipJsRegistrationStatusAtom = atom<RegistrationStatus>('idle');
+const sipJsCallStatusAtom = atom<CallStatus>('idle');
 
 const clientAtom = atom<TelnyxClientInstance | null>((get) => {
   const mode = get(clientModeAtom);
-  if (mode === "sipjs") {
+  if (mode === 'sipjs') {
     const sipJsOptions = get(simpleUserClientOptionsAtom);
     return createSimpleUserClient(sipJsOptions);
   }
@@ -64,7 +64,7 @@ const clientAtom = atom<TelnyxClientInstance | null>((get) => {
 
 const telnyxRtcClientAtom = atom<TelnyxRTC | null>((get) => {
   const mode = get(clientModeAtom);
-  if (mode === "sipjs") {
+  if (mode === 'sipjs') {
     return null;
   }
   const client = get(clientAtom);
@@ -75,7 +75,7 @@ const telnyxRtcClientAtom = atom<TelnyxRTC | null>((get) => {
 
 const telnyxSipJsClientAtom = atom<TelnyxDevice | null>((get) => {
   const mode = get(clientModeAtom);
-  if (mode !== "sipjs") {
+  if (mode !== 'sipjs') {
     return null;
   }
   const client = get(clientAtom);
@@ -98,7 +98,7 @@ function createTelnyxRTCClient(
   options: IClientOptionsDemo,
   region: string,
   host: string,
-  TelnyxRTCClass: typeof TelnyxRTC
+  TelnyxRTCClass: typeof TelnyxRTC,
 ) {
   if (!hasValidCredentials(options)) {
     return null;
@@ -108,10 +108,10 @@ function createTelnyxRTCClient(
     ...options,
     // @ts-expect-error internal option
     host,
-    region: region !== "auto" ? region : undefined,
+    region: region !== 'auto' ? region : undefined,
 
     // We can not set iceServers explicitly here, because WebRTC SDK use Telnyx STUN/TURN servers internally based on environment
-    env: IS_DEV_ENV ? "development" : "production",
+    env: IS_DEV_ENV ? 'development' : 'production',
   });
 }
 
@@ -121,7 +121,7 @@ function createSimpleUserClient(options: TelnyxDeviceConfig) {
   }
 
   const wsServers = splitCommaSeparatedList(
-    options.wsServers?.toString() || ""
+    options.wsServers?.toString() || '',
   );
 
   return new TelnyxDevice({
@@ -131,8 +131,8 @@ function createSimpleUserClient(options: TelnyxDeviceConfig) {
       wsServers.length === 0
         ? undefined
         : wsServers.length === 1
-        ? wsServers[0]
-        : wsServers,
+          ? wsServers[0]
+          : wsServers,
     username: options.username,
     password: options.password,
     displayName: options.displayName,
@@ -152,7 +152,7 @@ function hasValidCredentials(options: IClientOptionsDemo) {
   const validAnonymousLoginOptions =
     options.anonymous_login &&
     !!options.anonymous_login.target_id &&
-    options.anonymous_login.target_type === "ai_assistant";
+    options.anonymous_login.target_type === 'ai_assistant';
 
   return validCredentials || validLoginToken || validAnonymousLoginOptions;
 }
@@ -160,15 +160,15 @@ function hasValidCredentials(options: IClientOptionsDemo) {
 function hasValidSimpleUserCredentials(options: TelnyxDeviceConfig) {
   return Boolean(
     options.host &&
-      options.port &&
-      options.username &&
-      options.password &&
-      options.wsServers
+    options.port &&
+    options.username &&
+    options.password &&
+    options.wsServers,
   );
 }
 
 const ensureClientIsTelnyxRTC = (
-  client: TelnyxClientInstance | null
+  client: TelnyxClientInstance | null,
 ): client is TelnyxRTC => {
   const assumeClientIsTelnyxRTC = client as TelnyxRTC;
   if (!assumeClientIsTelnyxRTC) {
@@ -177,11 +177,11 @@ const ensureClientIsTelnyxRTC = (
 
   // Check for unique properties/methods of TelnyxRTC to confirm type. The list may be expanded as needed.
   const hasConnectMethod =
-    typeof assumeClientIsTelnyxRTC?.connect === "function";
+    typeof assumeClientIsTelnyxRTC?.connect === 'function';
   const hasNewCallMethod =
-    typeof assumeClientIsTelnyxRTC?.newCall === "function";
+    typeof assumeClientIsTelnyxRTC?.newCall === 'function';
   const hasOptionsProperty =
-    typeof assumeClientIsTelnyxRTC?.options === "object";
+    typeof assumeClientIsTelnyxRTC?.options === 'object';
 
   return hasConnectMethod && hasNewCallMethod && hasOptionsProperty;
 };

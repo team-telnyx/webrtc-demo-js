@@ -2,24 +2,24 @@ import {
   CallHistoryEntry,
   useAddCallHistory,
   useCallHistory,
-} from "@/atoms/callHistory";
-import { useCallOptions } from "@/atoms/callOptions";
-import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { PhoneIncoming, PhoneOutgoing, TrashIcon } from "lucide-react";
+} from '@/atoms/callHistory';
+import { useCallOptions } from '@/atoms/callOptions';
+import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { PhoneIncoming, PhoneOutgoing, TrashIcon } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { useEffect } from "react";
-import { Button } from "./ui/button";
-import List from "./List";
-import { INotification } from "@telnyx/webrtc";
+} from './ui/card';
+import { useEffect } from 'react';
+import { Button } from './ui/button';
+import List from './List';
+import { INotification } from '@telnyx/webrtc';
 
-const CallDirectionIcon = (props: { direction: "inbound" | "outbound" }) => {
-  return props.direction === "inbound" ? (
+const CallDirectionIcon = (props: { direction: 'inbound' | 'outbound' }) => {
+  return props.direction === 'inbound' ? (
     <PhoneIncoming className="flex-shrink-0 w-4 h-4 text-red-300" />
   ) : (
     <PhoneOutgoing className="flex-shrink-0 w-4 h-4 text-green-300" />
@@ -44,15 +44,15 @@ const CallHistory = () => {
   useEffect(() => {
     if (!client) return;
     const onNotification = (notification: INotification) => {
-      if (notification.type !== "callUpdate") return;
+      if (notification.type !== 'callUpdate') return;
       if (!notification.call) return;
-      if (["hangup", "done"].includes(notification.call.state)) {
+      if (['hangup', 'done'].includes(notification.call.state)) {
         addCallHistory(notification.call);
       }
     };
-    client.on("telnyx.notification", onNotification);
+    client.on('telnyx.notification', onNotification);
     return () => {
-      client.off("telnyx.notification", onNotification);
+      client.off('telnyx.notification', onNotification);
     };
   }, [addCallHistory, client, history]);
 
@@ -85,7 +85,7 @@ const CallHistory = () => {
         />
       </CardContent>
       <CardFooter>
-        <Button onClick={onClearHistory} className="w-full" variant={"outline"}>
+        <Button onClick={onClearHistory} className="w-full" variant={'outline'}>
           <TrashIcon className="w-4 h-4" /> Clear History
         </Button>
       </CardFooter>

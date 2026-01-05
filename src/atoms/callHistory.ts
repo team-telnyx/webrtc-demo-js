@@ -1,17 +1,17 @@
-import { Call } from "@telnyx/webrtc";
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
-import { useCallback } from "react";
+import { Call } from '@telnyx/webrtc';
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
+import { useCallback } from 'react';
 
 export type CallHistoryEntry = {
   id: string;
   destinationNumber: string;
-  direction: "inbound" | "outbound";
+  direction: 'inbound' | 'outbound';
 };
 
 const callHistoryAtom = atomWithStorage<CallHistoryEntry[]>(
-  "telnyx_call_history",
-  []
+  'telnyx_call_history',
+  [],
 );
 
 export const useCallHistory = () => useAtom(callHistoryAtom);
@@ -27,20 +27,20 @@ export const useAddCallHistory = () => {
           return prev;
         }
         const destinationNumber =
-          call.direction === "inbound"
+          call.direction === 'inbound'
             ? call.options.remoteCallerNumber
             : call.options.destinationNumber;
 
         return [
           {
             id: call.id,
-            destinationNumber: destinationNumber ?? "",
+            destinationNumber: destinationNumber ?? '',
             direction: call.direction,
           },
           ...prev,
         ];
       });
     },
-    [setHistory]
+    [setHistory],
   );
 };

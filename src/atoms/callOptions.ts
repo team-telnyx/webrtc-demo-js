@@ -1,4 +1,4 @@
-import { atom, useAtom } from "jotai";
+import { atom, useAtom } from 'jotai';
 
 export interface CustomHeader {
   name: string;
@@ -17,7 +17,7 @@ export interface ICallOptions {
   useStereo?: boolean;
   customHeaders?: CustomHeader[];
   debug?: boolean;
-  debugOutput?: "socket" | "file";
+  debugOutput?: 'socket' | 'file';
   preferred_codecs?: RTCRtpCodec[];
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
@@ -25,9 +25,9 @@ export interface ICallOptions {
 }
 
 const callOptionsAtom = atom({
-  destinationNumber: "",
-  callerName: "",
-  callerNumber: "",
+  destinationNumber: '',
+  callerName: '',
+  callerNumber: '',
   clientState: undefined,
   customHeaders: [],
   telnyxCallControlId: undefined,

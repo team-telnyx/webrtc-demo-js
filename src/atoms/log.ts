@@ -1,5 +1,5 @@
-import { atom, useAtom } from "jotai";
-import { useCallback } from "react";
+import { atom, useAtom } from 'jotai';
+import { useCallback } from 'react';
 type LogItemType = {
   id: string;
   description: string;
@@ -14,7 +14,7 @@ export const useLog = () => {
     (item: LogItemType) => {
       setLogs((prev) => [item, ...prev]);
     },
-    [setLogs]
+    [setLogs],
   );
 
   const clear = useCallback(() => setLogs([]), [setLogs]);
