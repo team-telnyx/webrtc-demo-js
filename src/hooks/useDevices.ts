@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 export const useDevices = (video = false) => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 
   const loadDevices = useCallback(async () => {
     if (
-      typeof navigator === "undefined" ||
+      typeof navigator === 'undefined' ||
       !navigator.mediaDevices?.enumerateDevices
     ) {
       return;
@@ -16,7 +16,7 @@ export const useDevices = (video = false) => {
       const devices = await navigator.mediaDevices.enumerateDevices();
       setDevices(devices);
     } catch (error) {
-      console.error("Failed to load audio devices", error);
+      console.error('Failed to load audio devices', error);
       setDevices([]);
     }
   }, [setDevices, video]);
@@ -24,15 +24,15 @@ export const useDevices = (video = false) => {
   useEffect(() => {
     loadDevices();
 
-    if (typeof navigator === "undefined" || !navigator.mediaDevices) return;
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices) return;
 
     const handleDeviceChange = () => loadDevices();
-    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
 
     return () => {
       navigator.mediaDevices.removeEventListener(
-        "devicechange",
-        handleDeviceChange
+        'devicechange',
+        handleDeviceChange,
       );
     };
   }, [loadDevices]);

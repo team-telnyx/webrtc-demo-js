@@ -1,5 +1,5 @@
-import { useConnectionStatus, useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { useEffect } from "react";
+import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { useEffect } from 'react';
 
 type SocketMessage = {
   result: {
@@ -19,48 +19,48 @@ const ClientAutoConnect = () => {
     }
 
     const onReady = () => {
-      setStatus("registered");
+      setStatus('registered');
     };
     const onSocketMessage = (message: SocketMessage) => {
-      if (["REGISTER", "REGED"].includes(message.result?.params.state)) {
-        setStatus("registered");
+      if (['REGISTER', 'REGED'].includes(message.result?.params.state)) {
+        setStatus('registered');
       }
     };
 
     const onError = () => {
-      setStatus("disconnected");
+      setStatus('disconnected');
     };
 
     const onSocketOpen = () => {
-      setStatus("registering");
+      setStatus('registering');
     };
 
     const onSocketClose = () => {
-      setStatus("disconnected");
+      setStatus('disconnected');
     };
     const onSocketError = () => {
-      setStatus("disconnected");
+      setStatus('disconnected');
     };
 
-    setStatus("connecting");
+    setStatus('connecting');
     client.connect().then(() => {
-      client.on("telnyx.ready", onReady);
-      client.on("telnyx.error", onError);
-      client.on("telnyx.socket.message", onSocketMessage);
-      client.on("telnyx.socket.open", onSocketOpen);
-      client.on("telnyx.socket.close", onSocketClose);
-      client.on("telnyx.socket.error", onSocketError);
+      client.on('telnyx.ready', onReady);
+      client.on('telnyx.error', onError);
+      client.on('telnyx.socket.message', onSocketMessage);
+      client.on('telnyx.socket.open', onSocketOpen);
+      client.on('telnyx.socket.close', onSocketClose);
+      client.on('telnyx.socket.error', onSocketError);
     });
 
     return () => {
-      setStatus("disconnected");
+      setStatus('disconnected');
       client.disconnect();
-      client.off("telnyx.ready", onReady);
-      client.off("telnyx.error", onError);
-      client.off("telnyx.socket.message", onSocketMessage);
-      client.off("telnyx.socket.open", onSocketOpen);
-      client.off("telnyx.socket.close", onSocketClose);
-      client.off("telnyx.socket.error", onSocketError);
+      client.off('telnyx.ready', onReady);
+      client.off('telnyx.error', onError);
+      client.off('telnyx.socket.message', onSocketMessage);
+      client.off('telnyx.socket.open', onSocketOpen);
+      client.off('telnyx.socket.close', onSocketClose);
+      client.off('telnyx.socket.error', onSocketError);
     };
   }, [client, setStatus]);
   return null;

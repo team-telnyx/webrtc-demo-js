@@ -1,6 +1,6 @@
-import { useClientOptions } from "@/atoms/clientOptions";
-import { useConnectionStatus } from "@/atoms/telnyxClient";
-import { clsx } from "clsx";
+import { useClientOptions } from '@/atoms/clientOptions';
+import { useConnectionStatus } from '@/atoms/telnyxClient';
+import { clsx } from 'clsx';
 
 const ConnectionStatus = () => {
   const [status] = useConnectionStatus();
@@ -8,12 +8,12 @@ const ConnectionStatus = () => {
   return (
     <h3
       className={clsx({
-        "text-red-500": status === "disconnected",
-        "text-yellow-500": status === "connecting" || status === "registering",
-        "text-green-500": status === "registered",
+        'text-red-500': status === 'disconnected',
+        'text-yellow-500': status === 'connecting' || status === 'registering',
+        'text-green-500': status === 'registered',
       })}
     >
-      {status} ({status === "registered" && clientOptions.login})
+      {status} ({status === 'registered' && clientOptions.login})
     </h3>
   );
 };

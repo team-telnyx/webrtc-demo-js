@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Button } from "./ui/button";
-import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import clsx from "clsx";
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import clsx from 'clsx';
 
 type Props = {
   showIndicator?: boolean;
@@ -22,8 +22,8 @@ const CheckRegistrationButton = ({ showIndicator }: Props) => {
       {showIndicator && isRegistered !== null && (
         <span
           className={clsx({
-            "text-red-500": isRegistered === false,
-            "text-green-500": isRegistered === true,
+            'text-red-500': isRegistered === false,
+            'text-green-500': isRegistered === true,
           })}
         >
           ●

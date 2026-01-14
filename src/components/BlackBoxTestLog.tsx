@@ -1,7 +1,7 @@
-import { useLog } from "@/atoms/log";
-import { useTelnyxSdkClient } from "@/atoms/telnyxClient";
-import { useEffect } from "react";
-import { Button } from "./ui/button";
+import { useLog } from '@/atoms/log';
+import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { useEffect } from 'react';
+import { Button } from './ui/button';
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from './ui/card';
 
 // Legacy component that is only used for compatibility with the black box test suite.
 const BlackBoxTestLog = () => {
@@ -17,23 +17,23 @@ const BlackBoxTestLog = () => {
   const [client] = useTelnyxSdkClient();
   useEffect(() => {
     const onReady = () => {
-      pushLog({ id: "registered", description: "registered" });
+      pushLog({ id: 'registered', description: 'registered' });
     };
 
     const onCloseOrError = () => {
-      pushLog({ id: "unregistered", description: "unregistered" });
+      pushLog({ id: 'unregistered', description: 'unregistered' });
     };
 
-    client?.on("telnyx.ready", onReady);
-    client?.on("telnyx.socket.close", onCloseOrError);
-    client?.on("telnyx.socket.error", onCloseOrError);
-    client?.on("telnyx.error", onCloseOrError);
+    client?.on('telnyx.ready', onReady);
+    client?.on('telnyx.socket.close', onCloseOrError);
+    client?.on('telnyx.socket.error', onCloseOrError);
+    client?.on('telnyx.error', onCloseOrError);
 
     return () => {
-      client?.off("telnyx.ready", onReady);
-      client?.off("telnyx.socket.close", onCloseOrError);
-      client?.off("telnyx.socket.error", onCloseOrError);
-      client?.off("telnyx.error", onCloseOrError);
+      client?.off('telnyx.ready', onReady);
+      client?.off('telnyx.socket.close', onCloseOrError);
+      client?.off('telnyx.socket.error', onCloseOrError);
+      client?.off('telnyx.error', onCloseOrError);
     };
   }, [client, pushLog]);
   return (

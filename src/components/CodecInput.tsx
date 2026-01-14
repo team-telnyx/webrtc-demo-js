@@ -1,6 +1,6 @@
-import * as React from "react";
-import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { DropdownMenuCheckboxItemProps } from '@radix-ui/react-dropdown-menu';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -8,11 +8,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
-import uniqueBy from "lodash-es/uniqBy";
+import uniqueBy from 'lodash-es/uniqBy';
 
-type Checked = DropdownMenuCheckboxItemProps["checked"];
+type Checked = DropdownMenuCheckboxItemProps['checked'];
 
 interface Props {
   value: RTCRtpCodec[];
@@ -29,14 +29,14 @@ function CodecSelectInput({ value = [], onChange, video = false }: Props) {
   };
 
   const audioCodecsList = React.useMemo(() => {
-    const audioCodecs = RTCRtpSender?.getCapabilities?.("audio")?.codecs || [];
+    const audioCodecs = RTCRtpSender?.getCapabilities?.('audio')?.codecs || [];
     return uniqueBy(audioCodecs, (codec) => codec.mimeType);
   }, []);
 
   const videoCodecsList = React.useMemo(() => {
     if (!video) return [];
 
-    const videoCodecs = RTCRtpSender?.getCapabilities?.("video")?.codecs || [];
+    const videoCodecs = RTCRtpSender?.getCapabilities?.('video')?.codecs || [];
     return uniqueBy(videoCodecs, (codec) => codec.mimeType);
   }, [video]);
 
@@ -57,7 +57,7 @@ function CodecSelectInput({ value = [], onChange, video = false }: Props) {
         <Button variant="outline">
           {value.length > 0
             ? `${value.length} Selected Codecs`
-            : "Select Codecs"}
+            : 'Select Codecs'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-[300px]">

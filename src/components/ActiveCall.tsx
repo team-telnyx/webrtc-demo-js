@@ -5,43 +5,43 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { playDTMFTone } from "@/lib/dtmf";
-import { Call } from "@telnyx/webrtc";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import AudioPlayer from "./AudioPlayer";
-import AudioVisualizer from "./AudioVisualizer";
-import InCallQualityMetrics from "./InCallQualityMetrics";
-import Keyboard from "./Keyboard";
-import { Button } from "./ui/button";
-import CheckRegistrationButton from "./CheckRegistrationButton";
-import { Switch } from "./ui/switch";
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { playDTMFTone } from '@/lib/dtmf';
+import { Call } from '@telnyx/webrtc';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import AudioPlayer from './AudioPlayer';
+import AudioVisualizer from './AudioVisualizer';
+import InCallQualityMetrics from './InCallQualityMetrics';
+import Keyboard from './Keyboard';
+import { Button } from './ui/button';
+import CheckRegistrationButton from './CheckRegistrationButton';
+import { Switch } from './ui/switch';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { useDevices } from "@/hooks/useDevices";
-import VideoPlayer from "./VideoPlayer";
+} from './ui/select';
+import { useDevices } from '@/hooks/useDevices';
+import VideoPlayer from './VideoPlayer';
 
 type Props = {
   call: Call;
   title?: string;
 };
 
-const ActiveCall = ({ call, title = "Active Call" }: Props) => {
+const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const devices = useDevices();
   const [isMuted, setIsMuted] = useState<boolean>(call.isAudioMuted);
-  const [selectedAudioInputId, setSelectedAudioInputId] = useState<string>("");
+  const [selectedAudioInputId, setSelectedAudioInputId] = useState<string>('');
   const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
-    call.isAudioMuted
+    call.isAudioMuted,
   );
 
   const audioInDevices = useMemo(() => {
-    return devices.filter((device) => device.kind === "audioinput");
+    return devices.filter((device) => device.kind === 'audioinput');
   }, [devices]);
 
   const onDTMFClick = useCallback(
@@ -49,7 +49,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
       call.dtmf(digit);
       playDTMFTone(digit);
     },
-    [call]
+    [call],
   );
 
   const switchAudioInput = async () => {
@@ -57,7 +57,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
       await call.setAudioInDevice(selectedAudioInputId, newAudioInDeviceMuted);
       setIsMuted(call.isAudioMuted);
     } catch (error) {
-      console.error("Failed to switch audio input", error);
+      console.error('Failed to switch audio input', error);
     }
   };
 
@@ -71,7 +71,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
       .map((track) => track.getSettings().deviceId);
 
     const defaultDevice = audioInDevices.find((device) =>
-      currentAudioTracksIds.includes(device.deviceId)
+      currentAudioTracksIds.includes(device.deviceId),
     );
 
     const initialDeviceId =
@@ -109,7 +109,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
                   <p className="text-sm font-semibold">Audio Input</p>
                   <p className="text-xs text-muted-foreground">
                     Pick a microphone to switch immediately with audio
-                    {newAudioInDeviceMuted ? " off" : " on"}.
+                    {newAudioInDeviceMuted ? ' off' : ' on'}.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
                   onValueChange={setSelectedAudioInputId}
                 >
                   <SelectTrigger data-testid="select-audio-input">
-                    <SelectValue placeholder={"Select audio input"} />
+                    <SelectValue placeholder={'Select audio input'} />
                   </SelectTrigger>
                   <SelectContent>
                     {audioInDevices.map((device, index) => (
@@ -140,7 +140,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
 
                 <Button
                   size="sm"
-                  variant={"default"}
+                  variant={'default'}
                   onClick={switchAudioInput}
                 >
                   Apply
@@ -198,7 +198,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
           <Button
             data-testid="btn-end-call"
             size="lg"
-            variant={"destructive"}
+            variant={'destructive'}
             className="w-full"
             onClick={() => call.hangup()}
           >
@@ -208,7 +208,7 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
           <Button
             data-testid="btn-end-call"
             size="lg"
-            variant={"outline"}
+            variant={'outline'}
             className="w-full"
             onClick={() => call.hold()}
           >
@@ -218,14 +218,14 @@ const ActiveCall = ({ call, title = "Active Call" }: Props) => {
           <Button
             data-testid="btn-toggle-mute"
             size="lg"
-            variant={"outline"}
+            variant={'outline'}
             className="w-full"
             onClick={() => {
               call.toggleAudioMute();
               setIsMuted(call.isAudioMuted);
             }}
           >
-            {isMuted ? "Unmute" : "Mute"}
+            {isMuted ? 'Unmute' : 'Mute'}
           </Button>
         </DialogFooter>
       </DialogContent>

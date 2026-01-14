@@ -1,16 +1,16 @@
-import { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
+import { ControllerProps, FieldPath, FieldValues } from 'react-hook-form';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
+} from './ui/form';
+import { Input } from './ui/input';
 
 export function TurnServersFormField<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
 }: Partial<ControllerProps<TFieldValues, TName>> & {
@@ -22,19 +22,19 @@ export function TurnServersFormField<
       rules={{
         validate: (value) => {
           if ((value?.username || value?.password) && !value?.urls?.trim()) {
-            return "TURN Server URL is required when username or password is provided";
+            return 'TURN Server URL is required when username or password is provided';
           }
           return true;
         },
       }}
-      name={props.name || ("turnServers" as TName)}
+      name={props.name || ('turnServers' as TName)}
       render={({ field }) => {
         const turnServer = Array.isArray(field.value)
           ? field.value[0]
           : field.value;
         const updateTurnServer = (
-          key: "urls" | "username" | "password",
-          value: string
+          key: 'urls' | 'username' | 'password',
+          value: string,
         ) => {
           const current = Array.isArray(field.value)
             ? field.value[0]
@@ -50,8 +50,8 @@ export function TurnServersFormField<
                   <Input
                     data-testid="input-turn-server-url"
                     placeholder="turn:turn.telnyx.com:3478?transport=tcp"
-                    value={(turnServer?.urls as string) ?? ""}
-                    onChange={(e) => updateTurnServer("urls", e.target.value)}
+                    value={(turnServer?.urls as string) ?? ''}
+                    onChange={(e) => updateTurnServer('urls', e.target.value)}
                   />
                 </FormControl>
               </FormItem>
@@ -61,9 +61,9 @@ export function TurnServersFormField<
                   <Input
                     data-testid="input-turn-username"
                     placeholder="Username"
-                    value={turnServer?.username ?? ""}
+                    value={turnServer?.username ?? ''}
                     onChange={(e) =>
-                      updateTurnServer("username", e.target.value)
+                      updateTurnServer('username', e.target.value)
                     }
                   />
                 </FormControl>
@@ -74,9 +74,9 @@ export function TurnServersFormField<
                   <Input
                     data-testid="input-turn-password"
                     placeholder="Password"
-                    value={turnServer?.password ?? ""}
+                    value={turnServer?.password ?? ''}
                     onChange={(e) =>
-                      updateTurnServer("password", e.target.value)
+                      updateTurnServer('password', e.target.value)
                     }
                   />
                 </FormControl>

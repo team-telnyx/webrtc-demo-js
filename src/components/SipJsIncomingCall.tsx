@@ -1,6 +1,6 @@
-import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-import { useRive } from "@rive-app/react-canvas-lite";
-import { Button } from "./ui/button";
+import type { TelnyxCall } from '@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call';
+import { useRive } from '@rive-app/react-canvas-lite';
+import { Button } from './ui/button';
 
 type Props = {
   call: TelnyxCall;
@@ -9,7 +9,7 @@ type Props = {
 const SipJsIncomingCall = ({ call }: Props) => {
   const { RiveComponent: Animation } = useRive({
     autoplay: true,
-    src: "/incoming.riv",
+    src: '/incoming.riv',
   });
 
   return (
@@ -20,17 +20,12 @@ const SipJsIncomingCall = ({ call }: Props) => {
         </span>
         <div className="flex-1">
           <h1 className="font-medium">Incoming Call</h1>
-          <p className="text-xs text-muted-foreground">
-            SIP.js Incoming Call
-          </p>
+          <p className="text-xs text-muted-foreground">SIP.js Incoming Call</p>
         </div>
-        <Button
-          data-testid="btn-answer-call"
-          onClick={() => call.accept()}
-        >
+        <Button data-testid="btn-answer-call" onClick={() => call.accept()}>
           Answer
         </Button>
-        <Button onClick={() => call.reject()} variant={"outline"}>
+        <Button onClick={() => call.reject()} variant={'outline'}>
           Reject
         </Button>
       </div>

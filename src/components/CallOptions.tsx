@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -13,30 +13,30 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { ExternalLinkIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
+} from '@/components/ui/form';
+import { ExternalLinkIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 
-import { ICallOptions, useCallOptions } from "@/atoms/callOptions";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useCallback } from "react";
-import CodecSelectInput from "./CodecInput";
-import CustomHeadersInput from "./CustomHeadersInput";
-import { useClientOptions } from "@/atoms/clientOptions";
+import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useCallback } from 'react';
+import CodecSelectInput from './CodecInput';
+import CustomHeadersInput from './CustomHeadersInput';
+import { useClientOptions } from '@/atoms/clientOptions';
 
 const CallOptions = () => {
   const [clientOptions] = useClientOptions();
   const [callOptions, setCallOptions] = useCallOptions();
   const form = useForm({
     defaultValues: {
-      callerName: "",
-      destinationNumber: "",
-      callerNumber: "",
-      clientState: "",
+      callerName: '',
+      destinationNumber: '',
+      callerNumber: '',
+      clientState: '',
       customHeaders: [],
       preferred_codecs: [],
-      debugOutput: "socket",
+      debugOutput: 'socket',
       keepConnectionAliveOnSocketClose: false,
     },
     values: callOptions,
@@ -51,15 +51,15 @@ const CallOptions = () => {
       (value: unknown) => {
         setCallOptions(value as ICallOptions);
       },
-      [setCallOptions]
-    )
+      [setCallOptions],
+    ),
   );
   return (
     <Card>
       <CardHeader>
         <CardTitle>Call Options</CardTitle>
         <CardDescription>
-          Options passed to the client when making new calls.{" "}
+          Options passed to the client when making new calls.{' '}
           <a
             className="underline inline-flex"
             href="https://developers.telnyx.com/docs/voice/webrtc/js-sdk/interfaces/icalloptions"

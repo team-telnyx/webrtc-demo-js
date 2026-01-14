@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import clsx from 'clsx';
 
 export interface DialButtonData {
   digit: string;
@@ -23,8 +23,8 @@ export const DialButton = ({
     <button
       onClick={() => onClick?.({ digit: digit as string, characters })}
       className={clsx(
-        " w-16 h-16 p-4 border hover:bg-foreground hover:text-black rounded-full flex flex-col items-center justify-center",
-        className
+        ' w-16 h-16 p-4 border hover:bg-foreground hover:text-black rounded-full flex flex-col items-center justify-center',
+        className,
       )}
       {...props}
     >

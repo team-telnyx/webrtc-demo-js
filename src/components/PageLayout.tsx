@@ -1,6 +1,6 @@
-import { PropsWithChildren } from "react";
-import { Call } from "./Call";
-import Header from "./Header";
+import { PropsWithChildren } from 'react';
+import { Call } from './Call';
+import Header from './Header';
 
 type Props = PropsWithChildren;
 

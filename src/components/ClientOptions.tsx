@@ -5,7 +5,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -14,10 +14,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { ExternalLinkIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { Button } from "./ui/button";
+} from '@/components/ui/form';
+import { ExternalLinkIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { Button } from './ui/button';
 
 import {
   Select,
@@ -25,32 +25,32 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-import { useClientOptions, useClientProfiles } from "@/atoms/clientOptions";
-import { LoginMethod, useLoginMethod } from "@/atoms/loginMethod";
-import { useConnectionStatus } from "@/atoms/telnyxClient";
-import { Input } from "@/components/ui/input";
-import { useCallback } from "react";
-import { toast } from "sonner";
-import FileUploadButton from "./FileUploadButton";
-import { Label } from "./ui/label";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { Switch } from "./ui/switch";
-import { IClientOptionsDemo } from "@/lib/types";
-import { TurnServersFormField } from "./TurnServersFormField";
-import { StunServersFormField } from "./StunServersFormField";
-import { IS_DEV_ENV } from "@/lib/vite";
+import { useClientOptions, useClientProfiles } from '@/atoms/clientOptions';
+import { LoginMethod, useLoginMethod } from '@/atoms/loginMethod';
+import { useConnectionStatus } from '@/atoms/telnyxClient';
+import { Input } from '@/components/ui/input';
+import { useCallback } from 'react';
+import { toast } from 'sonner';
+import FileUploadButton from './FileUploadButton';
+import { Label } from './ui/label';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Switch } from './ui/switch';
+import { IClientOptionsDemo } from '@/lib/types';
+import { TurnServersFormField } from './TurnServersFormField';
+import { StunServersFormField } from './StunServersFormField';
+import { IS_DEV_ENV } from '@/lib/vite';
 
 const configureIceServers = (
-  stunServers: IClientOptionsDemo["stunServers"],
-  turnServers: IClientOptionsDemo["turnServers"]
-): IClientOptionsDemo["iceServers"] => {
+  stunServers: IClientOptionsDemo['stunServers'],
+  turnServers: IClientOptionsDemo['turnServers'],
+): IClientOptionsDemo['iceServers'] => {
   const iceServers: RTCIceServer[] = [];
 
   if (stunServers) {
     iceServers.push(
-      ...stunServers.filter(Boolean).map((value) => ({ urls: value }))
+      ...stunServers.filter(Boolean).map((value) => ({ urls: value })),
     );
   }
 
@@ -75,43 +75,43 @@ const ClientOptions = () => {
     values: clientOptions,
     defaultValues: {
       debug: true,
-      debugOutput: "socket",
-      login: "",
-      password: "",
-      login_token: "",
+      debugOutput: 'socket',
+      login: '',
+      password: '',
+      login_token: '',
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
       trickleIce: false,
       useCanaryRtcServer: false,
-      ringbackFile: "/ringback.mp3",
-      ringtoneFile: "/ringtone.mp3",
-      rtcIp: "",
+      ringbackFile: '/ringback.mp3',
+      ringtoneFile: '/ringtone.mp3',
+      rtcIp: '',
       rtcPort: undefined,
       mutedMicOnStart: false,
       video: false,
       anonymous_login: {
-        target_type: "",
-        target_id: "",
+        target_type: '',
+        target_id: '',
       },
     },
   });
 
   const setLoginMethod = useCallback(
     (method: string) => {
-      form.setValue("login_token", "");
-      form.setValue("login", "");
-      form.setValue("password", "");
-      form.setValue("anonymous_login.target_id", "");
-      form.setValue("anonymous_login.target_type", "ai_assistant");
+      form.setValue('login_token', '');
+      form.setValue('login', '');
+      form.setValue('password', '');
+      form.setValue('anonymous_login.target_id', '');
+      form.setValue('anonymous_login.target_type', 'ai_assistant');
       _setLoginMethod(method as LoginMethod);
     },
-    [_setLoginMethod, form]
+    [_setLoginMethod, form],
   );
 
   const onSubmit = (values: Partial<IClientOptionsDemo>) => {
     values.iceServers = configureIceServers(
       values.stunServers,
-      values.turnServers
+      values.turnServers,
     );
 
     setClientOptions(values);
@@ -123,7 +123,7 @@ const ClientOptions = () => {
       return;
     }
     const profileIndex = profiles.findIndex(
-      (profile) => profile.login === values.login
+      (profile) => profile.login === values.login,
     );
     if (profileIndex !== -1) {
       setProfiles((prevProfiles) => {
@@ -132,10 +132,10 @@ const ClientOptions = () => {
         return newProfiles;
       });
 
-      return toast("Profile Updated");
+      return toast('Profile Updated');
     }
     setProfiles([...profiles, values]);
-    return toast("Profile Created");
+    return toast('Profile Created');
   };
 
   const onSelectProfile = (value: string) => {
@@ -150,10 +150,10 @@ const ClientOptions = () => {
   };
 
   const loginMethodForm = () => {
-    if (loginMethod === "anonymous") {
+    if (loginMethod === 'anonymous') {
       return (
         <FormField
-          rules={{ required: "AI Assistant ID is required" }}
+          rules={{ required: 'AI Assistant ID is required' }}
           control={form.control}
           name="anonymous_login.target_id"
           render={({ field }) => (
@@ -174,11 +174,11 @@ const ClientOptions = () => {
         />
       );
     }
-    if (loginMethod === "credentials") {
+    if (loginMethod === 'credentials') {
       return (
         <>
           <FormField
-            rules={{ required: "Login is required" }}
+            rules={{ required: 'Login is required' }}
             control={form.control}
             name="login"
             render={({ field }) => (
@@ -198,7 +198,7 @@ const ClientOptions = () => {
           />
 
           <FormField
-            rules={{ required: "Password is required" }}
+            rules={{ required: 'Password is required' }}
             control={form.control}
             name="password"
             render={({ field }) => (
@@ -220,10 +220,10 @@ const ClientOptions = () => {
         </>
       );
     }
-    if (loginMethod === "token") {
+    if (loginMethod === 'token') {
       return (
         <FormField
-          rules={{ required: "Login token is required" }}
+          rules={{ required: 'Login token is required' }}
           control={form.control}
           name="login_token"
           render={({ field }) => (
@@ -274,7 +274,7 @@ const ClientOptions = () => {
                     {profiles.map((profile) => (
                       <SelectItem
                         key={profile.login}
-                        value={profile.login ?? ""}
+                        value={profile.login ?? ''}
                       >
                         {profile.login}
                       </SelectItem>
@@ -637,7 +637,7 @@ const ClientOptions = () => {
               onClick={form.handleSubmit(onSubmit)}
               className="w-full"
             >
-              {connectionStatus === "connected" ? "Reconnect" : "Connect"}
+              {connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
             </Button>
           </CardFooter>
         </form>

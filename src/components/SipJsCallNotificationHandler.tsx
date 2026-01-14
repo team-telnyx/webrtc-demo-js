@@ -1,9 +1,12 @@
-import { useEffect, useRef } from "react";
-import { useSipJsClient, useSipJsCallStatus } from "@/atoms/telnyxClient";
-import { useSipJsCallNotification, useOutgoingCallHandler } from "@/atoms/sipJsCall";
-import { DeviceEvent, CallEvent } from "@telnyx/rtc-sipjs-simple-user";
-import type { TelnyxCall } from "@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call";
-import { toast } from "sonner";
+import { useEffect, useRef } from 'react';
+import { useSipJsClient, useSipJsCallStatus } from '@/atoms/telnyxClient';
+import {
+  useSipJsCallNotification,
+  useOutgoingCallHandler,
+} from '@/atoms/sipJsCall';
+import { DeviceEvent, CallEvent } from '@telnyx/rtc-sipjs-simple-user';
+import type { TelnyxCall } from '@telnyx/rtc-sipjs-simple-user/dist/types/lib/telnyx-call';
+import { toast } from 'sonner';
 
 const SipJsCallNotificationHandler = () => {
   const [client] = useSipJsClient();
@@ -15,7 +18,7 @@ const SipJsCallNotificationHandler = () => {
   useEffect(() => {
     if (!client) {
       setCallNotification({ call: null, direction: null });
-      setCallStatus("idle");
+      setCallStatus('idle');
       callCleanupRef.current?.();
       callCleanupRef.current = null;
       return;
@@ -23,62 +26,62 @@ const SipJsCallNotificationHandler = () => {
 
     const attachCallListeners = (
       call: TelnyxCall,
-      direction: "inbound" | "outbound"
+      direction: 'inbound' | 'outbound',
     ) => {
       // Clean up previous call listeners
       callCleanupRef.current?.();
 
       // Update notification with the new call
       setCallNotification({ call, direction });
-      setCallStatus(direction === "inbound" ? "incoming" : "dialing");
+      setCallStatus(direction === 'inbound' ? 'incoming' : 'dialing');
 
       // Set up call event listeners
       const handleConnecting = () => {
-        console.log("[SipJs Call] Connecting");
-        setCallStatus("connecting");
+        console.log('[SipJs Call] Connecting');
+        setCallStatus('connecting');
       };
 
       const handleAccepted = () => {
-        console.log("[SipJs Call] Accepted");
-        setCallStatus("connected");
+        console.log('[SipJs Call] Accepted');
+        setCallStatus('connected');
       };
 
       const handleTerminated = () => {
-        console.log("[SipJs Call] Terminated");
-        setCallStatus("ended");
+        console.log('[SipJs Call] Terminated');
+        setCallStatus('ended');
         setCallNotification({ call: null, direction: null });
         callCleanupRef.current = null;
       };
 
       const handleFailed = (error: Error) => {
-        console.error("[SipJs Call] Failed:", error);
-        setCallStatus("failed");
+        console.error('[SipJs Call] Failed:', error);
+        setCallStatus('failed');
         toast.error(`Call failed: ${error.message}`);
         setCallNotification({ call: null, direction: null });
         callCleanupRef.current = null;
       };
 
       const handleRejected = () => {
-        console.log("[SipJs Call] Rejected");
-        setCallStatus("ended");
+        console.log('[SipJs Call] Rejected');
+        setCallStatus('ended');
         setCallNotification({ call: null, direction: null });
         callCleanupRef.current = null;
       };
 
       const handleMuted = () => {
-        console.log("[SipJs Call] Muted");
+        console.log('[SipJs Call] Muted');
       };
 
       const handleUnmuted = () => {
-        console.log("[SipJs Call] Unmuted");
+        console.log('[SipJs Call] Unmuted');
       };
 
       const handleHeld = () => {
-        console.log("[SipJs Call] Held");
+        console.log('[SipJs Call] Held');
       };
 
       const handleResumed = () => {
-        console.log("[SipJs Call] Resumed");
+        console.log('[SipJs Call] Resumed');
       };
 
       // Attach call event listeners
@@ -106,10 +109,14 @@ const SipJsCallNotificationHandler = () => {
       };
     };
 
-    const handleIncomingInvite = ({ activeCall }: { activeCall: TelnyxCall }) => {
-      console.log("[SipJs Device] Incoming call");
-      toast("Incoming call");
-      attachCallListeners(activeCall, "inbound");
+    const handleIncomingInvite = ({
+      activeCall,
+    }: {
+      activeCall: TelnyxCall;
+    }) => {
+      console.log('[SipJs Device] Incoming call');
+      toast('Incoming call');
+      attachCallListeners(activeCall, 'inbound');
     };
 
     // Attach device event listener for incoming calls
@@ -117,7 +124,7 @@ const SipJsCallNotificationHandler = () => {
 
     // Expose handler for outgoing calls via atom
     const handleOutgoingCall = (call: TelnyxCall) => {
-      attachCallListeners(call, "outbound");
+      attachCallListeners(call, 'outbound');
     };
     setOutgoingCallHandler(() => handleOutgoingCall);
 

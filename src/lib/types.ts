@@ -1,4 +1,4 @@
-import { IClientOptions } from "@telnyx/webrtc";
+import { IClientOptions } from '@telnyx/webrtc';
 
 export interface IClientOptionsDemo extends IClientOptions {
   rtcIp?: string;

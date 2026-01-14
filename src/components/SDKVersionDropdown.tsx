@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
-import { useTelnyxSDKVersion } from "@/atoms/telnyxClient";
+import { useEffect, useState } from 'react';
+import { useTelnyxSDKVersion } from '@/atoms/telnyxClient';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-const fallbackVersions = ["latest"];
+const fallbackVersions = ['latest'];
 
 const SDKVersionDropdown = () => {
   const [{ version }, setVersion] = useTelnyxSDKVersion();
   const [versions, setVersions] = useState<string[]>(fallbackVersions);
   const [deprecatedVersions, setDeprecatedVersions] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(),
   );
 
   useEffect(() => {
@@ -23,16 +23,16 @@ const SDKVersionDropdown = () => {
     const fetchVersions = async () => {
       try {
         const response = await fetch(
-          "https://registry.npmjs.org/@telnyx/webrtc"
+          'https://registry.npmjs.org/@telnyx/webrtc',
         );
         if (!response.ok) {
           throw new Error(`Failed to fetch versions: ${response.status}`);
         }
 
         type NpmRegistryResponse = {
-          time?: Record<string, string>;
-          "dist-tags"?: Record<string, string>;
-          versions?: Record<string, { deprecated?: string }>;
+          'time'?: Record<string, string>;
+          'dist-tags'?: Record<string, string>;
+          'versions'?: Record<string, { deprecated?: string }>;
         };
 
         const data = (await response.json()) as NpmRegistryResponse;
@@ -43,14 +43,14 @@ const SDKVersionDropdown = () => {
               const message = descriptor.deprecated?.trim();
               return Boolean(message && message.length);
             })
-            .map(([release]) => release)
+            .map(([release]) => release),
         );
         const filterDeprecatedVersions = (items: string[]) =>
           items.filter((value) => !deprecatedSet.has(value));
 
         const timeEntries = Object.entries(data.time ?? {})
           .filter(
-            ([release]) => release !== "created" && release !== "modified"
+            ([release]) => release !== 'created' && release !== 'modified',
           )
           .sort(([, first], [, second]) => {
             const firstTime = new Date(first).getTime();
@@ -59,14 +59,14 @@ const SDKVersionDropdown = () => {
           })
           .map(([release]) => release);
 
-        const tagVersions = Object.values(data["dist-tags"] ?? {});
+        const tagVersions = Object.values(data['dist-tags'] ?? {});
 
         const nextVersions = Array.from(
           new Set([
-            "latest",
+            'latest',
             ...filterDeprecatedVersions(tagVersions),
             ...filterDeprecatedVersions(timeEntries),
-          ])
+          ]),
         ).slice(0, 50);
 
         if (!cancelled) {
@@ -74,7 +74,7 @@ const SDKVersionDropdown = () => {
           setVersions(nextVersions);
         }
       } catch (error) {
-        console.error("Failed to fetch Telnyx WebRTC versions from npm", error);
+        console.error('Failed to fetch Telnyx WebRTC versions from npm', error);
       }
     };
 
@@ -102,13 +102,13 @@ const SDKVersionDropdown = () => {
         `https://esm.sh/@telnyx/webrtc@${nextVersion}`
       );
 
-      if (!TelnyxRTC || typeof TelnyxRTC !== "function") {
-        throw new Error("Invalid Telnyx SDK module");
+      if (!TelnyxRTC || typeof TelnyxRTC !== 'function') {
+        throw new Error('Invalid Telnyx SDK module');
       }
 
       setVersion({ version: nextVersion, Class: TelnyxRTC });
     } catch (error) {
-      alert("Invalid version");
+      alert('Invalid version');
       console.error(error);
     }
   };
@@ -120,7 +120,7 @@ const SDKVersionDropdown = () => {
       <SelectContent>
         {versions.map((sdkVersion) => (
           <SelectItem key={sdkVersion} value={sdkVersion}>
-            {sdkVersion === "latest" ? "Latest" : sdkVersion}
+            {sdkVersion === 'latest' ? 'Latest' : sdkVersion}
           </SelectItem>
         ))}
       </SelectContent>

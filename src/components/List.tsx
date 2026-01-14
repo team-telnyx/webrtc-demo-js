@@ -1,4 +1,4 @@
-import { SquareDashedIcon } from "lucide-react";
+import { SquareDashedIcon } from 'lucide-react';
 
 type ListProps<T> = {
   className?: string;
