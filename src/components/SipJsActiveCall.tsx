@@ -51,14 +51,23 @@ const SipJsActiveCall = ({ call, title = 'Active Call' }: Props) => {
     [call],
   );
 
+  const handleHangup = () => {
+    const callId = call.getSession()?.id || 'unknown';
+    const direction = call.isIncoming() ? 'inbound' : 'outbound';
+    console.log('[Active Call] Hangup clicked', { callId, direction });
+    call.disconnect();
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      handleHangup();
+    }
+  };
+
   return (
     <Dialog
       open
-      onOpenChange={(open) => {
-        if (!open) {
-          call.disconnect();
-        }
-      }}
+      onOpenChange={handleDialogClose}
     >
       <DialogContent className="overflow-hidden">
         <DialogHeader>
@@ -113,7 +122,7 @@ const SipJsActiveCall = ({ call, title = 'Active Call' }: Props) => {
             size="lg"
             variant={'destructive'}
             className="w-full"
-            onClick={() => call.disconnect()}
+            onClick={handleHangup}
           >
             Hangup
           </Button>

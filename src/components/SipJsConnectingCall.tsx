@@ -7,6 +7,13 @@ type Props = {
 };
 
 const SipJsConnectingCall = ({ call }: Props) => {
+  const handleCancel = () => {
+    const callId = call.getSession()?.id || 'unknown';
+    const direction = call.isIncoming() ? 'inbound' : 'outbound';
+    console.log('[Connecting Call] Cancel clicked', { callId, direction });
+    call.disconnect();
+  };
+
   return (
     <div className="container mx-auto my-4 flex items-center rounded border p-4">
       <RadioTower className="mr-4" />
@@ -17,7 +24,7 @@ const SipJsConnectingCall = ({ call }: Props) => {
         </p>
       </div>
       <Button
-        onClick={() => call.disconnect()}
+        onClick={handleCancel}
         className="ml-auto"
         variant="outline"
       >

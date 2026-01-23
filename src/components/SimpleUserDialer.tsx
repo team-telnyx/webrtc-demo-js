@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSimpleUserCallOptions } from '@/atoms/simpleUserCallOptions';
 import {
   useSipJsClient,
@@ -32,6 +32,7 @@ const SimpleUserDialer = () => {
   const [callStatus] = useSipJsCallStatus();
   const [callNotification] = useSipJsCallNotification();
   const [outgoingCallHandler] = useOutgoingCallHandler();
+  const registrationStatusRef = useRef(registrationStatus);
 
   const setDestination = useCallback(
     (value: string) => {
@@ -43,42 +44,92 @@ const SimpleUserDialer = () => {
     [setCallOptions],
   );
 
+  // Helper function to log registration state transitions
+  const logRegistrationTransition = (
+    event: string,
+    from: string,
+    to: string,
+    data?: Record<string, unknown>,
+  ) => {
+    const logData = {
+      event,
+      from,
+      to,
+      timestamp: new Date().toISOString(),
+      ...data,
+    };
+    console.log(`[Registration State] ${event}: ${from} → ${to}`, logData);
+  };
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    registrationStatusRef.current = registrationStatus;
+  }, [registrationStatus]);
+
   useEffect(() => {
     if (!client) {
+      logRegistrationTransition('Client Removed', 'any', 'unregistered');
       setWsStatus('idle');
       setRegistrationStatus('unregistered');
+      registrationStatusRef.current = 'unregistered';
       return;
     }
 
     // Set up device event listeners
     const handleWsConnecting = ({ attempts }: { attempts: number }) => {
+      logRegistrationTransition('WebSocket Connecting', 'idle/disconnected', 'connecting', {
+        attempt: attempts,
+      });
       console.log(`[Device] WebSocket connecting (attempt ${attempts})`);
       setWsStatus('connecting');
     };
 
     const handleWsConnected = () => {
+      logRegistrationTransition('WebSocket Connected', 'connecting', 'connected');
       console.log('[Device] WebSocket connected');
       setWsStatus('connected');
     };
 
     const handleWsDisconnected = () => {
+      logRegistrationTransition('WebSocket Disconnected', 'connected', 'disconnected');
       console.log('[Device] WebSocket disconnected');
       setWsStatus('disconnected');
+      // When WebSocket disconnects, registration is also lost
+      const currentRegStatus = registrationStatusRef.current;
+      if (currentRegStatus === 'registered' || currentRegStatus === 'registering') {
+        logRegistrationTransition('Registration Lost (WS Disconnect)', currentRegStatus, 'unregistered');
+        setRegistrationStatus('unregistered');
+        registrationStatusRef.current = 'unregistered';
+      }
     };
 
     const handleRegistered = () => {
-      console.log('[Device] Registered');
+      logRegistrationTransition('Registered', 'registering/unregistered', 'registered', {
+        username: client.username,
+      });
+      console.log('[Device] Registered', { username: client.username });
       setRegistrationStatus('registered');
+      registrationStatusRef.current = 'registered';
     };
 
     const handleUnregistered = () => {
-      console.log('[Device] Unregistered');
+      logRegistrationTransition('Unregistered', 'registered', 'unregistered', {
+        username: client.username,
+      });
+      console.log('[Device] Unregistered', { username: client.username });
       setRegistrationStatus('unregistered');
+      registrationStatusRef.current = 'unregistered';
     };
 
     const handleRegistrationFailed = ({ cause }: { cause: Error }) => {
-      console.error('[Device] Registration failed:', cause);
+      logRegistrationTransition('Registration Failed', 'registering', 'unregistered', {
+        error: cause.message,
+        errorName: cause.name,
+        username: client.username,
+      });
+      console.error('[Device] Registration failed:', cause, { username: client.username });
       setRegistrationStatus('unregistered');
+      registrationStatusRef.current = 'unregistered';
       toast.error(`Registration failed: ${cause.message}`);
     };
 
@@ -140,25 +191,49 @@ const SimpleUserDialer = () => {
 
   const handleRegister = async () => {
     if (!client) return;
+    const currentStatus = registrationStatus;
+    logRegistrationTransition('Register Initiated', currentStatus, 'registering', {
+      username: client.username,
+    });
     setRegistrationStatus('registering');
     try {
       await client.register({ extraHeaders: registerExtraHeaders });
       // Status will be updated via DeviceEvent.Registered event
     } catch (error) {
-      console.error('Failed to register', error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logRegistrationTransition('Register Error', 'registering', 'unregistered', {
+        error: errorObj.message,
+        errorName: errorObj.name,
+        username: client.username,
+      });
+      console.error('Failed to register', error, { username: client.username });
       toast.error('Failed to register');
       setRegistrationStatus('unregistered');
+      registrationStatusRef.current = 'unregistered';
     }
   };
 
   const handleUnregister = async () => {
     if (!client) return;
+    const currentStatus = registrationStatus;
+    logRegistrationTransition('Unregister Initiated', currentStatus, 'unregistered', {
+      username: client.username,
+    });
     try {
       await client.unregister({ extraHeaders: registerExtraHeaders });
       // Status will be updated via DeviceEvent.Unregistered event
     } catch (error) {
-      console.error('Failed to unregister', error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logRegistrationTransition('Unregister Error', currentStatus, 'unregistered', {
+        error: errorObj.message,
+        errorName: errorObj.name,
+        username: client.username,
+      });
+      console.error('Failed to unregister', error, { username: client.username });
       toast.error('Failed to unregister');
+      // Still set to unregistered on error
+      setRegistrationStatus('unregistered');
+      registrationStatusRef.current = 'unregistered';
     }
   };
 
@@ -168,12 +243,19 @@ const SimpleUserDialer = () => {
       return;
     }
     try {
+      console.log('[Outbound Call] Initiating call', {
+        destination: callOptions.destinationNumber,
+        registrationStatus,
+        callStatus,
+      });
       const call = client.initiateCall(callOptions.destinationNumber);
       if (outgoingCallHandler) {
         outgoingCallHandler(call);
       }
     } catch (error) {
-      console.error('Failed to start call', error);
+      console.error('Failed to start call', error, {
+        destination: callOptions.destinationNumber,
+      });
       toast.error('Failed to start call');
     }
   };
@@ -181,18 +263,29 @@ const SimpleUserDialer = () => {
   const handleHangup = () => {
     const call = callNotification.call;
     if (!call) return;
+    console.log('[Call Action] Hangup initiated', {
+      direction: callNotification.direction,
+      callId: call.getSession()?.id,
+      callStatus,
+    });
     call.disconnect();
   };
 
   const handleAccept = () => {
     const call = callNotification.call;
     if (!call) return;
+    console.log('[Inbound Call] Accept initiated', {
+      callId: call.getSession()?.id,
+    });
     call.accept();
   };
 
   const handleReject = () => {
     const call = callNotification.call;
     if (!call) return;
+    console.log('[Inbound Call] Reject initiated', {
+      callId: call.getSession()?.id,
+    });
     call.reject();
   };
 
