@@ -4,7 +4,12 @@ import { atomWithStorage } from 'jotai/utils';
 
 const sipHost = import.meta.env.VITE_SIP_HOST || 'sip.telnyx.com';
 
-const defaultSimpleUserOptions: TelnyxDeviceConfig = {
+// Extended type to include inbound aliases configuration
+export type ExtendedTelnyxDeviceConfig = TelnyxDeviceConfig & {
+  inboundAliases?: string[];
+};
+
+const defaultSimpleUserOptions: ExtendedTelnyxDeviceConfig = {
   host: sipHost,
   port: '7443',
   wsServers: `wss://${sipHost}:7443`,
@@ -12,9 +17,10 @@ const defaultSimpleUserOptions: TelnyxDeviceConfig = {
   password: '',
   displayName: 'Phone User',
   registrarServer: `sip:${sipHost}:7443`,
+  inboundAliases: [],
 };
 
-export const simpleUserClientOptionsAtom = atomWithStorage<TelnyxDeviceConfig>(
+export const simpleUserClientOptionsAtom = atomWithStorage<ExtendedTelnyxDeviceConfig>(
   'telnyx_simple_user_client_options',
   defaultSimpleUserOptions,
 );

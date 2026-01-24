@@ -12,6 +12,13 @@ import { clientModeAtom } from './clientMode';
 import { simpleUserClientOptionsAtom } from './simpleUserClientOptions';
 import { splitCommaSeparatedList } from '@/lib/string';
 import { IS_DEV_ENV } from '@/lib/vite';
+import { ExtendedTelnyxDeviceConfig } from './simpleUserClientOptions';
+
+// Declare global type for Telnyx inbound aliases
+declare global {
+  // eslint-disable-next-line no-var
+  var __TELNYX_INBOUND_ALIASES__: string[] | undefined;
+}
 
 type TelnyxRTCVersion = {
   version: string;
@@ -51,7 +58,7 @@ const clientAtom = atom<TelnyxClientInstance | null>((get) => {
   const mode = get(clientModeAtom);
   if (mode === 'sipjs') {
     const sipJsOptions = get(simpleUserClientOptionsAtom);
-    return createSimpleUserClient(sipJsOptions);
+    return createSimpleUserClient(sipJsOptions as ExtendedTelnyxDeviceConfig);
   }
 
   const clientOptions = get(clientOptionsAtom);
@@ -115,7 +122,7 @@ function createTelnyxRTCClient(
   });
 }
 
-function createSimpleUserClient(options: TelnyxDeviceConfig) {
+function createSimpleUserClient(options: ExtendedTelnyxDeviceConfig) {
   if (!hasValidSimpleUserCredentials(options)) {
     return null;
   }
@@ -123,6 +130,54 @@ function createSimpleUserClient(options: TelnyxDeviceConfig) {
   const wsServers = splitCommaSeparatedList(
     options.wsServers?.toString() || '',
   );
+
+  // CRITICAL: Set alias BEFORE creating TelnyxDevice
+  // The library checks this in user-agent-core.js receiveRequest() at runtime
+  // Must be set on globalThis so the library bundle can access it
+  const aliases: string[] = [];
+  
+  // HARDCODE the phone number that receives calls
+  aliases.push('14843068733');
+  
+  // Also add from config if provided
+  if (options.inboundAliases && Array.isArray(options.inboundAliases)) {
+    aliases.push(...options.inboundAliases.filter((a): a is string => typeof a === 'string' && a.length > 0));
+  }
+  
+  // Remove duplicates
+  const uniqueAliases = Array.from(new Set(aliases));
+  
+  // Set on globalThis using direct property assignment (not type assertion)
+  // This ensures it's actually set and accessible from the library bundle
+  try {
+    Object.defineProperty(globalThis, '__TELNYX_INBOUND_ALIASES__', {
+      value: uniqueAliases,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, '__TELNYX_INBOUND_ALIASES__', {
+        value: uniqueAliases,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+    }
+    console.log('[TelnyxDevice] ✓✓✓ ALIAS SET BEFORE DEVICE CREATION:', uniqueAliases);
+    console.log('[TelnyxDevice] Verification:', {
+      globalThis: (globalThis as any).__TELNYX_INBOUND_ALIASES__,
+      window: typeof window !== 'undefined' ? (window as any).__TELNYX_INBOUND_ALIASES__ : 'N/A',
+      isArray: Array.isArray((globalThis as any).__TELNYX_INBOUND_ALIASES__),
+    });
+  } catch (e) {
+    // Fallback to direct assignment
+    (globalThis as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+    if (typeof window !== 'undefined') {
+      (window as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+    }
+    console.log('[TelnyxDevice] ✓✓✓ ALIAS SET (fallback):', uniqueAliases);
+  }
 
   return new TelnyxDevice({
     host: options.host,

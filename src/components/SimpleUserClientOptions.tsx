@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,9 +22,11 @@ import { Button } from '@/components/ui/button';
 import { TelnyxDeviceConfig } from '@telnyx/rtc-sipjs-simple-user';
 import { TurnServersFormField } from './TurnServersFormField';
 import { StunServersFormField } from './StunServersFormField';
+import { ExtendedTelnyxDeviceConfig } from '@/atoms/simpleUserClientOptions';
 
-type FormValues = Omit<TelnyxDeviceConfig, 'remoteAudioElement'> & {
+type FormValues = Omit<ExtendedTelnyxDeviceConfig, 'remoteAudioElement'> & {
   remoteAudioElementId?: string;
+  inboundAliasesAsString?: string;
 };
 
 const SimpleUserClientOptions = () => {
@@ -32,15 +35,24 @@ const SimpleUserClientOptions = () => {
     values: {
       ...clientOptions,
       remoteAudioElementId: clientOptions.remoteAudioElement?.id,
+      inboundAliasesAsString: clientOptions.inboundAliases?.join(', ') || '',
     },
   });
 
   const onSubmit = (values: FormValues) => {
-    const { remoteAudioElementId, ...rest } = values;
+    const { remoteAudioElementId, inboundAliasesAsString, ...rest } = values;
     const remoteAudioElement = remoteAudioElementId
       ? (document.getElementById(
           remoteAudioElementId,
         ) as HTMLAudioElement | null)
+      : undefined;
+
+    // Parse comma-separated aliases string into array
+    const inboundAliases = inboundAliasesAsString
+      ? inboundAliasesAsString
+          .split(',')
+          .map((alias) => alias.trim())
+          .filter((alias) => alias.length > 0)
       : undefined;
 
     setClientOptions({
@@ -50,6 +62,7 @@ const SimpleUserClientOptions = () => {
         : undefined,
       turnServers: values.turnServers ?? undefined,
       remoteAudioElement: remoteAudioElement ?? undefined,
+      inboundAliases: inboundAliases && inboundAliases.length > 0 ? inboundAliases : undefined,
     });
   };
 
@@ -190,6 +203,26 @@ const SimpleUserClientOptions = () => {
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="inboundAliasesAsString"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Inbound Phone Number Aliases</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="input-inbound-aliases"
+                      placeholder="14843068733, 15551234567"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Phone numbers that should accept incoming calls (comma-separated). Required when phone number differs from username.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <StunServersFormField control={form.control} name="stunServers" />
             <TurnServersFormField control={form.control} name="turnServers" />
             <FormField

@@ -22,10 +22,27 @@ import { Button } from '@/components/ui/button';
 import { DialButton } from './DialButton';
 import { toast } from 'sonner';
 import { DeviceEvent } from '@telnyx/rtc-sipjs-simple-user';
+import { useSimpleUserClientOptions } from '@/atoms/simpleUserClientOptions';
 
 const SimpleUserDialer = () => {
   const [client] = useSipJsClient();
+  const [clientOptions] = useSimpleUserClientOptions();
   const [callOptions, setCallOptions] = useSimpleUserCallOptions();
+
+  // CRITICAL FIX: Set alias IMMEDIATELY on component mount
+  // The library checks this at runtime in receiveRequest()
+  useEffect(() => {
+    if (typeof globalThis !== 'undefined') {
+      const phoneNumber = '14843068733'; // The phone number that receives calls
+      (globalThis as any).__TELNYX_INBOUND_ALIASES__ = [phoneNumber];
+      (window as any).__TELNYX_INBOUND_ALIASES__ = [phoneNumber];
+      console.log('[SimpleUserDialer] HARDCODED ALIAS SET:', [phoneNumber]);
+      console.log('[SimpleUserDialer] Verification:', {
+        globalThis: (globalThis as any).__TELNYX_INBOUND_ALIASES__,
+        window: (window as any).__TELNYX_INBOUND_ALIASES__,
+      });
+    }
+  }, []); // Run once on mount
   const [wsStatus, setWsStatus] = useSipJsWsStatus();
   const [registrationStatus, setRegistrationStatus] =
     useSipJsRegistrationStatus();
@@ -67,12 +84,114 @@ const SimpleUserDialer = () => {
   }, [registrationStatus]);
 
   useEffect(() => {
+    // CRITICAL: Set alias IMMEDIATELY, even before client check
+    // The library checks this at runtime when receiveRequest is called
+    if (typeof globalThis !== 'undefined') {
+      const aliases: string[] = [];
+      
+      // Always add the phone number that receives calls
+      const phoneNumber = '14843068733'; // TODO: Get from config
+      if (phoneNumber) {
+        aliases.push(phoneNumber);
+      }
+
+      // Check if username is a phone number
+      if (clientOptions.username && /^\d+$/.test(clientOptions.username)) {
+        aliases.push(clientOptions.username);
+      }
+
+      // Add aliases from configuration
+      if (clientOptions.inboundAliases && Array.isArray(clientOptions.inboundAliases)) {
+        aliases.push(...clientOptions.inboundAliases.filter((a): a is string => typeof a === 'string' && a.length > 0));
+      }
+
+      const uniqueAliases = Array.from(new Set(aliases));
+      
+      if (uniqueAliases.length > 0) {
+        (globalThis as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+        (window as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+        console.log('[SimpleUserDialer] ✓✓✓ ALIAS SET IMMEDIATELY:', uniqueAliases);
+      }
+    }
+
     if (!client) {
       logRegistrationTransition('Client Removed', 'any', 'unregistered');
       setWsStatus('idle');
       setRegistrationStatus('unregistered');
       registrationStatusRef.current = 'unregistered';
       return;
+    }
+
+    // Ensure alias is set when client is available (runtime check happens when INVITE arrives)
+    // This must be set AFTER device creation and BEFORE any INVITEs arrive
+    // The library checks: aor.user, contact.uri.user, pubGruu.user, tempGruu.user, then __TELNYX_INBOUND_ALIASES__
+    console.log('[SimpleUserDialer] Configuring inbound aliases for runtime checks', {
+      username: clientOptions.username,
+      inboundAliases: clientOptions.inboundAliases,
+      hasClient: !!client,
+      currentAlias: (globalThis as any).__TELNYX_INBOUND_ALIASES__,
+    });
+
+    if (typeof globalThis !== 'undefined') {
+      const aliases: string[] = [];
+
+      // Check if username is a phone number (all digits) - if so, use it as alias
+      if (clientOptions.username && /^\d+$/.test(clientOptions.username)) {
+        aliases.push(clientOptions.username);
+        console.log('[SimpleUserDialer] Added username as alias (numeric):', clientOptions.username);
+      }
+
+      // Add aliases from configuration
+      if (clientOptions.inboundAliases && Array.isArray(clientOptions.inboundAliases)) {
+        const validAliases = clientOptions.inboundAliases.filter(
+          (alias): alias is string => typeof alias === 'string' && alias.length > 0,
+        );
+        if (validAliases.length > 0) {
+          aliases.push(...validAliases);
+          console.log('[SimpleUserDialer] Added configured aliases:', validAliases);
+        }
+      } else {
+        console.log('[SimpleUserDialer] No inboundAliases in clientOptions:', {
+          inboundAliases: clientOptions.inboundAliases,
+          type: typeof clientOptions.inboundAliases,
+        });
+      }
+
+      // Remove duplicates
+      const uniqueAliases = Array.from(new Set(aliases));
+
+      if (uniqueAliases.length > 0) {
+        // Set on both globalThis and window for maximum compatibility
+        (globalThis as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+        if (typeof window !== 'undefined') {
+          (window as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+        }
+        console.log('[SimpleUserDialer] ✓ Alias configured for runtime checks:', uniqueAliases, {
+          username: clientOptions.username,
+          willMatch: 'Incoming INVITEs with Request-URI user matching these numbers will be accepted',
+        });
+      } else {
+        // Clear aliases if none configured
+        (globalThis as { __TELNYX_INBOUND_ALIASES__?: string[] }).__TELNYX_INBOUND_ALIASES__ =
+          undefined;
+        console.warn(
+          '[SimpleUserDialer] ⚠ No inbound aliases configured. Incoming calls to phone numbers will fail with 404.',
+          {
+            username: clientOptions.username,
+            usernameIsNumeric: clientOptions.username ? /^\d+$/.test(clientOptions.username) : false,
+            suggestion: 'Add the phone number(s) that receive calls to "Inbound Phone Number Aliases" in SIP.js Client Options',
+          },
+        );
+      }
+
+      // Verify it was set
+      const verifyAlias = (globalThis as { __TELNYX_INBOUND_ALIASES__?: string[] })
+        .__TELNYX_INBOUND_ALIASES__;
+      console.log('[SimpleUserDialer] Alias verification:', {
+        set: typeof verifyAlias !== 'undefined',
+        isArray: Array.isArray(verifyAlias),
+        value: verifyAlias,
+      });
     }
 
     // Set up device event listeners
@@ -108,6 +227,68 @@ const SimpleUserDialer = () => {
         username: client.username,
       });
       console.log('[Device] Registered', { username: client.username });
+
+      // CRITICAL: Re-set alias at registration time to ensure it's available when INVITEs arrive
+      // The alias check happens in receiveRequest() which is called BEFORE onCallReceived
+      // So the alias MUST be set and persist in globalThis
+      if (typeof globalThis !== 'undefined') {
+        const aliases: string[] = [];
+
+        // Check if username is a phone number (all digits) - if so, use it as alias
+        if (clientOptions.username && /^\d+$/.test(clientOptions.username)) {
+          aliases.push(clientOptions.username);
+        }
+
+        // Add aliases from configuration
+        if (clientOptions.inboundAliases && Array.isArray(clientOptions.inboundAliases)) {
+          aliases.push(
+            ...clientOptions.inboundAliases.filter(
+              (alias): alias is string => typeof alias === 'string' && alias.length > 0,
+            ),
+          );
+        }
+
+        // Remove duplicates
+        const uniqueAliases = Array.from(new Set(aliases));
+
+        if (uniqueAliases.length > 0) {
+          // Set it on both globalThis and window to ensure it's accessible
+          // The library checks globalThis, but in browser context window === globalThis
+          (globalThis as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+          if (typeof window !== 'undefined') {
+            (window as any).__TELNYX_INBOUND_ALIASES__ = uniqueAliases;
+          }
+          console.log('[Device] ✓ Alias RE-SET at registration:', uniqueAliases, {
+            username: clientOptions.username,
+            method: 'Direct assignment to globalThis and window',
+          });
+        }
+
+        // Verify it was set
+        const aliasCheck = (globalThis as any).__TELNYX_INBOUND_ALIASES__;
+        console.log('[Device] Alias verification at registration:', {
+          exists: typeof aliasCheck !== 'undefined',
+          isArray: Array.isArray(aliasCheck),
+          value: aliasCheck,
+          length: aliasCheck?.length,
+          globalThisType: typeof globalThis,
+          hasProperty: '__TELNYX_INBOUND_ALIASES__' in globalThis,
+        });
+
+        // Test the normalization logic that the library uses
+        if (Array.isArray(aliasCheck)) {
+          const testRuri = '14843068733';
+          const normalized = testRuri.replace(/\D/g, '');
+          const wouldMatch = aliasCheck.some((a: string) => (a || '').replace(/\D/g, '') === normalized);
+          console.log('[Device] Alias match test:', {
+            testRuri,
+            normalized,
+            aliases: aliasCheck,
+            wouldMatch,
+          });
+        }
+      }
+
       setRegistrationStatus('registered');
       registrationStatusRef.current = 'registered';
     };
@@ -156,7 +337,7 @@ const SimpleUserDialer = () => {
       client.off(DeviceEvent.RegistrationFailed, handleRegistrationFailed);
       client.off(DeviceEvent.Message, handleMessage);
     };
-  }, [client, setWsStatus, setRegistrationStatus]);
+  }, [client, clientOptions, setWsStatus, setRegistrationStatus]);
 
   const registerExtraHeaders = useMemo(
     () =>
