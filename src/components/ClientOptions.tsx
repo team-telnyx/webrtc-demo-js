@@ -2,7 +2,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -247,17 +246,26 @@ const ClientOptions = () => {
   };
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Client Options</CardTitle>
-        <CardDescription>
-          Options passed to the client constructor.
-          <a
-            className="inline-flex underline"
-            href="https://developers.telnyx.com/docs/voice/webrtc/js-sdk/interfaces/iclientoptions"
-          >
-            Reference <ExternalLinkIcon className="w-4" target="_blank" />
-          </a>
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+        <div className="flex-1">
+          <CardTitle>Client Options</CardTitle>
+          <CardDescription>
+            Options passed to the client constructor.
+            <a
+              className="inline-flex underline"
+              href="https://developers.telnyx.com/docs/voice/webrtc/js-sdk/interfaces/iclientoptions"
+            >
+              Reference <ExternalLinkIcon className="w-4" target="_blank" />
+            </a>
+          </CardDescription>
+        </div>
+        <Button
+          data-testid="btn-connect"
+          onClick={form.handleSubmit(onSubmit)}
+          className="ml-4"
+        >
+          {connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
+        </Button>
       </CardHeader>
 
       <Form {...form}>
@@ -285,6 +293,43 @@ const ClientOptions = () => {
               <FormDescription>Select a saved profile</FormDescription>
               <FormMessage />
             </FormItem>
+
+            <Label className="block mb-4">Login Method</Label>
+            <RadioGroup
+              defaultValue="credentials"
+              value={loginMethod}
+              className="flex mb-4"
+              onValueChange={setLoginMethod}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value="credentials"
+                  id="radio-credentials"
+                  data-testid="radio-credentials"
+                />
+                <Label htmlFor="radio-credentials">Credentials</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value="token"
+                  id="radio-token"
+                  data-testid="radio-token"
+                />
+                <Label htmlFor="radio-token">Token</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value="anonymous"
+                  id="radio-anonymous"
+                  data-testid="radio-anonymous"
+                />
+                <Label htmlFor="radio-anonymous">
+                  Anonymous-login (AI Assistant)
+                </Label>
+              </div>
+            </RadioGroup>
+            {loginMethodForm()}
 
             <FormField
               control={form.control}
@@ -325,42 +370,6 @@ const ClientOptions = () => {
                 </FormItem>
               )}
             />
-            <Label className="block mb-4">Login Method</Label>
-            <RadioGroup
-              defaultValue="credentials"
-              value={loginMethod}
-              className="flex mb-4"
-              onValueChange={setLoginMethod}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="credentials"
-                  id="radio-credentials"
-                  data-testid="radio-credentials"
-                />
-                <Label htmlFor="radio-credentials">Credentials</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="token"
-                  id="radio-token"
-                  data-testid="radio-token"
-                />
-                <Label htmlFor="radio-token">Token</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="anonymous"
-                  id="radio-anonymous"
-                  data-testid="radio-anonymous"
-                />
-                <Label htmlFor="radio-anonymous">
-                  Anonymous-login (AI Assistant)
-                </Label>
-              </div>
-            </RadioGroup>
-            {loginMethodForm()}
             <FormField
               control={form.control}
               name="debug"
@@ -631,15 +640,6 @@ const ClientOptions = () => {
               )}
             />
           </CardContent>
-          <CardFooter className="gap-2">
-            <Button
-              data-testid="btn-connect"
-              onClick={form.handleSubmit(onSubmit)}
-              className="w-full"
-            >
-              {connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
-            </Button>
-          </CardFooter>
         </form>
       </Form>
     </Card>
