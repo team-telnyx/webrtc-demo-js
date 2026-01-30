@@ -45,8 +45,21 @@ const SDKVersionDropdown = () => {
             })
             .map(([release]) => release)
         );
-        const filterDeprecatedVersions = (items: string[]) =>
-          items.filter((value) => !deprecatedSet.has(value));
+
+        // Filter deprecated versions AND pre-release versions (beta, alpha, rc, etc.)
+        const filterDeprecatedAndPrerelease = (items: string[]) =>
+          items.filter((value) => {
+            // Skip if deprecated
+            if (deprecatedSet.has(value)) return false;
+
+            // Skip if pre-release (beta, alpha, rc, etc.)
+            // Allow "latest" tag to pass through
+            if (value === "latest") return true;
+
+            // Check for pre-release identifiers
+            const isPrereleaseVersion = /-(beta|alpha|rc|dev|canary|next)\./i.test(value);
+            return !isPrereleaseVersion;
+          });
 
         const timeEntries = Object.entries(data.time ?? {})
           .filter(
@@ -64,8 +77,8 @@ const SDKVersionDropdown = () => {
         const nextVersions = Array.from(
           new Set([
             "latest",
-            ...filterDeprecatedVersions(tagVersions),
-            ...filterDeprecatedVersions(timeEntries),
+            ...filterDeprecatedAndPrerelease(tagVersions),
+            ...filterDeprecatedAndPrerelease(timeEntries),
           ])
         ).slice(0, 50);
 
