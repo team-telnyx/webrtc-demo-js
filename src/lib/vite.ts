@@ -2,7 +2,7 @@
 export const IS_DEV_MODE = import.meta.env.MODE === 'development';
 export const IS_PROD_MODE = import.meta.env.MODE === 'production';
 
-// Check if running on webrtcdev.telnyx.com to use development RTC endpoint
-const isDevHost = typeof window !== 'undefined' && window.location.hostname === 'webrtcdev.telnyx.com';
-export const IS_DEV_ENV = import.meta.env.DEV || isDevHost;
-export const IS_PROD_ENV = import.meta.env.PROD && !isDevHost;
+// VITE_RTC_ENV can be set to 'development' to use rtcdev.telnyx.com
+// Set this env var when building for webrtcdev.telnyx.com
+export const IS_DEV_ENV = import.meta.env.DEV || import.meta.env.VITE_RTC_ENV === 'development';
+export const IS_PROD_ENV = import.meta.env.PROD && import.meta.env.VITE_RTC_ENV !== 'development';
