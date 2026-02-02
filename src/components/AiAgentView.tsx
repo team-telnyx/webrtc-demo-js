@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { IS_DEV_ENV } from '@/lib/vite';
 import {
   Card,
   CardContent,
@@ -136,6 +137,7 @@ const AiAgentView = () => {
   ) => {
     const versionSuffix = `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : '';
+    const environmentAttr = IS_DEV_ENV ? ' environment="development"' : '';
     const eventListenersScript = `
       const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
 
@@ -173,7 +175,7 @@ const AiAgentView = () => {
           <script src="https://unpkg.com/@telnyx/ai-agent-widget${versionSuffix}"></script>
         </head>
         <body>
-          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}></telnyx-ai-agent>
+          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}${environmentAttr}></telnyx-ai-agent>
           <script>${eventListenersScript}</script>
         </body>
       </html>
