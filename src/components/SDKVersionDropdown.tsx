@@ -106,6 +106,10 @@ const SDKVersionDropdown = () => {
         throw new Error('Invalid Telnyx SDK module');
       }
 
+      // Clear the previous SDK's voice-sdk-id so the new version
+      // registers with a fresh identity instead of reusing a stale token.
+      sessionStorage.removeItem('telnyx-voice-sdk-id');
+
       setVersion({ version: nextVersion, Class: TelnyxRTC });
     } catch (error) {
       alert('Invalid version');
