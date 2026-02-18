@@ -649,8 +649,8 @@ const ClientOptions = () => {
               onClick={() => {
                 if (client) {
                   client.disconnect();
-                  setConnectionStatus('disconnected');
                 }
+                setConnectionStatus('disconnected');
               }}
             >
               Disconnect
