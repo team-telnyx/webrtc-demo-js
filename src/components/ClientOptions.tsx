@@ -29,7 +29,7 @@ import {
 
 import { useClientOptions, useClientProfiles } from '@/atoms/clientOptions';
 import { LoginMethod, useLoginMethod } from '@/atoms/loginMethod';
-import { useConnectionStatus } from '@/atoms/telnyxClient';
+import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { Input } from '@/components/ui/input';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
@@ -68,8 +68,9 @@ const configureIceServers = (
 const ClientOptions = () => {
   const [profiles, setProfiles] = useClientProfiles();
   const [clientOptions, setClientOptions] = useClientOptions();
-  const [connectionStatus] = useConnectionStatus();
+  const [connectionStatus, setConnectionStatus] = useConnectionStatus();
   const [loginMethod, _setLoginMethod] = useLoginMethod();
+  const [client] = useTelnyxSdkClient();
 
   const form = useForm<Partial<IClientOptionsDemo>>({
     values: clientOptions,
@@ -374,6 +375,7 @@ const ClientOptions = () => {
                   </div>
                   <FormControl>
                     <Switch
+                      data-testid="switch-debug"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
@@ -638,6 +640,20 @@ const ClientOptions = () => {
               className="w-full"
             >
               {connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
+            </Button>
+            <Button
+              data-testid="btn-disconnect"
+              variant="destructive"
+              className="w-full"
+              disabled={connectionStatus === 'disconnected'}
+              onClick={() => {
+                if (client) {
+                  client.disconnect();
+                }
+                setConnectionStatus('disconnected');
+              }}
+            >
+              Disconnect
             </Button>
           </CardFooter>
         </form>
