@@ -1,13 +1,13 @@
+import { atomWithMergingStorage } from '@/lib/atomWithMergingStorage';
 import { ISimpleUserCallOptions } from '@/lib/types';
 import { useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 
 const defaultCallOptions: ISimpleUserCallOptions = {
   destinationNumber: '',
   extraHeaders: [],
 };
 
-const simpleUserCallOptionsAtom = atomWithStorage<ISimpleUserCallOptions>(
+const simpleUserCallOptionsAtom = atomWithMergingStorage<ISimpleUserCallOptions>(
   'telnyx_simple_user_call_options',
   defaultCallOptions,
 );

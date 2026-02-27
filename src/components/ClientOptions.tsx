@@ -89,6 +89,7 @@ const ClientOptions = () => {
       rtcIp: '',
       rtcPort: undefined,
       mutedMicOnStart: false,
+      enableCallReports: true,
       video: false,
       anonymous_login: {
         target_type: '',
