@@ -564,6 +564,29 @@ const ClientOptions = () => {
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="enableCallReports"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Call Reports</FormLabel>
+                    <FormDescription>
+                      Allow the SDK to send call quality reports to Telnyx.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      data-testid="switch-call-reports"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {IS_DEV_ENV && (
               <FormField
                 control={form.control}

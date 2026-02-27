@@ -21,6 +21,7 @@ export const clientOptionsAtom = atomWithStorage<IClientOptionsDemo>(
     keepConnectionAliveOnSocketClose: false,
     useCanaryRtcServer: false,
     mutedMicOnStart: false,
+    enableCallReports: true,
   },
 );
 
