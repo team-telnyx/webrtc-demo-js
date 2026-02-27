@@ -43,7 +43,7 @@ const HeldCall = ({ call }: Props) => {
           </Button>
 
           <Button
-            data-testid="btn-end-call"
+            data-testid="btn-hold-call"
             size="lg"
             variant={'destructive'}
             className="w-full"

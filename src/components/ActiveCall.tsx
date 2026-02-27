@@ -206,7 +206,7 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
           </Button>
 
           <Button
-            data-testid="btn-end-call"
+            data-testid="btn-hold-call"
             size="lg"
             variant={'outline'}
             className="w-full"
