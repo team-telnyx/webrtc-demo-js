@@ -315,9 +315,7 @@ const AiAgentView = () => {
                           <SelectItem value="latest">Latest</SelectItem>
                           {availableVersions.map((version) => (
                             <SelectItem key={version} value={version}>
-                              {version.includes('-')
-                                ? `${version} 🧪`
-                                : version}
+                              {version.includes('-') ? `${version} 🧪` : version}
                             </SelectItem>
                           ))}
                         </SelectContent>
