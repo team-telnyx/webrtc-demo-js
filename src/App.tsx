@@ -1,6 +1,9 @@
 import BlackBoxTestLog from './components/BlackBoxTestLog';
 import CallHistory from './components/CallHistory';
 import CallNotificationHandler from './components/CallNotificationHandler';
+// WEBRTC-3248: test components for new telnyx.error event
+import ErrorBanner from './components/ErrorBanner';
+import ErrorEventHandler from './components/ErrorEventHandler';
 import CallOptions from './components/CallOptions';
 import ClientAutoConnect from './components/ClientAutoConnect';
 import ClientOptions from './components/ClientOptions';
@@ -67,10 +70,15 @@ const App = () => {
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
+            {/* WEBRTC-3248: listen for telnyx.error and display in banner + log */}
+            <ErrorEventHandler />
           </>
         ) : (
           <SipJsCallNotificationHandler />
         )}
+
+        {/* WEBRTC-3248: visible error banner for telnyx.error events */}
+        <ErrorBanner />
 
         {mode === 'sdk' ? null : <SipJsCall />}
       </TooltipProvider>
