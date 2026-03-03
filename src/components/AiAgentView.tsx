@@ -27,12 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PlusIcon, TrashIcon } from 'lucide-react';
 import AiAgentEventLog, { type AiAgentEvent } from './AiAgentEventLog';
+
+interface CustomAttribute {
+  name: string;
+  value: string;
+}
 
 interface FormValues {
   agentId: string;
   trickleIce: boolean;
   version: string;
+  conversationId: string;
 }
 
 const WIDGET_EVENTS = [
@@ -50,16 +57,24 @@ const AiAgentView = () => {
   const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
   const [currentTrickleIce, setCurrentTrickleIce] = useState(false);
   const [currentVersion, setCurrentVersion] = useState('next');
+  const [currentConversationId, setCurrentConversationId] = useState('');
+  const [currentCustomAttrs, setCurrentCustomAttrs] = useState<
+    CustomAttribute[]
+  >([]);
   const [invertBackground, setInvertBackground] = useState(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
   const [events, setEvents] = useState<AiAgentEvent[]>([]);
+  const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>(
+    [],
+  );
 
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: '',
       trickleIce: false,
       version: 'next',
+      conversationId: '',
     },
   });
 
@@ -94,31 +109,37 @@ const AiAgentView = () => {
         );
         const data = await response.json();
 
-        // Filter out deprecated and beta versions
+        // Filter out deprecated versions, keep stable + beta
         const filteredVersions = Object.entries(
           data.versions as Record<string, { deprecated?: string }>,
         )
-          .filter(([version, metadata]) => {
+          .filter(([_, metadata]) => {
             // Exclude deprecated versions
             if (metadata.deprecated) return false;
-            // Exclude beta/prerelease versions (contain "-")
-            if (version.includes('-')) return false;
             return true;
           })
           .map(([version]) => version);
 
         const versions = filteredVersions.sort((a, b) => {
           const parseVersion = (v: string) => {
-            const parts = v.split('.').map(Number);
-            return { parts };
+            const [main, pre] = v.split('-');
+            const parts = main.split('.').map(Number);
+            return { parts, pre: pre || '' };
           };
           const vA = parseVersion(a);
           const vB = parseVersion(b);
-          for (let i = 0; i < Math.max(vA.parts.length, vB.parts.length); i++) {
+          for (
+            let i = 0;
+            i < Math.max(vA.parts.length, vB.parts.length);
+            i++
+          ) {
             const diff = (vB.parts[i] || 0) - (vA.parts[i] || 0);
             if (diff !== 0) return diff;
           }
-          return 0;
+          // Same major.minor.patch: stable before prerelease, then alpha by tag
+          if (!vA.pre && vB.pre) return -1;
+          if (vA.pre && !vB.pre) return 1;
+          return vA.pre.localeCompare(vB.pre);
         });
         setAvailableVersions(versions);
       } catch (error) {
@@ -134,10 +155,19 @@ const AiAgentView = () => {
     agentId: string,
     version: string,
     trickleIce: boolean,
+    conversationId: string,
+    extraAttributes: CustomAttribute[],
   ) => {
     const versionSuffix = `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : '';
     const environmentAttr = IS_DEV_ENV ? ' environment="development"' : '';
+    const conversationIdAttr = conversationId
+      ? ` conversation-id="${conversationId}"`
+      : '';
+    const customAttrsStr = extraAttributes
+      .filter((attr) => attr.name.trim() && attr.value.trim())
+      .map((attr) => ` ${attr.name.trim()}="${attr.value.trim()}"`)
+      .join('');
     const eventListenersScript = `
       const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
 
@@ -175,7 +205,7 @@ const AiAgentView = () => {
           <script src="https://unpkg.com/@telnyx/ai-agent-widget${versionSuffix}"></script>
         </head>
         <body>
-          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}${environmentAttr}></telnyx-ai-agent>
+          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}${environmentAttr}${conversationIdAttr}${customAttrsStr}></telnyx-ai-agent>
           <script>${eventListenersScript}</script>
         </body>
       </html>
@@ -188,14 +218,43 @@ const AiAgentView = () => {
     setCurrentAgentId(values.agentId.trim());
     setCurrentTrickleIce(values.trickleIce);
     setCurrentVersion(values.version);
+    setCurrentConversationId(values.conversationId.trim());
+    setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
   };
 
   const handleReset = () => {
     setIsEmbedded(false);
     setCurrentAgentId(null);
+    setCurrentConversationId('');
+    setCurrentCustomAttrs([]);
     setEvents([]);
+    setCustomAttributes([]);
     form.reset();
+  };
+
+  const handleAddAttribute = () => {
+    setCustomAttributes((prev) => [...prev, { name: '', value: '' }]);
+  };
+
+  const handleRemoveAttribute = (index: number) => {
+    setCustomAttributes((prev) => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const handleAttributeChange = (
+    index: number,
+    field: 'name' | 'value',
+    newValue: string,
+  ) => {
+    setCustomAttributes((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: newValue };
+      return next;
+    });
   };
 
   return (
@@ -256,7 +315,9 @@ const AiAgentView = () => {
                           <SelectItem value="latest">Latest</SelectItem>
                           {availableVersions.map((version) => (
                             <SelectItem key={version} value={version}>
-                              {version}
+                              {version.includes('-')
+                                ? `${version} 🧪`
+                                : version}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -286,6 +347,76 @@ const AiAgentView = () => {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="conversationId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Conversation ID</FormLabel>
+                      <FormControl>
+                        <Input
+                          data-testid="input-conversation-id"
+                          placeholder="Optional — rejoin an existing conversation"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Custom Attributes */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Custom Attributes</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddAttribute}
+                      data-testid="btn-add-custom-attr"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  {customAttributes.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Additional HTML attributes passed to the{' '}
+                      <code className="text-xs">&lt;telnyx-ai-agent&gt;</code>{' '}
+                      element.
+                    </p>
+                  )}
+                  {customAttributes.map((attr, index) => (
+                    <div className="flex gap-2" key={index}>
+                      <Input
+                        placeholder="attribute-name"
+                        value={attr.name}
+                        onChange={(e) =>
+                          handleAttributeChange(index, 'name', e.target.value)
+                        }
+                        data-testid={`input-custom-attr-name-${index}`}
+                      />
+                      <Input
+                        placeholder="value"
+                        value={attr.value}
+                        onChange={(e) =>
+                          handleAttributeChange(index, 'value', e.target.value)
+                        }
+                        data-testid={`input-custom-attr-value-${index}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveAttribute(index)}
+                        data-testid={`btn-remove-custom-attr-${index}`}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
               <CardFooter className="justify-end gap-2">
                 {isEmbedded && (
@@ -337,11 +468,13 @@ const AiAgentView = () => {
           >
             {isEmbedded && currentAgentId ? (
               <iframe
-                key={`${currentAgentId}-${currentTrickleIce}-${currentVersion}`}
+                key={`${currentAgentId}-${currentTrickleIce}-${currentVersion}-${currentConversationId}-${JSON.stringify(currentCustomAttrs)}`}
                 srcDoc={getIframeSrcDoc(
                   currentAgentId,
                   currentVersion,
                   currentTrickleIce,
+                  currentConversationId,
+                  currentCustomAttrs,
                 )}
                 className="h-full w-full border-0"
                 allow="microphone; camera; autoplay"
