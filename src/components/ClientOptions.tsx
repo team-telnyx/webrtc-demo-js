@@ -721,7 +721,7 @@ const ClientOptions = () => {
                   });
               }}
             >
-              Login (refresh token, no reconnect)
+              Login
             </Button>
           </CardFooter>
         </form>
