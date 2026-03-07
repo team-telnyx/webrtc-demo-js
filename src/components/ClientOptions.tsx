@@ -657,27 +657,72 @@ const ClientOptions = () => {
               )}
             />
           </CardContent>
-          <CardFooter className="gap-2">
+          <CardFooter className="flex-col gap-2">
+            <div className="flex w-full gap-2">
+              <Button
+                data-testid="btn-connect"
+                onClick={form.handleSubmit(onSubmit)}
+                className="w-full"
+              >
+                {connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
+              </Button>
+              <Button
+                data-testid="btn-disconnect"
+                variant="destructive"
+                className="w-full"
+                disabled={connectionStatus === 'disconnected'}
+                onClick={() => {
+                  if (client) {
+                    client.disconnect();
+                  }
+                  setConnectionStatus('disconnected');
+                }}
+              >
+                Disconnect
+              </Button>
+            </div>
             <Button
-              data-testid="btn-connect"
-              onClick={form.handleSubmit(onSubmit)}
+              type="button"
+              data-testid="btn-login"
+              variant="secondary"
               className="w-full"
-            >
-              {connectionStatus === 'connected' ? 'Reconnect' : 'Connect'}
-            </Button>
-            <Button
-              data-testid="btn-disconnect"
-              variant="destructive"
-              className="w-full"
-              disabled={connectionStatus === 'disconnected'}
+              disabled={connectionStatus !== 'registered'}
               onClick={() => {
-                if (client) {
-                  client.disconnect();
+                if (!client) return;
+
+                const values = form.getValues();
+                const creds: Record<string, unknown> = {};
+
+                if (values.login_token) {
+                  creds.login_token = values.login_token;
+                } else if (values.login && values.password) {
+                  creds.login = values.login;
+                  creds.password = values.password;
                 }
-                setConnectionStatus('disconnected');
+
+                client
+                  .login({
+                    creds,
+                    onSuccess: () => {
+                      toast.success(
+                        'Re-authenticated (socket kept alive)',
+                      );
+                      setConnectionStatus('registered');
+                    },
+                    onError: (error: unknown) => {
+                      toast.error(
+                        `Login failed: ${error instanceof Error ? error.message : String(error)}`,
+                      );
+                    },
+                  })
+                  .catch((error: unknown) => {
+                    toast.error(
+                      `Login error: ${error instanceof Error ? error.message : String(error)}`,
+                    );
+                  });
               }}
             >
-              Disconnect
+              Login
             </Button>
           </CardFooter>
         </form>
