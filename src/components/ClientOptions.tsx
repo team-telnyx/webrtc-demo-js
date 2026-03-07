@@ -682,6 +682,7 @@ const ClientOptions = () => {
               </Button>
             </div>
             <Button
+              type="button"
               data-testid="btn-login"
               variant="secondary"
               className="w-full"
