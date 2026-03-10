@@ -38,6 +38,7 @@ interface CustomAttribute {
 interface FormValues {
   agentId: string;
   trickleIce: boolean;
+  chatMode: boolean;
   version: string;
   conversationId: string;
 }
@@ -56,6 +57,7 @@ const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
   const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
   const [currentTrickleIce, setCurrentTrickleIce] = useState(false);
+  const [currentChatMode, setCurrentChatMode] = useState(false);
   const [currentVersion, setCurrentVersion] = useState('next');
   const [currentConversationId, setCurrentConversationId] = useState('');
   const [currentCustomAttrs, setCurrentCustomAttrs] = useState<
@@ -73,6 +75,7 @@ const AiAgentView = () => {
     defaultValues: {
       agentId: '',
       trickleIce: false,
+      chatMode: false,
       version: 'next',
       conversationId: '',
     },
@@ -155,11 +158,13 @@ const AiAgentView = () => {
     agentId: string,
     version: string,
     trickleIce: boolean,
+    chatMode: boolean,
     conversationId: string,
     extraAttributes: CustomAttribute[],
   ) => {
     const versionSuffix = `@${version}`;
     const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : '';
+    const chatModeAttr = chatMode ? ' chat-mode="true"' : '';
     const environmentAttr = IS_DEV_ENV ? ' environment="development"' : '';
     const conversationIdAttr = conversationId
       ? ` conversation-id="${conversationId}"`
@@ -205,7 +210,7 @@ const AiAgentView = () => {
           <script src="https://unpkg.com/@telnyx/ai-agent-widget${versionSuffix}"></script>
         </head>
         <body>
-          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}${environmentAttr}${conversationIdAttr}${customAttrsStr}></telnyx-ai-agent>
+          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}${chatModeAttr}${environmentAttr}${conversationIdAttr}${customAttrsStr}></telnyx-ai-agent>
           <script>${eventListenersScript}</script>
         </body>
       </html>
@@ -217,6 +222,7 @@ const AiAgentView = () => {
 
     setCurrentAgentId(values.agentId.trim());
     setCurrentTrickleIce(values.trickleIce);
+    setCurrentChatMode(values.chatMode);
     setCurrentVersion(values.version);
     setCurrentConversationId(values.conversationId.trim());
     setCurrentCustomAttrs([...customAttributes]);
@@ -349,6 +355,28 @@ const AiAgentView = () => {
                 />
                 <FormField
                   control={form.control}
+                  name="chatMode"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Chat Mode</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Text-only interaction — no audio playback or
+                          microphone
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          data-testid="switch-chat-mode"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="conversationId"
                   render={({ field }) => (
                     <FormItem>
@@ -468,11 +496,12 @@ const AiAgentView = () => {
           >
             {isEmbedded && currentAgentId ? (
               <iframe
-                key={`${currentAgentId}-${currentTrickleIce}-${currentVersion}-${currentConversationId}-${JSON.stringify(currentCustomAttrs)}`}
+                key={`${currentAgentId}-${currentTrickleIce}-${currentChatMode}-${currentVersion}-${currentConversationId}-${JSON.stringify(currentCustomAttrs)}`}
                 srcDoc={getIframeSrcDoc(
                   currentAgentId,
                   currentVersion,
                   currentTrickleIce,
+                  currentChatMode,
                   currentConversationId,
                   currentCustomAttrs,
                 )}
