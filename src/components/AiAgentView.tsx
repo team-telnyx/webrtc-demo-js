@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { PlusIcon, TrashIcon } from 'lucide-react';
 import AiAgentEventLog, { type AiAgentEvent } from './AiAgentEventLog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface CustomAttribute {
   name: string;
@@ -37,9 +38,23 @@ interface CustomAttribute {
 
 interface FormValues {
   agentId: string;
-  trickleIce: boolean;
   version: string;
+  versionId: string;
   conversationId: string;
+  // Toggles
+  trickleIce: boolean;
+  chatMode: boolean;
+  debug: boolean;
+  showUserPerceivedLatency: boolean;
+  showGreetingLatency: boolean;
+  // Call options
+  callDestinationNumber: string;
+  callCallerNumber: string;
+  callCallerName: string;
+  callCustomHeaders: string;
+  callAudio: string;
+  // VAD
+  vad: string;
 }
 
 const WIDGET_EVENTS = [
@@ -54,10 +69,9 @@ const WIDGET_EVENTS = [
 
 const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
-  const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
-  const [currentTrickleIce, setCurrentTrickleIce] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState('next');
-  const [currentConversationId, setCurrentConversationId] = useState('');
+  const [currentFormValues, setCurrentFormValues] = useState<FormValues | null>(
+    null,
+  );
   const [currentCustomAttrs, setCurrentCustomAttrs] = useState<
     CustomAttribute[]
   >([]);
@@ -72,9 +86,20 @@ const AiAgentView = () => {
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: '',
-      trickleIce: false,
       version: 'next',
+      versionId: '',
       conversationId: '',
+      trickleIce: false,
+      chatMode: false,
+      debug: false,
+      showUserPerceivedLatency: false,
+      showGreetingLatency: false,
+      callDestinationNumber: '',
+      callCallerNumber: '',
+      callCallerName: '',
+      callCustomHeaders: '',
+      callAudio: '',
+      vad: '',
     },
   });
 
@@ -152,22 +177,56 @@ const AiAgentView = () => {
   }, []);
 
   const getIframeSrcDoc = (
-    agentId: string,
-    version: string,
-    trickleIce: boolean,
-    conversationId: string,
+    values: FormValues,
     extraAttributes: CustomAttribute[],
   ) => {
-    const versionSuffix = `@${version}`;
-    const trickleIceAttr = trickleIce ? ' trickle-ice="true"' : '';
-    const environmentAttr = IS_DEV_ENV ? ' environment="development"' : '';
-    const conversationIdAttr = conversationId
-      ? ` conversation-id="${conversationId}"`
-      : '';
+    const versionSuffix = `@${values.version}`;
+
+    // Build attribute string from form values
+    const attrs: string[] = [`agent-id="${values.agentId}"`];
+
+    // Boolean toggles
+    if (values.trickleIce) attrs.push('trickle-ice="true"');
+    if (values.chatMode) attrs.push('chat-mode="true"');
+    if (values.debug) attrs.push('debug="true"');
+    if (values.showUserPerceivedLatency)
+      attrs.push('show-user-perceived-latency="true"');
+    if (values.showGreetingLatency)
+      attrs.push('show-greeting-latency="true"');
+
+    // Environment
+    if (IS_DEV_ENV) attrs.push('environment="development"');
+
+    // String attributes (only include if non-empty)
+    if (values.versionId.trim())
+      attrs.push(`version-id="${values.versionId.trim()}"`);
+    if (values.conversationId.trim())
+      attrs.push(`conversation-id="${values.conversationId.trim()}"`);
+    if (values.callDestinationNumber.trim())
+      attrs.push(
+        `call-destination-number="${values.callDestinationNumber.trim()}"`,
+      );
+    if (values.callCallerNumber.trim())
+      attrs.push(`call-caller-number="${values.callCallerNumber.trim()}"`);
+    if (values.callCallerName.trim())
+      attrs.push(`call-caller-name="${values.callCallerName.trim()}"`);
+    if (values.callCustomHeaders.trim())
+      attrs.push(
+        `call-custom-headers='${values.callCustomHeaders.trim()}'`,
+      );
+    if (values.callAudio.trim())
+      attrs.push(`call-audio='${values.callAudio.trim()}'`);
+    if (values.vad.trim()) attrs.push(`vad='${values.vad.trim()}'`);
+
+    // Extra custom attributes
     const customAttrsStr = extraAttributes
       .filter((attr) => attr.name.trim() && attr.value.trim())
-      .map((attr) => ` ${attr.name.trim()}="${attr.value.trim()}"`)
-      .join('');
+      .map((attr) => `${attr.name.trim()}="${attr.value.trim()}"`)
+      .join(' ');
+    if (customAttrsStr) attrs.push(customAttrsStr);
+
+    const attrString = attrs.join(' ');
+
     const eventListenersScript = `
       const WIDGET_EVENTS = ${JSON.stringify(WIDGET_EVENTS)};
 
@@ -205,7 +264,7 @@ const AiAgentView = () => {
           <script src="https://unpkg.com/@telnyx/ai-agent-widget${versionSuffix}"></script>
         </head>
         <body>
-          <telnyx-ai-agent agent-id="${agentId}"${trickleIceAttr}${environmentAttr}${conversationIdAttr}${customAttrsStr}></telnyx-ai-agent>
+          <telnyx-ai-agent ${attrString}></telnyx-ai-agent>
           <script>${eventListenersScript}</script>
         </body>
       </html>
@@ -215,18 +274,14 @@ const AiAgentView = () => {
   const onSubmit = (values: FormValues) => {
     if (!values.agentId.trim()) return;
 
-    setCurrentAgentId(values.agentId.trim());
-    setCurrentTrickleIce(values.trickleIce);
-    setCurrentVersion(values.version);
-    setCurrentConversationId(values.conversationId.trim());
+    setCurrentFormValues({ ...values, agentId: values.agentId.trim() });
     setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
   };
 
   const handleReset = () => {
     setIsEmbedded(false);
-    setCurrentAgentId(null);
-    setCurrentConversationId('');
+    setCurrentFormValues(null);
     setCurrentCustomAttrs([]);
     setEvents([]);
     setCustomAttributes([]);
@@ -264,111 +319,343 @@ const AiAgentView = () => {
           <CardHeader>
             <CardTitle>AI Agent Widget</CardTitle>
             <CardDescription>
-              Enter the Agent ID to embed the Telnyx AI Agent widget.
+              Configure and embed the Telnyx AI Agent widget with all available
+              options.
             </CardDescription>
           </CardHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="agentId"
-                  rules={{ required: 'Agent ID is required' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Agent ID</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-agent-id"
-                          placeholder="assistant-xxx"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="version"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Widget Version</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={versionsLoading}
-                      >
+              <CardContent className="space-y-6">
+                {/* ── Core Settings ── */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Core
+                  </h3>
+                  <FormField
+                    control={form.control}
+                    name="agentId"
+                    rules={{ required: 'Agent ID is required' }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Agent ID</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-widget-version">
-                            <SelectValue
-                              placeholder={
-                                versionsLoading
-                                  ? 'Loading versions...'
-                                  : 'Select a version'
-                              }
-                            />
-                          </SelectTrigger>
+                          <Input
+                            data-testid="input-agent-id"
+                            placeholder="assistant-xxx"
+                            {...field}
+                          />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="next">Next</SelectItem>
-                          <SelectItem value="latest">Latest</SelectItem>
-                          {availableVersions.map((version) => (
-                            <SelectItem key={version} value={version}>
-                              {version.includes('-')
-                                ? `${version} 🧪`
-                                : version}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="trickleIce"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel>Trickle ICE</FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Enable trickle ICE for faster connection establishment
-                        </p>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          data-testid="switch-trickle-ice"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="conversationId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Conversation ID</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-conversation-id"
-                          placeholder="Optional — rejoin an existing conversation"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="versionId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Version ID</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-version-id"
+                            placeholder="Optional — agent version to use"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="version"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Widget Version</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          disabled={versionsLoading}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-widget-version">
+                              <SelectValue
+                                placeholder={
+                                  versionsLoading
+                                    ? 'Loading versions...'
+                                    : 'Select a version'
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="next">Next</SelectItem>
+                            <SelectItem value="latest">Latest</SelectItem>
+                            {availableVersions.map((version) => (
+                              <SelectItem key={version} value={version}>
+                                {version.includes('-')
+                                  ? `${version} 🧪`
+                                  : version}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="conversationId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Conversation ID</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-conversation-id"
+                            placeholder="Optional — rejoin an existing conversation"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                {/* Custom Attributes */}
+                {/* ── Feature Toggles ── */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Features
+                  </h3>
+                  <FormField
+                    control={form.control}
+                    name="trickleIce"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Trickle ICE</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Faster connection establishment
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-trickle-ice"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="chatMode"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Chat Mode</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Text-only — no microphone or audio playback
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-chat-mode"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="debug"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Debug</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Enable debug logging in the widget
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-debug"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="showUserPerceivedLatency"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Show User-Perceived Latency</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Display latency overlay in the widget
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-show-latency"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="showGreetingLatency"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Show Greeting Latency</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Display greeting latency in the widget
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-show-greeting-latency"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* ── Call Options ── */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Call Options
+                  </h3>
+                  <FormField
+                    control={form.control}
+                    name="callDestinationNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Destination Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-call-destination-number"
+                            placeholder="Optional — override destination"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="callCallerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Caller Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-call-caller-name"
+                            placeholder="Optional"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="callCallerNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Caller Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-call-caller-number"
+                            placeholder="Optional"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="callCustomHeaders"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custom Headers (JSON)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            data-testid="input-call-custom-headers"
+                            placeholder='[{"name":"X-Header","value":"val"}]'
+                            className="font-mono text-xs"
+                            rows={2}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="callAudio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Audio Constraints (JSON)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            data-testid="input-call-audio"
+                            placeholder='{"echoCancellation":true,"noiseSuppression":true}'
+                            className="font-mono text-xs"
+                            rows={2}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vad"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>VAD Options (JSON)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            data-testid="input-vad"
+                            placeholder='{"type":"silero","threshold":0.5}'
+                            className="font-mono text-xs"
+                            rows={2}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* ── Custom Attributes ── */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <FormLabel>Custom Attributes</FormLabel>
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Custom Attributes
+                    </h3>
                     <Button
                       type="button"
                       variant="outline"
@@ -444,8 +731,8 @@ const AiAgentView = () => {
           <div>
             <CardTitle>Widget Preview</CardTitle>
             <CardDescription>
-              {isEmbedded
-                ? `Showing agent: ${currentAgentId}`
+              {isEmbedded && currentFormValues
+                ? `Showing agent: ${currentFormValues.agentId}`
                 : 'Enter an Agent ID and click Embed to see the widget.'}
             </CardDescription>
           </div>
@@ -466,16 +753,13 @@ const AiAgentView = () => {
             }`}
             data-testid="widget-container"
           >
-            {isEmbedded && currentAgentId ? (
+            {isEmbedded && currentFormValues ? (
               <iframe
-                key={`${currentAgentId}-${currentTrickleIce}-${currentVersion}-${currentConversationId}-${JSON.stringify(currentCustomAttrs)}`}
-                srcDoc={getIframeSrcDoc(
-                  currentAgentId,
-                  currentVersion,
-                  currentTrickleIce,
-                  currentConversationId,
-                  currentCustomAttrs,
-                )}
+                key={JSON.stringify({
+                  ...currentFormValues,
+                  customAttrs: currentCustomAttrs,
+                })}
+                srcDoc={getIframeSrcDoc(currentFormValues, currentCustomAttrs)}
                 className="h-full w-full border-0"
                 allow="microphone; camera; autoplay"
                 title="AI Agent Widget"
