@@ -4,7 +4,7 @@ export interface IClientOptionsDemo extends IClientOptions {
   rtcIp?: string;
   rtcPort?: number;
   trickleIce?: boolean;
-  singleInterfaceIce?: boolean;
+  singleInterfaceIce?: boolean; // TODO: remove when singleInterfaceIce is added to IClientOptions in @telnyx/webrtc
   useCanaryRtcServer?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
   stunServers?: string[];
