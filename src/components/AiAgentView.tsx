@@ -36,11 +36,22 @@ interface CustomAttribute {
   value: string;
 }
 
+const REGION_OPTIONS = [
+  { value: 'auto', label: 'AUTO' },
+  { value: 'eu', label: 'EU' },
+  { value: 'us-central', label: 'US-CENTRAL' },
+  { value: 'us-east', label: 'US-EAST' },
+  { value: 'us-west', label: 'US-WEST' },
+  { value: 'ca-central', label: 'CA-CENTRAL' },
+  { value: 'apac', label: 'APAC' },
+] as const;
+
 interface FormValues {
   agentId: string;
   version: string;
   versionId: string;
   conversationId: string;
+  region: string;
   // Toggles
   trickleIce: boolean;
   chatMode: boolean;
@@ -89,6 +100,7 @@ const AiAgentView = () => {
       version: 'next',
       versionId: '',
       conversationId: '',
+      region: 'auto',
       trickleIce: false,
       chatMode: false,
       debug: false,
@@ -193,6 +205,10 @@ const AiAgentView = () => {
       attrs.push('show-user-perceived-latency="true"');
     if (values.showGreetingLatency)
       attrs.push('show-greeting-latency="true"');
+
+    // Region (skip if auto — let the SDK use default)
+    if (values.region && values.region !== 'auto')
+      attrs.push(`region="${values.region}"`);
 
     // Environment
     if (IS_DEV_ENV) attrs.push('environment="development"');
@@ -417,6 +433,33 @@ const AiAgentView = () => {
                             {...field}
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Region</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-region">
+                              <SelectValue placeholder="Select region" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {REGION_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
