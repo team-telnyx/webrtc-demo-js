@@ -4,6 +4,7 @@ export interface IClientOptionsDemo extends IClientOptions {
   rtcIp?: string;
   rtcPort?: number;
   trickleIce?: boolean;
+  singleInterfaceIce?: boolean;
   useCanaryRtcServer?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
   stunServers?: string[];
