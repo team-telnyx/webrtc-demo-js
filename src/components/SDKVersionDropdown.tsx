@@ -118,7 +118,7 @@ const SDKVersionDropdown = () => {
   };
   return (
     <Select value={version} onValueChange={onVersionChange}>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-[180px]" data-testid="select-sdk-version">
         <SelectValue placeholder="SDK version" />
       </SelectTrigger>
       <SelectContent>

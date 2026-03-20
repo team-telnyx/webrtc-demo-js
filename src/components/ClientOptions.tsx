@@ -463,6 +463,7 @@ const ClientOptions = () => {
                   </div>
                   <FormControl>
                     <Switch
+                      data-testid="switch-single-interface-ice"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
@@ -509,6 +510,7 @@ const ClientOptions = () => {
                   </div>
                   <FormControl>
                     <Switch
+                      data-testid="switch-force-relay-candidate"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
