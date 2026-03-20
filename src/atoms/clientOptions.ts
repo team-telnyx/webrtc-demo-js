@@ -12,6 +12,7 @@ const clientOptionsDefault: IClientOptionsDemo = {
   prefetchIceCandidates: false,
   forceRelayCandidate: false,
   trickleIce: false,
+  singleInterfaceIce: false,
   keepConnectionAliveOnSocketClose: false,
   useCanaryRtcServer: false,
   mutedMicOnStart: false,
