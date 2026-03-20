@@ -83,6 +83,7 @@ const ClientOptions = () => {
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
       trickleIce: false,
+      singleInterfaceIce: false,
       useCanaryRtcServer: false,
       ringbackFile: '/ringback.mp3',
       ringtoneFile: '/ringtone.mp3',
@@ -438,6 +439,30 @@ const ClientOptions = () => {
                   <FormControl>
                     <Switch
                       data-testid="switch-trickle-ice"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="singleInterfaceIce"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Single Interface ICE</FormLabel>
+                    <FormDescription>
+                      Restrict ICE candidates to a single network interface.
+                      Prevents DTLS mismatch on multi-NIC clients.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
