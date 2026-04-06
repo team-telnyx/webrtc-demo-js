@@ -1,10 +1,11 @@
 import { useClientOptions } from '@/atoms/clientOptions';
-import { useConnectionStatus, useSource } from '@/atoms/telnyxClient';
+import { useConnectionStatus, useLocalDc, useLocalRegion } from '@/atoms/telnyxClient';
 import { clsx } from 'clsx';
 
 const ConnectionStatus = () => {
   const [status] = useConnectionStatus();
-  const [source] = useSource();
+  const [localDc] = useLocalDc();
+  const [localRegion] = useLocalRegion();
   const [clientOptions] = useClientOptions();
   return (
     <h3
@@ -15,7 +16,8 @@ const ConnectionStatus = () => {
       })}
     >
       {status} ({status === 'registered' && clientOptions.login})
-      {source && <span className='ml-2 text-sm opacity-75'>region: {source}</span>}
+      {localRegion && <span className='ml-2 text-sm opacity-75'>region: {localRegion}</span>}
+      {localDc && <span className='ml-2 text-sm opacity-75'>dc: {localDc}</span>}
     </h3>
   );
 };

@@ -1,6 +1,7 @@
 import {
   useConnectionStatus,
-  useSource,
+  useLocalDc,
+  useLocalRegion,
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
 import { useEffect } from 'react';
@@ -16,7 +17,8 @@ type SocketMessage = {
 const ClientAutoConnect = () => {
   const [client] = useTelnyxSdkClient();
   const [, setStatus] = useConnectionStatus();
-  const [, setSource] = useSource();
+  const [, setLocalDc] = useLocalDc();
+  const [, setLocalRegion] = useLocalRegion();
 
   useEffect(() => {
     if (!client) {
@@ -26,10 +28,16 @@ const ClientAutoConnect = () => {
     const onReady = () => {
       setStatus('registered');
 
-      // @ts-expect-error `source` is added in @telnyx/webrtc PR #583 but not yet in published types
-      const source: string | undefined = client.source;
-      if (source) {
-        setSource(source);
+      // @ts-expect-error `localDc` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const localDc: string | undefined = client.localDc;
+      if (localDc) {
+        setLocalDc(localDc);
+      }
+
+      // @ts-expect-error `localRegion` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const localRegion: string | undefined = client.localRegion;
+      if (localRegion) {
+        setLocalRegion(localRegion);
       }
     };
     const onSocketMessage = (message: SocketMessage) => {
@@ -48,7 +56,8 @@ const ClientAutoConnect = () => {
 
     const onSocketClose = () => {
       setStatus('disconnected');
-      setSource(null);
+      setLocalDc(null);
+      setLocalRegion(null);
     };
     const onSocketError = () => {
       setStatus('disconnected');
@@ -66,7 +75,8 @@ const ClientAutoConnect = () => {
 
     return () => {
       setStatus('disconnected');
-      setSource(null);
+      setLocalDc(null);
+      setLocalRegion(null);
       client.disconnect();
       client.off('telnyx.ready', onReady);
       client.off('telnyx.error', onError);
@@ -75,7 +85,7 @@ const ClientAutoConnect = () => {
       client.off('telnyx.socket.close', onSocketClose);
       client.off('telnyx.socket.error', onSocketError);
     };
-  }, [client, setStatus, setSource]);
+  }, [client, setStatus, setLocalDc, setLocalRegion]);
   return null;
 };
 
