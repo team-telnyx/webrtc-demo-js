@@ -1,7 +1,7 @@
 import {
   useConnectionStatus,
-  useLocalDc,
-  useLocalRegion,
+  useConnectedRegion,
+  useDc,
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
 import { useEffect } from 'react';
@@ -17,8 +17,8 @@ type SocketMessage = {
 const ClientAutoConnect = () => {
   const [client] = useTelnyxSdkClient();
   const [, setStatus] = useConnectionStatus();
-  const [, setLocalDc] = useLocalDc();
-  const [, setLocalRegion] = useLocalRegion();
+  const [, setDc] = useDc();
+  const [, setConnectedRegion] = useConnectedRegion();
 
   useEffect(() => {
     if (!client) {
@@ -28,16 +28,16 @@ const ClientAutoConnect = () => {
     const onReady = () => {
       setStatus('registered');
 
-      // @ts-expect-error `localDc` is added in @telnyx/webrtc PR #583 but not yet in published types
-      const localDc: string | undefined = client.localDc;
-      if (localDc) {
-        setLocalDc(localDc);
+      // @ts-expect-error `dc` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const dc: string | undefined = client.dc;
+      if (dc) {
+        setDc(dc);
       }
 
-      // @ts-expect-error `localRegion` is added in @telnyx/webrtc PR #583 but not yet in published types
-      const localRegion: string | undefined = client.localRegion;
-      if (localRegion) {
-        setLocalRegion(localRegion);
+      // @ts-expect-error `region` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const region: string | undefined = client.region;
+      if (region) {
+        setConnectedRegion(region);
       }
     };
     const onSocketMessage = (message: SocketMessage) => {
@@ -56,8 +56,8 @@ const ClientAutoConnect = () => {
 
     const onSocketClose = () => {
       setStatus('disconnected');
-      setLocalDc(null);
-      setLocalRegion(null);
+      setDc(null);
+      setConnectedRegion(null);
     };
     const onSocketError = () => {
       setStatus('disconnected');
@@ -75,8 +75,8 @@ const ClientAutoConnect = () => {
 
     return () => {
       setStatus('disconnected');
-      setLocalDc(null);
-      setLocalRegion(null);
+      setDc(null);
+      setConnectedRegion(null);
       client.disconnect();
       client.off('telnyx.ready', onReady);
       client.off('telnyx.error', onError);
@@ -85,7 +85,7 @@ const ClientAutoConnect = () => {
       client.off('telnyx.socket.close', onSocketClose);
       client.off('telnyx.socket.error', onSocketError);
     };
-  }, [client, setStatus, setLocalDc, setLocalRegion]);
+  }, [client, setStatus, setDc, setConnectedRegion]);
   return null;
 };
 
