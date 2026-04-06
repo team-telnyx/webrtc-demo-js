@@ -1,4 +1,8 @@
-import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import {
+  useConnectionStatus,
+  useSource,
+  useTelnyxSdkClient,
+} from '@/atoms/telnyxClient';
 import { useEffect } from 'react';
 
 type SocketMessage = {
@@ -12,6 +16,7 @@ type SocketMessage = {
 const ClientAutoConnect = () => {
   const [client] = useTelnyxSdkClient();
   const [, setStatus] = useConnectionStatus();
+  const [, setSource] = useSource();
 
   useEffect(() => {
     if (!client) {
@@ -20,6 +25,12 @@ const ClientAutoConnect = () => {
 
     const onReady = () => {
       setStatus('registered');
+
+      // @ts-expect-error `source` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const source: string | undefined = client.source;
+      if (source) {
+        setSource(source);
+      }
     };
     const onSocketMessage = (message: SocketMessage) => {
       if (['REGISTER', 'REGED'].includes(message.result?.params.state)) {
@@ -37,6 +48,7 @@ const ClientAutoConnect = () => {
 
     const onSocketClose = () => {
       setStatus('disconnected');
+      setSource(null);
     };
     const onSocketError = () => {
       setStatus('disconnected');
@@ -54,6 +66,7 @@ const ClientAutoConnect = () => {
 
     return () => {
       setStatus('disconnected');
+      setSource(null);
       client.disconnect();
       client.off('telnyx.ready', onReady);
       client.off('telnyx.error', onError);
@@ -62,7 +75,7 @@ const ClientAutoConnect = () => {
       client.off('telnyx.socket.close', onSocketClose);
       client.off('telnyx.socket.error', onSocketError);
     };
-  }, [client, setStatus]);
+  }, [client, setStatus, setSource]);
   return null;
 };
 

@@ -1,9 +1,10 @@
 import { useClientOptions } from '@/atoms/clientOptions';
-import { useConnectionStatus } from '@/atoms/telnyxClient';
+import { useConnectionStatus, useSource } from '@/atoms/telnyxClient';
 import { clsx } from 'clsx';
 
 const ConnectionStatus = () => {
   const [status] = useConnectionStatus();
+  const [source] = useSource();
   const [clientOptions] = useClientOptions();
   return (
     <h3
@@ -14,6 +15,7 @@ const ConnectionStatus = () => {
       })}
     >
       {status} ({status === 'registered' && clientOptions.login})
+      {source && <span className='ml-2 text-sm opacity-75'>region: {source}</span>}
     </h3>
   );
 };
