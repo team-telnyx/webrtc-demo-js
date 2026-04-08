@@ -90,6 +90,11 @@ const AiAgentView = () => {
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
   const [events, setEvents] = useState<AiAgentEvent[]>([]);
+  const [widgetConnectionInfo, setWidgetConnectionInfo] = useState<{
+    dc: string | null;
+    region: string | null;
+    callReportId: string | null;
+  } | null>(null);
   const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>(
     [],
   );
@@ -128,6 +133,28 @@ const AiAgentView = () => {
         timestamp: new Date(),
       };
       setEvents((prev) => [newEvent, ...prev]);
+
+      // Capture widget-side connection metadata from `agent.connected`.
+      // The widget emits `{ dc, region, callReportId }` in the event detail
+      // (see telnyx-voice-ai-widget#NN). On SDK versions that pre-date
+      // team-telnyx/webrtc#583 the dc/region fields will be null; the
+      // callReportId works with any version that ships BaseSession.callReportId.
+      if (event.data.eventType === 'agent.connected') {
+        const detail = event.data.detail as
+          | {
+              dc?: string | null;
+              region?: string | null;
+              callReportId?: string | null;
+            }
+          | undefined;
+        setWidgetConnectionInfo({
+          dc: detail?.dc ?? null,
+          region: detail?.region ?? null,
+          callReportId: detail?.callReportId ?? null,
+        });
+      } else if (event.data.eventType === 'agent.disconnected') {
+        setWidgetConnectionInfo(null);
+      }
     }
   }, []);
 
@@ -300,6 +327,7 @@ const AiAgentView = () => {
     setCurrentFormValues(null);
     setCurrentCustomAttrs([]);
     setEvents([]);
+    setWidgetConnectionInfo(null);
     setCustomAttributes([]);
     form.reset();
   };
@@ -771,13 +799,41 @@ const AiAgentView = () => {
 
       <Card className="flex flex-col min-h-[600px]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div>
+          <div className="flex-1 min-w-0">
             <CardTitle>Widget Preview</CardTitle>
             <CardDescription>
               {isEmbedded && currentFormValues
                 ? `Showing agent: ${currentFormValues.agentId}`
                 : 'Enter an Agent ID and click Embed to see the widget.'}
             </CardDescription>
+            {widgetConnectionInfo &&
+              (widgetConnectionInfo.region ||
+                widgetConnectionInfo.dc ||
+                widgetConnectionInfo.callReportId) && (
+                <div
+                  className="mt-1 text-xs text-muted-foreground space-x-2 truncate"
+                  data-testid="widget-connection-info"
+                >
+                  {widgetConnectionInfo.region && (
+                    <span data-testid="widget-connection-info-region">
+                      region: {widgetConnectionInfo.region}
+                    </span>
+                  )}
+                  {widgetConnectionInfo.dc && (
+                    <span data-testid="widget-connection-info-dc">
+                      dc: {widgetConnectionInfo.dc}
+                    </span>
+                  )}
+                  {widgetConnectionInfo.callReportId && (
+                    <span
+                      className="font-mono"
+                      data-testid="widget-connection-info-call-report-id"
+                    >
+                      call_report_id: {widgetConnectionInfo.callReportId}
+                    </span>
+                  )}
+                </div>
+              )}
           </div>
           <Button
             type="button"
