@@ -26,6 +26,8 @@ const telnyxRTCVersionAtom = atom<TelnyxRTCVersion>({
 });
 
 const connectionStatusAtom = atom<string>('disconnected');
+const dcAtom = atom<string | null>(null);
+const connectedRegionAtom = atom<string | null>(null);
 
 // SIP.js Simple User status atoms
 export type WsStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
@@ -86,6 +88,8 @@ export const useTelnyxClient = () => useAtom(clientAtom);
 export const useTelnyxSdkClient = () => useAtom(telnyxRtcClientAtom);
 export const useSipJsClient = () => useAtom(telnyxSipJsClientAtom);
 export const useConnectionStatus = () => useAtom(connectionStatusAtom);
+export const useDc = () => useAtom(dcAtom);
+export const useConnectedRegion = () => useAtom(connectedRegionAtom);
 export const useTelnyxSDKVersion = () => useAtom(telnyxRTCVersionAtom);
 
 // SIP.js Simple User status hooks

@@ -1,4 +1,9 @@
-import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import {
+  useConnectionStatus,
+  useConnectedRegion,
+  useDc,
+  useTelnyxSdkClient,
+} from '@/atoms/telnyxClient';
 import { useEffect } from 'react';
 
 type SocketMessage = {
@@ -12,6 +17,8 @@ type SocketMessage = {
 const ClientAutoConnect = () => {
   const [client] = useTelnyxSdkClient();
   const [, setStatus] = useConnectionStatus();
+  const [, setDc] = useDc();
+  const [, setConnectedRegion] = useConnectedRegion();
 
   useEffect(() => {
     if (!client) {
@@ -20,6 +27,18 @@ const ClientAutoConnect = () => {
 
     const onReady = () => {
       setStatus('registered');
+
+      // @ts-expect-error `dc` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const dc: string | undefined = client.dc;
+      if (dc) {
+        setDc(dc);
+      }
+
+      // @ts-expect-error `region` is added in @telnyx/webrtc PR #583 but not yet in published types
+      const region: string | undefined = client.region;
+      if (region) {
+        setConnectedRegion(region);
+      }
     };
     const onSocketMessage = (message: SocketMessage) => {
       if (['REGISTER', 'REGED'].includes(message.result?.params.state)) {
@@ -37,6 +56,8 @@ const ClientAutoConnect = () => {
 
     const onSocketClose = () => {
       setStatus('disconnected');
+      setDc(null);
+      setConnectedRegion(null);
     };
     const onSocketError = () => {
       setStatus('disconnected');
@@ -54,6 +75,8 @@ const ClientAutoConnect = () => {
 
     return () => {
       setStatus('disconnected');
+      setDc(null);
+      setConnectedRegion(null);
       client.disconnect();
       client.off('telnyx.ready', onReady);
       client.off('telnyx.error', onError);
@@ -62,7 +85,7 @@ const ClientAutoConnect = () => {
       client.off('telnyx.socket.close', onSocketClose);
       client.off('telnyx.socket.error', onSocketError);
     };
-  }, [client, setStatus]);
+  }, [client, setStatus, setDc, setConnectedRegion]);
   return null;
 };
 
