@@ -4,6 +4,10 @@ import {
   useDc,
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
+import {
+  ITelnyxErrorEvent,
+  isMediaRecoveryErrorEvent,
+} from '@telnyx/webrtc';
 import { useEffect } from 'react';
 
 type SocketMessage = {
@@ -46,8 +50,18 @@ const ClientAutoConnect = () => {
       }
     };
 
-    const onError = () => {
-      setStatus('disconnected');
+    const onError = (event: ITelnyxErrorEvent) => {
+      if (isMediaRecoveryErrorEvent(event)) {
+        return;
+      }
+
+      if (
+        [45001, 45002, 45003, 45004, 46001, 46002, 46003, 48001].includes(
+          event.error.code,
+        )
+      ) {
+        setStatus('disconnected');
+      }
     };
 
     const onSocketOpen = () => {
