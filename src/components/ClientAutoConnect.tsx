@@ -5,9 +5,8 @@ import {
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
 import {
-  ITelnyxErrorEvent,
-  ITelnyxWarningEvent,
-  SdkErrorCode,
+  type ITelnyxErrorEvent,
+  type ITelnyxWarningEvent,
   SwEvent,
   TELNYX_ERROR_CODES,
 } from '@telnyx/webrtc';
@@ -22,7 +21,7 @@ type SocketMessage = {
   };
 };
 
-const DISCONNECT_ERROR_CODES = new Set<SdkErrorCode>([
+const DISCONNECT_ERROR_CODES = new Set<ITelnyxErrorEvent['error']['code']>([
   TELNYX_ERROR_CODES.NETWORK_OFFLINE,
   TELNYX_ERROR_CODES.GATEWAY_FAILED,
   TELNYX_ERROR_CODES.WEBSOCKET_CONNECTION_FAILED,
