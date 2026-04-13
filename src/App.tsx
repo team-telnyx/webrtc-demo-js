@@ -6,7 +6,7 @@ import ClientAutoConnect from './components/ClientAutoConnect';
 import ClientOptions from './components/ClientOptions';
 import Dialer from './components/Dialer';
 import PageLayout from './components/PageLayout';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
 import WebSocketMessageLog from './components/WebSocketMessageLog';
 import { ThemeProvider } from './providers/ThemeProvider';
