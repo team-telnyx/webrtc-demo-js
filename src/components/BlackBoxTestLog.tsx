@@ -1,9 +1,5 @@
 import { useLog } from '@/atoms/log';
 import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
-import {
-  ITelnyxErrorEvent,
-  isMediaRecoveryErrorEvent,
-} from '@telnyx/webrtc';
 import { useEffect } from 'react';
 import { Button } from './ui/button';
 import {
@@ -24,8 +20,8 @@ const BlackBoxTestLog = () => {
       pushLog({ id: 'registered', description: 'registered' });
     };
 
-    const onCloseOrError = (event?: ITelnyxErrorEvent) => {
-      if (event && isMediaRecoveryErrorEvent(event)) {
+    const onCloseOrError = (event?: { recoverable?: boolean }) => {
+      if (event?.recoverable) {
         return;
       }
 

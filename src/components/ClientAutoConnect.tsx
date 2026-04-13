@@ -5,8 +5,14 @@ import {
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
 import {
-  ITelnyxErrorEvent,
-  isMediaRecoveryErrorEvent,
+  AUTHENTICATION_REQUIRED,
+  GATEWAY_FAILED,
+  INVALID_CREDENTIALS,
+  LOGIN_FAILED,
+  NETWORK_OFFLINE,
+  RECONNECTION_EXHAUSTED,
+  WEBSOCKET_CONNECTION_FAILED,
+  WEBSOCKET_ERROR,
 } from '@telnyx/webrtc';
 import { useEffect } from 'react';
 
@@ -50,16 +56,23 @@ const ClientAutoConnect = () => {
       }
     };
 
-    const onError = (event: ITelnyxErrorEvent) => {
-      if (isMediaRecoveryErrorEvent(event)) {
+    const onError = (event: { error: { code: number }; recoverable?: boolean }) => {
+      if (event.recoverable) {
         return;
       }
 
-      if (
-        [45001, 45002, 45003, 45004, 46001, 46002, 46003, 48001].includes(
-          event.error.code,
-        )
-      ) {
+      const disconnectCodes = [
+        WEBSOCKET_CONNECTION_FAILED,
+        WEBSOCKET_ERROR,
+        RECONNECTION_EXHAUSTED,
+        GATEWAY_FAILED,
+        LOGIN_FAILED,
+        INVALID_CREDENTIALS,
+        AUTHENTICATION_REQUIRED,
+        NETWORK_OFFLINE,
+      ];
+
+      if (disconnectCodes.includes(event.error.code)) {
         setStatus('disconnected');
       }
     };

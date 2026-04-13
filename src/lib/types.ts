@@ -10,6 +10,11 @@ export interface IClientOptionsDemo extends IClientOptions {
   stunServers?: string[];
   turnServers?: TurnServer;
   video?: boolean;
+  mediaPermissionsRecovery?: {
+    enabled: boolean;
+    timeout: number;
+    onSuccess?: () => void;
+  };
 }
 
 export type TurnServer = {

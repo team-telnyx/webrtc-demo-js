@@ -2,12 +2,7 @@ import { useLog } from '@/atoms/log';
 import { useMediaRecovery } from '@/atoms/mediaRecovery';
 import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { useTelnyxNotification } from '@/atoms/telnyxNotification';
-import {
-  INotification,
-  ITelnyxErrorEvent,
-  TelnyxRTC,
-  isMediaRecoveryErrorEvent,
-} from '@telnyx/webrtc';
+import { INotification, ITelnyxError, TelnyxRTC } from '@telnyx/webrtc';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -61,18 +56,27 @@ const CallNotificationHandler = () => {
       setNotification(notification);
     };
 
-    const onError = (event: ITelnyxErrorEvent) => {
-      if (isMediaRecoveryErrorEvent(event)) {
+    const onError = (event: {
+      error: ITelnyxError;
+      callId?: string;
+      sessionId?: string;
+      recoverable?: boolean;
+      retryDeadline?: number;
+      resume?: () => void;
+      reject?: () => void;
+    }) => {
+      if (event.recoverable) {
+        const callId = event.callId ?? '';
         pushLog({
-          id: `mediaRecovery-${event.callId}`,
+          id: `mediaRecovery-${callId}`,
           description: `Media recovery requested: ${event.error.message}`,
         });
         setMediaRecovery({
-          callId: event.callId,
+          callId,
           error: event.error,
-          retryDeadline: event.retryDeadline,
-          resume: event.resume,
-          reject: event.reject,
+          retryDeadline: event.retryDeadline ?? 0,
+          resume: event.resume ?? (() => {}),
+          reject: event.reject ?? (() => {}),
           status: 'waiting',
         });
         return;

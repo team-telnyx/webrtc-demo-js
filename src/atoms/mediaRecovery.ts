@@ -1,9 +1,9 @@
-import { ITelnyxMediaError } from '@telnyx/webrtc';
+import { ITelnyxError } from '@telnyx/webrtc';
 import { atom, useAtom } from 'jotai';
 
 export type MediaRecoveryState = {
   callId: string;
-  error: ITelnyxMediaError;
+  error: ITelnyxError;
   retryDeadline: number;
   resume: () => void;
   reject: () => void;
