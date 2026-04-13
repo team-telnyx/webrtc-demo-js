@@ -4,7 +4,13 @@ import {
   useDc,
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
+import {
+  ITelnyxErrorEvent,
+  ITelnyxWarningEvent,
+  SwEvent,
+} from '@telnyx/webrtc';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 type SocketMessage = {
   result: {
@@ -12,6 +18,30 @@ type SocketMessage = {
       state: string;
     };
   };
+};
+
+const getEventContext = (sessionId: string, callId?: string) =>
+  callId ? `Call: ${callId}` : `Session: ${sessionId}`;
+
+const getErrorDescription = (event: ITelnyxErrorEvent) => {
+  const details = [
+    event.error.description,
+    `Code: ${event.error.code}`,
+    getEventContext(event.sessionId, event.callId),
+    event.recoverable ? 'The SDK may recover automatically.' : undefined,
+  ];
+
+  return details.filter(Boolean).join(' ');
+};
+
+const getWarningDescription = (event: ITelnyxWarningEvent) => {
+  const details = [
+    event.warning.description,
+    `Code: ${event.warning.code}`,
+    getEventContext(event.sessionId, event.callId),
+  ];
+
+  return details.filter(Boolean).join(' ');
 };
 
 const ClientAutoConnect = () => {
@@ -46,8 +76,21 @@ const ClientAutoConnect = () => {
       }
     };
 
-    const onError = () => {
+    const onError = (event: ITelnyxErrorEvent) => {
+      console.error('[Telnyx SDK] Error:', event.error);
       setStatus('disconnected');
+      toast.error(event.error.message, {
+        id: `telnyx-error-${event.error.code}-${event.callId ?? event.sessionId}`,
+        description: getErrorDescription(event),
+      });
+    };
+
+    const onWarning = (event: ITelnyxWarningEvent) => {
+      console.warn('[Telnyx SDK] Warning:', event.warning);
+      toast.warning(event.warning.message, {
+        id: `telnyx-warning-${event.warning.code}-${event.callId ?? event.sessionId}`,
+        description: getWarningDescription(event),
+      });
     };
 
     const onSocketOpen = () => {
@@ -60,30 +103,45 @@ const ClientAutoConnect = () => {
       setConnectedRegion(null);
     };
     const onSocketError = () => {
+      console.error('[Telnyx SDK] Socket error');
       setStatus('disconnected');
+      toast.error('WebSocket connection error', {
+        id: 'telnyx-socket-error',
+        description:
+          'The Telnyx client connection failed. Check your network and credentials, then reconnect.',
+      });
     };
 
+    client.on(SwEvent.Ready, onReady);
+    client.on(SwEvent.Error, onError);
+    client.on(SwEvent.Warning, onWarning);
+    client.on(SwEvent.SocketMessage, onSocketMessage);
+    client.on(SwEvent.SocketOpen, onSocketOpen);
+    client.on(SwEvent.SocketClose, onSocketClose);
+    client.on(SwEvent.SocketError, onSocketError);
+
     setStatus('connecting');
-    client.connect().then(() => {
-      client.on('telnyx.ready', onReady);
-      client.on('telnyx.error', onError);
-      client.on('telnyx.socket.message', onSocketMessage);
-      client.on('telnyx.socket.open', onSocketOpen);
-      client.on('telnyx.socket.close', onSocketClose);
-      client.on('telnyx.socket.error', onSocketError);
+    client.connect().catch((error: unknown) => {
+      console.error('[Telnyx SDK] Failed to connect:', error);
+      setStatus('disconnected');
+      toast.error('Failed to connect to Telnyx', {
+        id: 'telnyx-connect-error',
+        description: error instanceof Error ? error.message : String(error),
+      });
     });
 
     return () => {
       setStatus('disconnected');
       setDc(null);
       setConnectedRegion(null);
+      client.on(SwEvent.Ready, onReady);
+      client.on(SwEvent.Error, onError);
+      client.on(SwEvent.Warning, onWarning);
+      client.on(SwEvent.SocketMessage, onSocketMessage);
+      client.on(SwEvent.SocketOpen, onSocketOpen);
+      client.on(SwEvent.SocketClose, onSocketClose);
+      client.on(SwEvent.SocketError, onSocketError);
       client.disconnect();
-      client.off('telnyx.ready', onReady);
-      client.off('telnyx.error', onError);
-      client.off('telnyx.socket.message', onSocketMessage);
-      client.off('telnyx.socket.open', onSocketOpen);
-      client.off('telnyx.socket.close', onSocketClose);
-      client.off('telnyx.socket.error', onSocketError);
     };
   }, [client, setStatus, setDc, setConnectedRegion]);
   return null;
