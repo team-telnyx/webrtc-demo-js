@@ -7,7 +7,9 @@ import {
 import {
   ITelnyxErrorEvent,
   ITelnyxWarningEvent,
+  SdkErrorCode,
   SwEvent,
+  TELNYX_ERROR_CODES,
 } from '@telnyx/webrtc';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -19,6 +21,14 @@ type SocketMessage = {
     };
   };
 };
+
+const DISCONNECT_ERROR_CODES = new Set<SdkErrorCode>([
+  TELNYX_ERROR_CODES.NETWORK_OFFLINE,
+  TELNYX_ERROR_CODES.GATEWAY_FAILED,
+  TELNYX_ERROR_CODES.WEBSOCKET_CONNECTION_FAILED,
+  TELNYX_ERROR_CODES.WEBSOCKET_ERROR,
+  TELNYX_ERROR_CODES.RECONNECTION_EXHAUSTED,
+]);
 
 const getEventContext = (sessionId: string, callId?: string) =>
   callId ? `Call: ${callId}` : `Session: ${sessionId}`;
@@ -55,6 +65,12 @@ const ClientAutoConnect = () => {
       return;
     }
 
+    const markDisconnected = () => {
+      setStatus('disconnected');
+      setDc(null);
+      setConnectedRegion(null);
+    };
+
     const onReady = () => {
       setStatus('registered');
 
@@ -78,7 +94,9 @@ const ClientAutoConnect = () => {
 
     const onError = (event: ITelnyxErrorEvent) => {
       console.error('[Telnyx SDK] Error:', event.error);
-      setStatus('disconnected');
+      if (DISCONNECT_ERROR_CODES.has(event.error.code)) {
+        markDisconnected();
+      }
       toast.error(event.error.message, {
         id: `telnyx-error-${event.error.code}-${event.callId ?? event.sessionId}`,
         description: getErrorDescription(event),
@@ -98,13 +116,11 @@ const ClientAutoConnect = () => {
     };
 
     const onSocketClose = () => {
-      setStatus('disconnected');
-      setDc(null);
-      setConnectedRegion(null);
+      markDisconnected();
     };
     const onSocketError = () => {
       console.error('[Telnyx SDK] Socket error');
-      setStatus('disconnected');
+      markDisconnected();
       toast.error('WebSocket connection error', {
         id: 'telnyx-socket-error',
         description:
@@ -123,7 +139,7 @@ const ClientAutoConnect = () => {
     setStatus('connecting');
     client.connect().catch((error: unknown) => {
       console.error('[Telnyx SDK] Failed to connect:', error);
-      setStatus('disconnected');
+      markDisconnected();
       toast.error('Failed to connect to Telnyx', {
         id: 'telnyx-connect-error',
         description: error instanceof Error ? error.message : String(error),
@@ -131,16 +147,14 @@ const ClientAutoConnect = () => {
     });
 
     return () => {
-      setStatus('disconnected');
-      setDc(null);
-      setConnectedRegion(null);
-      client.on(SwEvent.Ready, onReady);
-      client.on(SwEvent.Error, onError);
-      client.on(SwEvent.Warning, onWarning);
-      client.on(SwEvent.SocketMessage, onSocketMessage);
-      client.on(SwEvent.SocketOpen, onSocketOpen);
-      client.on(SwEvent.SocketClose, onSocketClose);
-      client.on(SwEvent.SocketError, onSocketError);
+      markDisconnected();
+      client.off(SwEvent.Ready, onReady);
+      client.off(SwEvent.Error, onError);
+      client.off(SwEvent.Warning, onWarning);
+      client.off(SwEvent.SocketMessage, onSocketMessage);
+      client.off(SwEvent.SocketOpen, onSocketOpen);
+      client.off(SwEvent.SocketClose, onSocketClose);
+      client.off(SwEvent.SocketError, onSocketError);
       client.disconnect();
     };
   }, [client, setStatus, setDc, setConnectedRegion]);
