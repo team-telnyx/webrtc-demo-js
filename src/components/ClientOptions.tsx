@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ExternalLinkIcon } from 'lucide-react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Button } from './ui/button';
 
 import {
@@ -92,19 +92,11 @@ const ClientOptions = () => {
       mutedMicOnStart: false,
       enableCallReports: true,
       video: false,
-      mediaPermissionsRecovery: {
-        enabled: true,
-        timeout: 20000,
-      },
       anonymous_login: {
         target_type: '',
         target_id: '',
       },
     },
-  });
-  const mediaRecoveryEnabled = useWatch({
-    control: form.control,
-    name: 'mediaPermissionsRecovery.enabled',
   });
 
   const setLoginMethod = useCallback(
@@ -120,13 +112,6 @@ const ClientOptions = () => {
   );
 
   const onSubmit = (values: Partial<IClientOptionsDemo>) => {
-    values.mediaPermissionsRecovery = {
-      enabled: Boolean(values.mediaPermissionsRecovery?.enabled),
-      timeout:
-        Number(values.mediaPermissionsRecovery?.timeout) > 0
-          ? Number(values.mediaPermissionsRecovery?.timeout)
-          : 20000,
-    };
     values.iceServers = configureIceServers(
       values.stunServers,
       values.turnServers,
@@ -657,61 +642,6 @@ const ClientOptions = () => {
 
             <FormField
               control={form.control}
-              name="mediaPermissionsRecovery.enabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between mb-4">
-                  <div>
-                    <FormLabel>Media Recovery Flow</FormLabel>
-                    <FormDescription>
-                      Pause inbound call answer on microphone failure and let
-                      the app retry after permission or device changes.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      data-testid="switch-media-recovery"
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {mediaRecoveryEnabled && (
-              <FormField
-                control={form.control}
-                name="mediaPermissionsRecovery.timeout"
-                render={({ field }) => (
-                  <FormItem className="mb-4">
-                    <FormLabel>Media Recovery Timeout (ms)</FormLabel>
-                    <FormControl>
-                      <Input
-                        data-testid="input-media-recovery-timeout"
-                        type="number"
-                        min={1000}
-                        max={25000}
-                        step={1000}
-                        value={field.value ?? 20000}
-                        onChange={(event) => {
-                          const value = Number(event.target.value);
-                          field.onChange(Number.isNaN(value) ? 20000 : value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      How long the SDK should wait for Retry or Reject.
-                      Recommended maximum: 25000 ms.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <FormField
-              control={form.control}
               name="ringbackFile"
               render={({ field }) => (
                 <FormItem className="mb-4">
@@ -801,9 +731,7 @@ const ClientOptions = () => {
                   .login({
                     creds,
                     onSuccess: () => {
-                      toast.success(
-                        'Re-authenticated (socket kept alive)',
-                      );
+                      toast.success('Re-authenticated (socket kept alive)');
                       setConnectionStatus('registered');
                     },
                     onError: (error: unknown) => {

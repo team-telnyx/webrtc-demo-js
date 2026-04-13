@@ -1,20 +1,13 @@
+import { useMediaRecovery } from '@/atoms/mediaRecovery';
 import {
   useConnectionStatus,
   useConnectedRegion,
   useDc,
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
-import {
-  AUTHENTICATION_REQUIRED,
-  GATEWAY_FAILED,
-  INVALID_CREDENTIALS,
-  LOGIN_FAILED,
-  NETWORK_OFFLINE,
-  RECONNECTION_EXHAUSTED,
-  WEBSOCKET_CONNECTION_FAILED,
-  WEBSOCKET_ERROR,
-} from '@telnyx/webrtc';
+import { type ITelnyxErrorEvent } from '@telnyx/webrtc';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 type SocketMessage = {
   result: {
@@ -29,6 +22,7 @@ const ClientAutoConnect = () => {
   const [, setStatus] = useConnectionStatus();
   const [, setDc] = useDc();
   const [, setConnectedRegion] = useConnectedRegion();
+  const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
 
   useEffect(() => {
     if (!client) {
@@ -56,25 +50,24 @@ const ClientAutoConnect = () => {
       }
     };
 
-    const onError = (event: { error: { code: number }; recoverable?: boolean }) => {
+    const onError = (event: ITelnyxErrorEvent) => {
       if (event.recoverable) {
+        setMediaRecovery({
+          callId: event.callId ?? '',
+          error: event.error,
+          retryDeadline: event.retryDeadline ?? 0,
+          resume: event.resume,
+          reject: event.reject,
+        });
         return;
       }
 
-      const disconnectCodes = [
-        WEBSOCKET_CONNECTION_FAILED,
-        WEBSOCKET_ERROR,
-        RECONNECTION_EXHAUSTED,
-        GATEWAY_FAILED,
-        LOGIN_FAILED,
-        INVALID_CREDENTIALS,
-        AUTHENTICATION_REQUIRED,
-        NETWORK_OFFLINE,
-      ];
-
-      if (disconnectCodes.includes(event.error.code)) {
-        setStatus('disconnected');
+      if (mediaRecovery?.callId === event.callId) {
+        setMediaRecovery(null);
+        toast.error(event.error.message);
       }
+
+      setStatus('disconnected');
     };
 
     const onSocketOpen = () => {

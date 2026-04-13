@@ -7,7 +7,6 @@ export type MediaRecoveryState = {
   retryDeadline: number;
   resume: () => void;
   reject: () => void;
-  status: 'waiting' | 'retrying';
 };
 
 const mediaRecoveryAtom = atom<MediaRecoveryState | null>(null);

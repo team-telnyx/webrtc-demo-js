@@ -20,11 +20,7 @@ const BlackBoxTestLog = () => {
       pushLog({ id: 'registered', description: 'registered' });
     };
 
-    const onCloseOrError = (event?: { recoverable?: boolean }) => {
-      if (event?.recoverable) {
-        return;
-      }
-
+    const onCloseOrError = () => {
       pushLog({ id: 'unregistered', description: 'unregistered' });
     };
 

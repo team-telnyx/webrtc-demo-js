@@ -1,5 +1,4 @@
 import { useMediaRecovery } from '@/atoms/mediaRecovery';
-import { useTelnyxNotification } from '@/atoms/telnyxNotification';
 import {
   Dialog,
   DialogContent,
@@ -17,12 +16,12 @@ const MediaRecoveryDialogContent = () => {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const timerId = window.setInterval(() => {
+    const timerId = setInterval(() => {
       setNow(Date.now());
     }, 250);
 
     return () => {
-      window.clearInterval(timerId);
+      clearInterval(timerId);
     };
   }, []);
 
@@ -33,9 +32,7 @@ const MediaRecoveryDialogContent = () => {
   const timeLeftMs = Math.max(0, mediaRecovery.retryDeadline - now);
 
   const onRetry = () => {
-    setMediaRecovery((current) =>
-      current ? { ...current, status: 'retrying' } : current,
-    );
+    setMediaRecovery(null);
     mediaRecovery.resume();
   };
 
@@ -78,21 +75,15 @@ const MediaRecoveryDialogContent = () => {
       )}
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={mediaRecovery.status === 'retrying'}
-          onClick={onReject}
-        >
+        <Button type="button" variant="outline" onClick={onReject}>
           Reject Call
         </Button>
         <Button
           type="button"
           data-testid="btn-media-recovery-retry"
-          disabled={timeLeftMs <= 0 || mediaRecovery.status === 'retrying'}
           onClick={onRetry}
         >
-          {mediaRecovery.status === 'retrying' ? 'Retrying...' : 'Retry'}
+          Retry
         </Button>
       </DialogFooter>
     </>
