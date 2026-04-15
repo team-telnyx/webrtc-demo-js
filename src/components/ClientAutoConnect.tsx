@@ -63,6 +63,10 @@ const ClientAutoConnect = () => {
   const mediaRecoveryRef = useRef(mediaRecovery);
 
   useEffect(() => {
+    mediaRecoveryRef.current = mediaRecovery;
+  }, [mediaRecovery, mediaRecoveryRef]);
+
+  useEffect(() => {
     if (!client) {
       return;
     }
