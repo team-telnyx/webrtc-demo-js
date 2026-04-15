@@ -1,4 +1,4 @@
-import { useMediaRecovery } from '@/atoms/mediaRecovery';
+import { MediaRecoveryState, useMediaRecovery } from '@/atoms/mediaRecovery';
 import {
   Dialog,
   DialogContent,
@@ -11,30 +11,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-const MediaRecoveryDialogContent = () => {
-  const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
+const MediaRecoveryDialogContent = ({
+  mediaRecovery,
+  resetMediaRecovery,
+}: {
+  mediaRecovery: MediaRecoveryState;
+  resetMediaRecovery: () => void;
+}) => {
   const [now, setNow] = useState(() => Date.now());
 
-  const onReject = useCallback(() => {
-    if (!mediaRecovery) return;
-    setMediaRecovery(null);
-    mediaRecovery.reject();
-  }, [mediaRecovery, setMediaRecovery]);
-
   useEffect(() => {
-    if (!mediaRecovery) return;
-
-    const timeLeft = mediaRecovery.retryDeadline - Date.now();
-    if (timeLeft <= 0) {
-      onReject();
-      return;
-    }
-
     const timerId = setInterval(() => {
       const remaining = mediaRecovery.retryDeadline - Date.now();
       if (remaining <= 0) {
         clearInterval(timerId);
-        onReject();
       } else {
         setNow(Date.now());
       }
@@ -43,17 +33,16 @@ const MediaRecoveryDialogContent = () => {
     return () => {
       clearInterval(timerId);
     };
-  }, [mediaRecovery, onReject]);
+  }, [mediaRecovery, setNow]);
 
-  if (!mediaRecovery) {
-    return null;
-  }
-
-  const timeLeftMs = Math.max(0, mediaRecovery.retryDeadline - now);
+  const onReject = () => {
+    mediaRecovery.reject();
+    resetMediaRecovery();
+  };
 
   const onRetry = () => {
-    setMediaRecovery(null);
     mediaRecovery.resume();
+    resetMediaRecovery();
   };
 
   return (
@@ -73,7 +62,8 @@ const MediaRecoveryDialogContent = () => {
         <AlertDescription className="space-y-3 text-slate-100/90">
           <p>{mediaRecovery.error.description}</p>
           <p className="text-amber-100">
-            Time left: {Math.ceil(timeLeftMs / 1000)}s
+            Time left:{' '}
+            {Math.ceil(Math.max(0, mediaRecovery.retryDeadline - now) / 1000)}s
           </p>
         </AlertDescription>
       </Alert>
@@ -106,7 +96,11 @@ const MediaRecoveryDialogContent = () => {
 };
 
 const MediaRecoveryDialog = () => {
-  const [mediaRecovery] = useMediaRecovery();
+  const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
+
+  const resetMediaRecovery = useCallback(() => {
+    setMediaRecovery(null);
+  }, [setMediaRecovery]);
 
   if (!mediaRecovery) {
     return null;
@@ -119,7 +113,11 @@ const MediaRecoveryDialog = () => {
         onEscapeKeyDown={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}
       >
-        <MediaRecoveryDialogContent key={mediaRecovery.callId} />
+        <MediaRecoveryDialogContent
+          key={mediaRecovery.callId}
+          mediaRecovery={mediaRecovery}
+          resetMediaRecovery={resetMediaRecovery}
+        />
       </DialogContent>
     </Dialog>
   );
