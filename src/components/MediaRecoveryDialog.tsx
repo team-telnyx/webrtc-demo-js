@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
@@ -15,15 +15,35 @@ const MediaRecoveryDialogContent = () => {
   const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
   const [now, setNow] = useState(() => Date.now());
 
+  const onReject = useCallback(() => {
+    if (!mediaRecovery) return;
+    setMediaRecovery(null);
+    mediaRecovery.reject();
+  }, [mediaRecovery, setMediaRecovery]);
+
   useEffect(() => {
+    if (!mediaRecovery) return;
+
+    const timeLeft = mediaRecovery.retryDeadline - Date.now();
+    if (timeLeft <= 0) {
+      onReject();
+      return;
+    }
+
     const timerId = setInterval(() => {
-      setNow(Date.now());
+      const remaining = mediaRecovery.retryDeadline - Date.now();
+      if (remaining <= 0) {
+        clearInterval(timerId);
+        onReject();
+      } else {
+        setNow(Date.now());
+      }
     }, 250);
 
     return () => {
       clearInterval(timerId);
     };
-  }, []);
+  }, [mediaRecovery, onReject]);
 
   if (!mediaRecovery) {
     return null;
@@ -34,11 +54,6 @@ const MediaRecoveryDialogContent = () => {
   const onRetry = () => {
     setMediaRecovery(null);
     mediaRecovery.resume();
-  };
-
-  const onReject = () => {
-    setMediaRecovery(null);
-    mediaRecovery.reject();
   };
 
   return (

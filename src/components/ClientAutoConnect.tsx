@@ -6,7 +6,7 @@ import {
   useTelnyxSdkClient,
 } from '@/atoms/telnyxClient';
 import { type ITelnyxErrorEvent } from '@telnyx/webrtc';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 type SocketMessage = {
@@ -23,6 +23,8 @@ const ClientAutoConnect = () => {
   const [, setDc] = useDc();
   const [, setConnectedRegion] = useConnectedRegion();
   const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
+  const mediaRecoveryRef = useRef(mediaRecovery);
+  mediaRecoveryRef.current = mediaRecovery;
 
   useEffect(() => {
     if (!client) {
@@ -62,7 +64,7 @@ const ClientAutoConnect = () => {
         return;
       }
 
-      if (mediaRecovery?.callId === event.callId) {
+      if (mediaRecoveryRef.current?.callId === event.callId) {
         setMediaRecovery(null);
         toast.error(event.error.message);
       }
@@ -105,7 +107,7 @@ const ClientAutoConnect = () => {
       client.off('telnyx.socket.close', onSocketClose);
       client.off('telnyx.socket.error', onSocketError);
     };
-  }, [client, setStatus, setDc, setConnectedRegion]);
+  }, [client, setStatus, setDc, setConnectedRegion, setMediaRecovery]);
   return null;
 };
 
