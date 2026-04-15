@@ -17,6 +17,10 @@ const clientOptionsDefault: IClientOptionsDemo = {
   useCanaryRtcServer: false,
   mutedMicOnStart: false,
   enableCallReports: true,
+  mediaPermissionsRecovery: {
+    enabled: true,
+    timeout: 20000,
+  },
 };
 
 const profilesAtom = atomWithStorage<IClientOptionsDemo[]>(

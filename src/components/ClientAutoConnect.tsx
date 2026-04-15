@@ -1,3 +1,4 @@
+import { useMediaRecovery } from '@/atoms/mediaRecovery';
 import {
   useConnectionStatus,
   useConnectedRegion,
@@ -10,7 +11,7 @@ import {
   SwEvent,
   TELNYX_ERROR_CODES,
 } from '@telnyx/webrtc';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 type SocketMessage = {
@@ -58,6 +59,12 @@ const ClientAutoConnect = () => {
   const [, setStatus] = useConnectionStatus();
   const [, setDc] = useDc();
   const [, setConnectedRegion] = useConnectedRegion();
+  const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
+  const mediaRecoveryRef = useRef(mediaRecovery);
+
+  useEffect(() => {
+    mediaRecoveryRef.current = mediaRecovery;
+  }, [mediaRecovery, mediaRecoveryRef]);
 
   useEffect(() => {
     if (!client) {
@@ -93,9 +100,25 @@ const ClientAutoConnect = () => {
 
     const onError = (event: ITelnyxErrorEvent) => {
       console.error('[Telnyx SDK] Error:', event.error);
+      if (event.recoverable) {
+        setMediaRecovery({
+          callId: event.callId ?? '',
+          error: event.error,
+          retryDeadline: event.retryDeadline ?? 0,
+          resume: event.resume,
+          reject: event.reject,
+        });
+        return;
+      }
+
+      if (mediaRecoveryRef.current?.callId === event.callId) {
+        setMediaRecovery(null);
+      }
+
       if (DISCONNECT_ERROR_CODES.has(event.error.code)) {
         markDisconnected();
       }
+
       toast.error(event.error.message, {
         id: `telnyx-error-${event.error.code}-${event.callId ?? event.sessionId}`,
         description: getErrorDescription(event),
@@ -156,7 +179,7 @@ const ClientAutoConnect = () => {
       client.off(SwEvent.SocketError, onSocketError);
       client.disconnect();
     };
-  }, [client, setStatus, setDc, setConnectedRegion]);
+  }, [client, setStatus, setDc, setConnectedRegion, setMediaRecovery]);
   return null;
 };
 

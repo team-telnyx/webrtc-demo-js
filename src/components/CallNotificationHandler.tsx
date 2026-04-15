@@ -2,15 +2,12 @@ import { useLog } from '@/atoms/log';
 import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { useTelnyxNotification } from '@/atoms/telnyxNotification';
 import { INotification, TelnyxRTC } from '@telnyx/webrtc';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 const CallNotificationHandler = () => {
   const [client] = useTelnyxSdkClient();
-  const [_notification, setNotification] = useTelnyxNotification();
+  const [, setNotification] = useTelnyxNotification();
   const { pushLog } = useLog();
-
-  const activeNotificationRef = useRef(_notification);
-  activeNotificationRef.current = _notification;
 
   useEffect(() => {
     if (!client) return;

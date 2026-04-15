@@ -18,6 +18,7 @@ import SimpleUserCallOptions from './components/SimpleUserCallOptions';
 import SipJsCallNotificationHandler from './components/SipJsCallNotificationHandler';
 import { SipJsCall } from './components/SipJsCall';
 import AiAgentView from './components/AiAgentView';
+import MediaRecoveryDialog from './components/MediaRecoveryDialog';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -67,6 +68,7 @@ const App = () => {
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
+            <MediaRecoveryDialog />
           </>
         ) : (
           <SipJsCallNotificationHandler />

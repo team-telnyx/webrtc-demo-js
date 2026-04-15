@@ -731,9 +731,7 @@ const ClientOptions = () => {
                   .login({
                     creds,
                     onSuccess: () => {
-                      toast.success(
-                        'Re-authenticated (socket kept alive)',
-                      );
+                      toast.success('Re-authenticated (socket kept alive)');
                       setConnectionStatus('registered');
                     },
                     onError: (error: unknown) => {
