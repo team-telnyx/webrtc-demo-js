@@ -58,6 +58,7 @@ interface FormValues {
   debug: boolean;
   showUserPerceivedLatency: boolean;
   showGreetingLatency: boolean;
+  skipLastVoiceSdkId: boolean;
   // Call options
   callDestinationNumber: string;
   callCallerNumber: string;
@@ -106,6 +107,7 @@ const AiAgentView = () => {
       debug: false,
       showUserPerceivedLatency: false,
       showGreetingLatency: false,
+      skipLastVoiceSdkId: true,
       callDestinationNumber: '',
       callCallerNumber: '',
       callCallerName: '',
@@ -205,6 +207,9 @@ const AiAgentView = () => {
       attrs.push('show-user-perceived-latency="true"');
     if (values.showGreetingLatency)
       attrs.push('show-greeting-latency="true"');
+    // skip-last-voice-sdk-id defaults to true in the widget, but we
+    // explicitly emit it when the user opts out so the demo is transparent.
+    if (!values.skipLastVoiceSdkId) attrs.push('skip-last-voice-sdk-id="false"');
 
     // Region (skip if auto — let the SDK use default)
     if (values.region && values.region !== 'auto')
@@ -569,6 +574,27 @@ const AiAgentView = () => {
                         <FormControl>
                           <Switch
                             data-testid="switch-show-greeting-latency"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="skipLastVoiceSdkId"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Skip Last Voice SDK ID</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            On reconnect, route to a fresh b2bua-rtc instance
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-skip-last-voice-sdk-id"
                             checked={field.value}
                             onCheckedChange={field.onChange}
                           />
