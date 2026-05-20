@@ -3,6 +3,7 @@ import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { useTelnyxNotification } from '@/atoms/telnyxNotification';
 import { INotification, TelnyxRTC } from '@telnyx/webrtc';
 import { useEffect } from 'react';
+import { getActiveReproController } from '@/lib/activeReproController';
 
 const CallNotificationHandler = () => {
   const [client] = useTelnyxSdkClient();
@@ -39,6 +40,36 @@ const CallNotificationHandler = () => {
             notification.call.cause ? ` (${notification.call.cause})` : ''
           }`,
         });
+      }
+
+      // --- LocalStream Repro: trigger audio on call.active ---
+      if (status === 'active') {
+        const controller = getActiveReproController();
+        if (controller) {
+          pushLog({
+            id: 'reproCallActive',
+            description: `[Repro] call.active — triggering onCallActive()`,
+          });
+          controller.onCallActive();
+        }
+      }
+
+      // --- LocalStream Repro: cleanup on call end ---
+      if (
+        status === 'done' ||
+        status === 'hangup' ||
+        status === 'destroy' ||
+        status === 'fail'
+      ) {
+        const controller = getActiveReproController();
+        if (controller) {
+          pushLog({
+            id: 'reproCallEnd',
+            description: `[Repro] call ended (${status}) — stopping + cleanup`,
+          });
+          controller.stop(`call.${status}`);
+          controller.cleanup();
+        }
       }
 
       setNotification(notification);

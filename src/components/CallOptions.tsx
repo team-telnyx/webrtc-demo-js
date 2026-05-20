@@ -17,13 +17,38 @@ import {
 import { ExternalLinkIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
-import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import {
+  ICallOptions,
+  useCallOptions,
+  LocalStreamReproSource,
+  LocalStreamReproStartMode,
+} from '@/atoms/callOptions';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useCallback } from 'react';
 import CodecSelectInput from './CodecInput';
 import CustomHeadersInput from './CustomHeadersInput';
 import { useClientOptions } from '@/atoms/clientOptions';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const startModeLabels: Record<LocalStreamReproStartMode, string> = {
+  'before-call': 'Before call (audio running before newCall/answer)',
+  'on-active': 'On active (immediately when call.active)',
+  'after-active-delay': 'After active + delay',
+  manual: 'Manual (user clicks Start in active call)',
+};
+
+const sourceLabels: Record<LocalStreamReproSource, string> = {
+  sine: 'Sine wave',
+  noise: 'White noise',
+};
 
 const CallOptions = () => {
   const [clientOptions] = useClientOptions();
@@ -54,6 +79,9 @@ const CallOptions = () => {
       [setCallOptions],
     ),
   );
+
+  const repro = callOptions.localStreamRepro;
+
   return (
     <Card>
       <CardHeader>
@@ -163,6 +191,211 @@ const CallOptions = () => {
                 </FormItem>
               )}
             />
+
+            {/* ── LocalStream Repro Section ── */}
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="text-sm font-semibold">LocalStream Repro</h3>
+              <p className="text-xs text-muted-foreground">
+                Inject synthetic audio via SDK{"'"}s <code>localStream</code>{' '}
+                option to reproduce startup distortion.
+              </p>
+
+              {/* Enable */}
+              <FormField
+                control={form.control}
+                name="localStreamRepro.enabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between">
+                    <div>
+                      <FormLabel>Enable LocalStream Repro</FormLabel>
+                      <FormDescription>
+                        Pass synthetic MediaStream as localStream
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {repro?.enabled && (
+                <>
+                  {/* Audio source */}
+                  <FormField
+                    control={form.control}
+                    name="localStreamRepro.source"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Audio source</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value ?? 'sine'}
+                            onValueChange={(v) =>
+                              field.onChange(v as LocalStreamReproSource)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(sourceLabels).map(
+                                ([key, label]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {label}
+                                  </SelectItem>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Start mode */}
+                  <FormField
+                    control={form.control}
+                    name="localStreamRepro.startMode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start mode</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value ?? 'on-active'}
+                            onValueChange={(v) =>
+                              field.onChange(v as LocalStreamReproStartMode)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(startModeLabels).map(
+                                ([key, label]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {label}
+                                  </SelectItem>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Delay after active */}
+                  {repro.startMode === 'after-active-delay' && (
+                    <FormField
+                      control={form.control}
+                      name="localStreamRepro.delayMs"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Delay after active, ms</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={100}
+                              value={field.value ?? 3000}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value) || 0)
+                              }
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Milliseconds after call.active before audio starts
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {/* Frequency (sine only) */}
+                  {repro.source === 'sine' && (
+                    <FormField
+                      control={form.control}
+                      name="localStreamRepro.frequencyHz"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Frequency Hz</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={20}
+                              max={20000}
+                              value={field.value ?? 440}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value) || 440)
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {/* Volume */}
+                  <FormField
+                    control={form.control}
+                    name="localStreamRepro.volume"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Volume (0–1)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={field.value ?? 0.25}
+                            onChange={(e) => {
+                              let v = Number(e.target.value);
+                              if (v < 0) v = 0;
+                              if (v > 1) v = 1;
+                              field.onChange(v);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Log timing */}
+                  <FormField
+                    control={form.control}
+                    name="localStreamRepro.logTiming"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between">
+                        <div>
+                          <FormLabel>Log detailed timing</FormLabel>
+                          <FormDescription>
+                            Console + WS log timestamps for start/stop/delay
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value ?? true}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </div>
           </form>
         </Form>
       </CardContent>
