@@ -65,9 +65,20 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   };
 
   const disconnectSocket = () => {
-    if (client) {
-      client.disconnect();
+    if (!client) {
+      return;
     }
+
+    const socketDisconnect = (
+      client as unknown as { socketDisconnect?: () => void }
+    ).socketDisconnect;
+
+    if (typeof socketDisconnect !== 'function') {
+      console.error('Current TelnyxRTC client does not expose socketDisconnect');
+      return;
+    }
+
+    socketDisconnect.call(client);
     setConnectionStatus('disconnected');
   };
 
@@ -106,12 +117,34 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             Talking To {call.options.remoteCallerNumber} (
             {call.options.remoteCallerName})
           </DialogDescription>
-          {call.options.keepConnectionAliveOnSocketClose && (
-            <CheckRegistrationButton showIndicator />
-          )}
         </DialogHeader>
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto space-y-4">
+          {call.options.keepConnectionAliveOnSocketClose && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">Connection recovery</p>
+                  <p className="text-xs text-muted-foreground">
+                    Drop only the WebSocket to test reattach/reconnect without
+                    hanging up the active call.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CheckRegistrationButton showIndicator />
+                  <Button
+                    data-testid="btn-disconnect-socket"
+                    size="sm"
+                    variant={'outline'}
+                    disabled={!client || connectionStatus === 'disconnected'}
+                    onClick={disconnectSocket}
+                  >
+                    Drop Socket
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {audioInDevices.length > 0 && (
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-start justify-between gap-3">
@@ -223,17 +256,6 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             onClick={() => call.hold()}
           >
             Hold
-          </Button>
-
-          <Button
-            data-testid="btn-disconnect-socket"
-            size="lg"
-            variant={'outline'}
-            className="w-full"
-            disabled={connectionStatus === 'disconnected'}
-            onClick={disconnectSocket}
-          >
-            Disconnect Socket
           </Button>
 
           <Button
