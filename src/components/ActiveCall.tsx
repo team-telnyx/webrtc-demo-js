@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { useDevices } from '@/hooks/useDevices';
+import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import VideoPlayer from './VideoPlayer';
 
 type Props = {
@@ -34,6 +35,8 @@ type Props = {
 
 const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const devices = useDevices();
+  const [client] = useTelnyxSdkClient();
+  const [connectionStatus, setConnectionStatus] = useConnectionStatus();
   const [isMuted, setIsMuted] = useState<boolean>(call.isAudioMuted);
   const [selectedAudioInputId, setSelectedAudioInputId] = useState<string>('');
   const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
@@ -59,6 +62,13 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
     } catch (error) {
       console.error('Failed to switch audio input', error);
     }
+  };
+
+  const disconnectSocket = () => {
+    if (client) {
+      client.disconnect();
+    }
+    setConnectionStatus('disconnected');
   };
 
   useEffect(() => {
@@ -213,6 +223,17 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             onClick={() => call.hold()}
           >
             Hold
+          </Button>
+
+          <Button
+            data-testid="btn-disconnect-socket"
+            size="lg"
+            variant={'outline'}
+            className="w-full"
+            disabled={connectionStatus === 'disconnected'}
+            onClick={disconnectSocket}
+          >
+            Disconnect Socket
           </Button>
 
           <Button
