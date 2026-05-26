@@ -14,6 +14,7 @@ const clientOptionsDefault: IClientOptionsDemo = {
   trickleIce: false,
   singleInterfaceIce: false,
   keepConnectionAliveOnSocketClose: false,
+  hangupOnBeforeUnload: true,
   useCanaryRtcServer: false,
   mutedMicOnStart: false,
   enableCallReports: true,

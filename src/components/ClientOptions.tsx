@@ -84,6 +84,7 @@ const ClientOptions = () => {
       forceRelayCandidate: false,
       trickleIce: false,
       singleInterfaceIce: false,
+      hangupOnBeforeUnload: true,
       useCanaryRtcServer: false,
       ringbackFile: '/ringback.mp3',
       ringtoneFile: '/ringtone.mp3',
@@ -536,6 +537,32 @@ const ClientOptions = () => {
                   <FormControl>
                     <Switch
                       checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="hangupOnBeforeUnload"
+              render={({ field }) => (
+                <FormItem className="flex items-center mb-4 justify-between">
+                  <div>
+                    <FormLabel>Hang up on Before Unload</FormLabel>
+                    <FormDescription>
+                      Send a best-effort BYE when the page refreshes, closes, or
+                      navigates away. Disable this when testing app-managed page
+                      lifecycle handling.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      data-testid="switch-hangup-on-before-unload"
+                      checked={field.value ?? true}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
