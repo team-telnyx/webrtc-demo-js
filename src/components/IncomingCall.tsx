@@ -1,4 +1,4 @@
-import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import { useCallOptions } from '@/atoms/callOptions';
 import { buildLocalStreamRepro } from '@/lib/localStreamRepro';
 import {
   setActiveReproController,
@@ -27,19 +27,23 @@ const IncomingCall = ({ call }: Props) => {
       setActiveReproController(null);
     }
 
-    // Build SDK call options — strip demo-only localStreamRepro
-    const { localStreamRepro, ...sdkCallOpts } = callOptions;
-
     // Build localStream repro if enabled
+    // NOTE: answer() only accepts { customHeaders, video } — it does NOT
+    // forward localStream from params. We must set it directly on
+    // call.options before answering so the SDK Peer picks it up.
+    const { localStreamRepro } = callOptions;
     if (localStreamRepro?.enabled) {
       const controller = buildLocalStreamRepro(localStreamRepro);
       setActiveReproController(controller);
-
-      // Inject the synthetic stream as SDK localStream
-      (sdkCallOpts as ICallOptions).localStream = controller.stream;
+      call.options.localStream = controller.stream;
     }
 
-    call.answer(sdkCallOpts);
+    // Pass only SDK-supported answer params (customHeaders, video)
+    const answerParams = {
+      customHeaders: callOptions.customHeaders,
+      video: callOptions.video,
+    };
+    call.answer(answerParams);
   };
 
   return (
