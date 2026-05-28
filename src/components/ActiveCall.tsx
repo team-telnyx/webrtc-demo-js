@@ -43,6 +43,9 @@ const statusColors: Record<ReproStatus, string> = {
 
 const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const devices = useDevices();
+  const audioInDevices = useMemo(() => {
+    return devices.filter((device) => device.kind === 'audioinput');
+  }, [devices]);
   const [isMuted, setIsMuted] = useState<boolean>(call.isAudioMuted);
   const [selectedAudioInputId, setSelectedAudioInputId] = useState<string>('');
   const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
