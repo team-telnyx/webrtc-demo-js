@@ -5,27 +5,11 @@ export interface CustomHeader {
   value: string;
 }
 
-// --- LocalStream Repro types (demo-only, not passed to SDK) ---
-
-export type LocalStreamReproSource = 'sine' | 'noise';
-
-export type LocalStreamReproStartMode =
-  | 'before-call'
-  | 'on-active'
-  | 'after-active-delay'
-  | 'manual';
-
-export interface LocalStreamReproOptions {
+export interface AudioStartupReproOptions {
   enabled: boolean;
-  source: LocalStreamReproSource;
-  startMode: LocalStreamReproStartMode;
-  delayMs: number;
   frequencyHz: number;
-  volume: number;
-  logTiming: boolean;
+  gain: number;
 }
-
-// --- End LocalStream Repro types ---
 
 export interface ICallOptions {
   destinationNumber: string;
@@ -37,6 +21,7 @@ export interface ICallOptions {
   clientState?: string;
   iceServers?: RTCIceServer[];
   useStereo?: boolean;
+  video?: boolean;
   customHeaders?: CustomHeader[];
   debug?: boolean;
   debugOutput?: 'socket' | 'file';
@@ -44,20 +29,21 @@ export interface ICallOptions {
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
-  /** SDK option — synthetic MediaStream to send as local audio */
-  localStream?: MediaStream;
-  /** Demo-only config — controls when/how repro audio starts. NOT passed to SDK. */
-  localStreamRepro?: LocalStreamReproOptions;
+  /**
+   * SDK startup-audio repro option from team-telnyx/webrtc
+   * feat/audio-startup-repro-harness.
+   *
+   * The SDK replaces outbound microphone audio with a deterministic sine tone
+   * that starts immediately when the sender track is created. This is for
+   * investigation only.
+   */
+  audioStartupRepro?: AudioStartupReproOptions;
 }
 
-const defaultLocalStreamRepro: LocalStreamReproOptions = {
+const defaultAudioStartupRepro: AudioStartupReproOptions = {
   enabled: false,
-  source: 'sine',
-  startMode: 'on-active',
-  delayMs: 3000,
   frequencyHz: 440,
-  volume: 0.25,
-  logTiming: true,
+  gain: 0.2,
 };
 
 const callOptionsAtom = atom({
@@ -70,7 +56,7 @@ const callOptionsAtom = atom({
   telnyxLegId: undefined,
   telnyxSessionId: undefined,
   useStereo: false,
-  localStreamRepro: { ...defaultLocalStreamRepro },
+  audioStartupRepro: { ...defaultAudioStartupRepro },
 } as ICallOptions);
 
 export const useCallOptions = () => useAtom(callOptionsAtom);

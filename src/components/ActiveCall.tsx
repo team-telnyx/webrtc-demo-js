@@ -26,19 +26,10 @@ import {
 } from './ui/select';
 import { useDevices } from '@/hooks/useDevices';
 import VideoPlayer from './VideoPlayer';
-import { getActiveReproController } from '@/lib/activeReproController';
-import { ReproStatus } from '@/lib/localStreamRepro';
 
 type Props = {
   call: Call;
   title?: string;
-};
-
-const statusColors: Record<ReproStatus, string> = {
-  armed: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  audible: 'bg-green-100 text-green-800 border-green-300',
-  stopped: 'bg-gray-100 text-gray-800 border-gray-300',
-  failed: 'bg-red-100 text-red-800 border-red-300',
 };
 
 const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
@@ -51,22 +42,6 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
     call.isAudioMuted,
   );
-  const [reproStatus, setReproStatus] = useState<ReproStatus | 'disabled'>(
-    'disabled',
-  );
-
-  // Subscribe to repro controller status changes
-  useEffect(() => {
-    const controller = getActiveReproController();
-    if (!controller) {
-      setReproStatus('disabled');
-      return;
-    }
-
-    setReproStatus(controller.getStatus());
-    const unsub = controller.onStatusChange((s) => setReproStatus(s));
-    return unsub;
-  }, [call]);
 
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {
@@ -104,8 +79,6 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
     setSelectedAudioInputId(initialDeviceId);
   }, [call, audioInDevices, selectedAudioInputId]);
 
-  const reproController = getActiveReproController();
-
   return (
     <Dialog
       open
@@ -128,42 +101,6 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
         </DialogHeader>
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto space-y-4">
-          {/* ── Repro Status Block ── */}
-          {reproStatus !== 'disabled' && reproController && (
-            <div className="rounded-lg border p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">LocalStream Repro</p>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded border font-mono ${
-                    reproStatus in statusColors
-                      ? statusColors[reproStatus as ReproStatus]
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {reproStatus}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="default"
-                  disabled={reproStatus === 'audible'}
-                  onClick={() => reproController.start('manual – user click')}
-                >
-                  Start repro audio
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={reproStatus !== 'audible'}
-                  onClick={() => reproController.stop('manual – user click')}
-                >
-                  Stop repro audio
-                </Button>
-              </div>
-            </div>
-          )}
-
           {audioInDevices.length > 0 && (
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-start justify-between gap-3">

@@ -15,11 +15,6 @@ import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { DialButton, DialButtonData } from './DialButton';
 import { Input } from './ui/input';
-import { buildLocalStreamRepro } from '@/lib/localStreamRepro';
-import {
-  setActiveReproController,
-  getActiveReproController,
-} from '@/lib/activeReproController';
 
 const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -51,14 +46,6 @@ const Dialer = () => {
     ].includes(notification.call.state);
 
   const onHangupCall = () => {
-    // Clean up repro controller if active
-    const controller = getActiveReproController();
-    if (controller) {
-      controller.stop('hangup');
-      controller.cleanup();
-      setActiveReproController(null);
-    }
-
     if (notification?.call) {
       pushLog({
         id: 'hangingUpCall',
@@ -88,27 +75,19 @@ const Dialer = () => {
       return;
     }
 
-    // Clean up any previous controller
-    const prevController = getActiveReproController();
-    if (prevController) {
-      prevController.cleanup();
-      setActiveReproController(null);
-    }
+    const { audioStartupRepro, ...sdkCallOpts } = callOptions;
+    const sdkOptions: ICallOptions = sdkCallOpts;
 
-    // Build SDK call options — strip demo-only localStreamRepro
-    const { localStreamRepro, ...sdkCallOpts } = callOptions;
-
-    // Build localStream repro if enabled
-    if (localStreamRepro?.enabled) {
-      const controller = buildLocalStreamRepro(localStreamRepro);
-      setActiveReproController(controller);
-
-      // Inject the synthetic stream as SDK localStream
-      (sdkCallOpts as ICallOptions).localStream = controller.stream;
+    if (audioStartupRepro?.enabled) {
+      sdkOptions.audioStartupRepro = {
+        enabled: true,
+        frequencyHz: audioStartupRepro.frequencyHz,
+        gain: audioStartupRepro.gain,
+      };
 
       pushLog({
-        id: 'reproArmed',
-        description: `[Repro] Armed: source=${localStreamRepro.source} startMode=${localStreamRepro.startMode} delay=${localStreamRepro.delayMs}ms vol=${localStreamRepro.volume}`,
+        id: 'audioStartupReproEnabled',
+        description: `[Repro] SDK audioStartupRepro enabled: frequency=${audioStartupRepro.frequencyHz}Hz gain=${audioStartupRepro.gain}. Tone starts immediately when SDK creates sender track.`,
       });
     }
 
@@ -117,7 +96,7 @@ const Dialer = () => {
       description: `Calling: ${callOptions.destinationNumber}`,
     });
 
-    client.newCall(sdkCallOpts);
+    client.newCall(sdkOptions);
   };
 
   const isDialButtonDisabled = useMemo(() => {
