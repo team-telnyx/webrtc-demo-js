@@ -31,6 +31,12 @@ export interface ICallOptions {
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
   /**
+   * Demo-app level repro helper. When enabled, inbound calls are answered as
+   * soon as the incoming call component renders, matching customer apps that
+   * auto-answer instead of waiting for a user click.
+   */
+  autoAnswerInbound?: boolean;
+  /**
    * SDK startup-audio repro option from team-telnyx/webrtc
    * feat/audio-startup-repro-harness.
    *
@@ -58,6 +64,7 @@ const callOptionsAtom = atom({
   telnyxLegId: undefined,
   telnyxSessionId: undefined,
   useStereo: false,
+  autoAnswerInbound: false,
   audioStartupRepro: { ...defaultAudioStartupRepro },
 } as ICallOptions);
 

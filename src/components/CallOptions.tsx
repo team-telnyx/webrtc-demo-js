@@ -39,6 +39,7 @@ const CallOptions = () => {
       preferred_codecs: [],
       debugOutput: 'socket',
       keepConnectionAliveOnSocketClose: false,
+      autoAnswerInbound: false,
       audioStartupRepro: {
         enabled: false,
         frequencyHz: 440,
@@ -179,6 +180,29 @@ const CallOptions = () => {
                 . When enabled, the SDK replaces outbound mic audio with a sine
                 tone. Delay defaults to 0 ms, matching immediate startup.
               </p>
+
+              <FormField
+                control={form.control}
+                name="autoAnswerInbound"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between">
+                    <div>
+                      <FormLabel>Auto-answer inbound calls</FormLabel>
+                      <FormDescription>
+                        Demo-app repro mode: immediately answer inbound calls
+                        with the configured call options and startup tone.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

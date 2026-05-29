@@ -3,6 +3,7 @@ import { Call } from '@telnyx/webrtc';
 import { useRive } from '@rive-app/react-canvas-lite';
 import { Button } from './ui/button';
 import { useLog } from '@/atoms/log';
+import { useCallback, useEffect, useRef } from 'react';
 
 type Props = {
   call: Call;
@@ -15,8 +16,12 @@ const IncomingCall = ({ call }: Props) => {
   });
   const [callOptions] = useCallOptions();
   const { pushLog } = useLog();
+  const answerCalledRef = useRef(false);
 
-  const handleAnswer = () => {
+  const handleAnswer = useCallback(() => {
+    if (answerCalledRef.current) return;
+    answerCalledRef.current = true;
+
     if (callOptions.audioStartupRepro?.enabled) {
       pushLog({
         id: 'audioStartupReproEnabled',
@@ -39,7 +44,19 @@ const IncomingCall = ({ call }: Props) => {
         : {}),
     };
     call.answer(answerParams);
-  };
+  }, [call, callOptions, pushLog]);
+
+  useEffect(() => {
+    if (!callOptions.autoAnswerInbound) return;
+    if (call.direction !== 'inbound') return;
+
+    pushLog({
+      id: 'autoAnswerInbound',
+      description:
+        '[Repro] Auto-answering inbound call from demo app with configured call options.',
+    });
+    handleAnswer();
+  }, [call.direction, callOptions.autoAnswerInbound, handleAnswer, pushLog]);
 
   return (
     <div className="IncomingCallAlert container mx-auto my-4 border rounded p-4">
