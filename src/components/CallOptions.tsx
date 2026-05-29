@@ -43,6 +43,7 @@ const CallOptions = () => {
         enabled: false,
         frequencyHz: 440,
         gain: 0.2,
+        delayMs: 0,
       },
     },
     values: callOptions,
@@ -176,7 +177,7 @@ const CallOptions = () => {
                 Uses the SDK <code>audioStartupRepro</code> option from{' '}
                 <code>team-telnyx/webrtc#feat/audio-startup-repro-harness</code>
                 . When enabled, the SDK replaces outbound mic audio with a sine
-                tone that starts immediately when the sender track is created.
+                tone. Delay defaults to 0 ms, matching immediate startup.
               </p>
 
               <FormField
@@ -252,6 +253,37 @@ const CallOptions = () => {
                         </FormControl>
                         <FormDescription>
                           SDK default is 0.2. Keep low enough to avoid clipping.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="audioStartupRepro.delayMs"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tone delay ms</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={10000}
+                            step={100}
+                            value={field.value ?? 0}
+                            onChange={(e) => {
+                              let v = Number(e.target.value) || 0;
+                              if (v < 0) v = 0;
+                              if (v > 10000) v = 10000;
+                              field.onChange(v);
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          SDK default is 0 ms. Use this to compare immediate
+                          tone against delayed first audio. SDK clamps to
+                          0–10000 ms.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

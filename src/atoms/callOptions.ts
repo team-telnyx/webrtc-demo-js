@@ -9,6 +9,7 @@ export interface AudioStartupReproOptions {
   enabled: boolean;
   frequencyHz: number;
   gain: number;
+  delayMs: number;
 }
 
 export interface ICallOptions {
@@ -44,6 +45,7 @@ const defaultAudioStartupRepro: AudioStartupReproOptions = {
   enabled: false,
   frequencyHz: 440,
   gain: 0.2,
+  delayMs: 0,
 };
 
 const callOptionsAtom = atom({

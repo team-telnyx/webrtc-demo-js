@@ -20,7 +20,7 @@ const IncomingCall = ({ call }: Props) => {
     if (callOptions.audioStartupRepro?.enabled) {
       pushLog({
         id: 'audioStartupReproEnabled',
-        description: `[Repro] SDK audioStartupRepro enabled for inbound answer: frequency=${callOptions.audioStartupRepro.frequencyHz}Hz gain=${callOptions.audioStartupRepro.gain}. Tone starts as soon as SDK local media is ready, before sender/SDP setup.`,
+        description: `[Repro] SDK audioStartupRepro enabled for inbound answer: frequency=${callOptions.audioStartupRepro.frequencyHz}Hz gain=${callOptions.audioStartupRepro.gain} delayMs=${callOptions.audioStartupRepro.delayMs}. Tone source is created when SDK local media is ready; audible tone starts after delay.`,
       });
     }
 
@@ -33,6 +33,7 @@ const IncomingCall = ({ call }: Props) => {
               enabled: true,
               frequencyHz: callOptions.audioStartupRepro.frequencyHz,
               gain: callOptions.audioStartupRepro.gain,
+              delayMs: callOptions.audioStartupRepro.delayMs,
             },
           }
         : {}),

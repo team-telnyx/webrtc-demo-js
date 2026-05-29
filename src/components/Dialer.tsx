@@ -83,11 +83,12 @@ const Dialer = () => {
         enabled: true,
         frequencyHz: audioStartupRepro.frequencyHz,
         gain: audioStartupRepro.gain,
+        delayMs: audioStartupRepro.delayMs,
       };
 
       pushLog({
         id: 'audioStartupReproEnabled',
-        description: `[Repro] SDK audioStartupRepro enabled: frequency=${audioStartupRepro.frequencyHz}Hz gain=${audioStartupRepro.gain}. Tone starts as soon as SDK local media is ready, before sender/SDP setup.`,
+        description: `[Repro] SDK audioStartupRepro enabled: frequency=${audioStartupRepro.frequencyHz}Hz gain=${audioStartupRepro.gain} delayMs=${audioStartupRepro.delayMs}. Tone source is created when SDK local media is ready; audible tone starts after delay.`,
       });
     }
 
