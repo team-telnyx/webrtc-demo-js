@@ -1,4 +1,4 @@
-import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import { useCallOptions } from '@/atoms/callOptions';
 import { Call } from '@telnyx/webrtc';
 import { useRive } from '@rive-app/react-canvas-lite';
 import { Button } from './ui/button';
@@ -18,26 +18,24 @@ const IncomingCall = ({ call }: Props) => {
 
   const handleAnswer = () => {
     if (callOptions.audioStartupRepro?.enabled) {
-      // answer() only accepts { customHeaders, video }; set the SDK repro
-      // option directly on call.options before answer() so Peer.init() sees it.
-      // eslint-disable-next-line react-hooks/immutability -- SDK answer() does not accept this option; Peer.init() reads call.options.
-      (call.options as ICallOptions).audioStartupRepro = {
-        enabled: true,
-        frequencyHz: callOptions.audioStartupRepro.frequencyHz,
-        gain: callOptions.audioStartupRepro.gain,
-      };
-
       pushLog({
         id: 'audioStartupReproEnabled',
         description: `[Repro] SDK audioStartupRepro enabled for inbound answer: frequency=${callOptions.audioStartupRepro.frequencyHz}Hz gain=${callOptions.audioStartupRepro.gain}. Tone starts as soon as SDK local media is ready, before sender/SDP setup.`,
       });
-    } else {
-      delete (call.options as ICallOptions).audioStartupRepro;
     }
 
     const answerParams = {
       customHeaders: callOptions.customHeaders,
       video: callOptions.video,
+      ...(callOptions.audioStartupRepro?.enabled
+        ? {
+            audioStartupRepro: {
+              enabled: true,
+              frequencyHz: callOptions.audioStartupRepro.frequencyHz,
+              gain: callOptions.audioStartupRepro.gain,
+            },
+          }
+        : {}),
     };
     call.answer(answerParams);
   };
