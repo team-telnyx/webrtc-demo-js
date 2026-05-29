@@ -29,7 +29,7 @@ const IncomingCall = ({ call }: Props) => {
 
       pushLog({
         id: 'audioStartupReproEnabled',
-        description: `[Repro] SDK audioStartupRepro enabled for inbound answer: frequency=${callOptions.audioStartupRepro.frequencyHz}Hz gain=${callOptions.audioStartupRepro.gain}. Tone starts immediately when SDK creates sender track.`,
+        description: `[Repro] SDK audioStartupRepro enabled for inbound answer: frequency=${callOptions.audioStartupRepro.frequencyHz}Hz gain=${callOptions.audioStartupRepro.gain}. Tone starts as soon as SDK local media is ready, before sender/SDP setup.`,
       });
     } else {
       delete (call.options as ICallOptions).audioStartupRepro;
