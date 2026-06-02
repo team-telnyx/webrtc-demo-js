@@ -34,7 +34,18 @@ const IncomingCall = ({ call }: Props) => {
     let reproController: LocalStreamReproController | null = null;
 
     if (callOptions.localStreamRepro?.enabled) {
-      reproController = buildLocalStreamRepro(callOptions.localStreamRepro);
+      try {
+        reproController = await buildLocalStreamRepro(callOptions.localStreamRepro);
+      } catch (error) {
+        answerCalledRef.current = false;
+        pushLog({
+          id: 'localStreamReproFailed',
+          description: `[Repro] Failed to create localStream repro: ${error instanceof Error ? error.message : String(error)}`,
+        });
+        console.error('[LocalStreamRepro] failed to create localStream', error);
+        return;
+      }
+
       reproControllerRef.current = reproController;
 
       (call as CallWithLocalStreamRepro).__localStreamReproController =

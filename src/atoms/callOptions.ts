@@ -5,7 +5,7 @@ export interface CustomHeader {
   value: string;
 }
 
-export type LocalStreamReproSource = 'sine' | 'noise';
+export type LocalStreamReproSource = 'sine' | 'noise' | 'recording';
 export type LocalStreamReproStartMode = 'after-answer' | 'after-answer-delay';
 
 export interface LocalStreamReproOptions {
@@ -15,6 +15,8 @@ export interface LocalStreamReproOptions {
   delayMs: number;
   frequencyHz: number;
   amplitude: number;
+  recordingUrl?: string;
+  recordingName?: string;
   logTiming: boolean;
 }
 
@@ -57,6 +59,8 @@ const defaultLocalStreamRepro: LocalStreamReproOptions = {
   delayMs: 0,
   frequencyHz: 440,
   amplitude: 1,
+  recordingUrl: undefined,
+  recordingName: undefined,
   logTiming: true,
 };
 

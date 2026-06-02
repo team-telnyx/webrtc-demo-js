@@ -24,10 +24,20 @@ const getAudioContext = (): AudioContext => {
   return new AudioContextCtor();
 };
 
-const buildLoopingBuffer = (
+const buildLoopingBuffer = async (
   audioCtx: AudioContext,
   options: LocalStreamReproOptions,
-): AudioBuffer => {
+): Promise<AudioBuffer> => {
+  if (options.source === 'recording') {
+    if (!options.recordingUrl) {
+      throw new Error('Recorded audio source selected without an audio file');
+    }
+
+    const response = await fetch(options.recordingUrl);
+    const encodedAudio = await response.arrayBuffer();
+    return audioCtx.decodeAudioData(encodedAudio);
+  }
+
   const frameCount = audioCtx.sampleRate;
   const buffer = audioCtx.createBuffer(1, frameCount, audioCtx.sampleRate);
   const channel = buffer.getChannelData(0);
@@ -57,9 +67,9 @@ const buildLoopingBuffer = (
  * There is no GainNode/ramp. The buffer starts with immediate non-silent audio,
  * and the delayed mode is only for A/B confirmation that initial silence helps.
  */
-export function buildLocalStreamRepro(
+export async function buildLocalStreamRepro(
   options: LocalStreamReproOptions,
-): LocalStreamReproController {
+): Promise<LocalStreamReproController> {
   const log = (...args: unknown[]) => {
     if (options.logTiming) {
       console.log('[LocalStreamRepro]', ...args);
@@ -73,7 +83,7 @@ export function buildLocalStreamRepro(
   const audioCtx = getAudioContext();
   const destination = audioCtx.createMediaStreamDestination();
   const sourceNode = audioCtx.createBufferSource();
-  sourceNode.buffer = buildLoopingBuffer(audioCtx, options);
+  sourceNode.buffer = await buildLoopingBuffer(audioCtx, options);
   sourceNode.loop = true;
   sourceNode.connect(destination);
 
@@ -174,6 +184,8 @@ export function buildLocalStreamRepro(
     source: options.source,
     frequencyHz: options.source === 'sine' ? options.frequencyHz : undefined,
     amplitude: options.amplitude,
+    recordingName:
+      options.source === 'recording' ? options.recordingName : undefined,
     startMode: options.startMode,
     delayMs: options.delayMs,
   });

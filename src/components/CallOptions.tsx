@@ -53,6 +53,8 @@ const CallOptions = () => {
         delayMs: 0,
         frequencyHz: 440,
         amplitude: 1,
+        recordingUrl: undefined,
+        recordingName: undefined,
         logTiming: true,
       },
     },
@@ -257,6 +259,9 @@ const CallOptions = () => {
                             <SelectContent>
                               <SelectItem value="sine">Sine tone</SelectItem>
                               <SelectItem value="noise">White noise</SelectItem>
+                              <SelectItem value="recording">
+                                Recorded audio file
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
@@ -268,6 +273,62 @@ const CallOptions = () => {
                       </FormItem>
                     )}
                   />
+
+                  {repro.source === 'recording' && (
+                    <FormField
+                      control={form.control}
+                      name="localStreamRepro.recordingName"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel>Recorded audio file</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              accept="audio/*"
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (!file) return;
+
+                                const previousUrl = form.getValues(
+                                  'localStreamRepro.recordingUrl',
+                                );
+                                if (previousUrl) {
+                                  URL.revokeObjectURL(previousUrl);
+                                }
+
+                                const recordingUrl = URL.createObjectURL(file);
+                                form.setValue(
+                                  'localStreamRepro.recordingUrl',
+                                  recordingUrl,
+                                  { shouldDirty: true },
+                                );
+                                form.setValue(
+                                  'localStreamRepro.recordingName',
+                                  file.name,
+                                  { shouldDirty: true },
+                                );
+                                setCallOptions({
+                                  ...form.getValues(),
+                                  localStreamRepro: {
+                                    ...form.getValues().localStreamRepro,
+                                    recordingUrl,
+                                    recordingName: file.name,
+                                  },
+                                } as ICallOptions);
+                              }}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            The demo decodes this file into a looping
+                            AudioBufferSourceNode and sends it via
+                            call.options.localStream. Selected:{' '}
+                            {repro.recordingName || 'none'}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
