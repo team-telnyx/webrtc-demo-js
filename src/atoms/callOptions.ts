@@ -5,11 +5,17 @@ export interface CustomHeader {
   value: string;
 }
 
-export interface AudioStartupReproOptions {
+export type LocalStreamReproSource = 'sine' | 'noise';
+export type LocalStreamReproStartMode = 'after-answer' | 'after-answer-delay';
+
+export interface LocalStreamReproOptions {
   enabled: boolean;
-  frequencyHz: number;
-  gain: number;
+  source: LocalStreamReproSource;
+  startMode: LocalStreamReproStartMode;
   delayMs: number;
+  frequencyHz: number;
+  amplitude: number;
+  logTiming: boolean;
 }
 
 export interface ICallOptions {
@@ -37,21 +43,21 @@ export interface ICallOptions {
    */
   autoAnswerInbound?: boolean;
   /**
-   * SDK startup-audio repro option from team-telnyx/webrtc
-   * feat/audio-startup-repro-harness.
-   *
-   * The SDK replaces outbound microphone audio with a deterministic sine tone
-   * that starts immediately when the sender track is created. This is for
-   * investigation only.
+   * Demo-only localStream repro config. This is intentionally not an SDK
+   * option: the demo creates a looping AudioBufferSource stream, assigns it to
+   * call.options.localStream, calls answer(), then starts the source.
    */
-  audioStartupRepro?: AudioStartupReproOptions;
+  localStreamRepro?: LocalStreamReproOptions;
 }
 
-const defaultAudioStartupRepro: AudioStartupReproOptions = {
+const defaultLocalStreamRepro: LocalStreamReproOptions = {
   enabled: false,
-  frequencyHz: 440,
-  gain: 0.2,
+  source: 'sine',
+  startMode: 'after-answer',
   delayMs: 0,
+  frequencyHz: 440,
+  amplitude: 1,
+  logTiming: true,
 };
 
 const callOptionsAtom = atom({
@@ -65,7 +71,7 @@ const callOptionsAtom = atom({
   telnyxSessionId: undefined,
   useStereo: false,
   autoAnswerInbound: false,
-  audioStartupRepro: { ...defaultAudioStartupRepro },
+  localStreamRepro: { ...defaultLocalStreamRepro },
 } as ICallOptions);
 
 export const useCallOptions = () => useAtom(callOptionsAtom);

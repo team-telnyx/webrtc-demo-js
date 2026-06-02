@@ -75,29 +75,16 @@ const Dialer = () => {
       return;
     }
 
-    const { audioStartupRepro, ...sdkCallOpts } = callOptions;
-    const sdkOptions: ICallOptions = sdkCallOpts;
-
-    if (audioStartupRepro?.enabled) {
-      sdkOptions.audioStartupRepro = {
-        enabled: true,
-        frequencyHz: audioStartupRepro.frequencyHz,
-        gain: audioStartupRepro.gain,
-        delayMs: audioStartupRepro.delayMs,
-      };
-
-      pushLog({
-        id: 'audioStartupReproEnabled',
-        description: `[Repro] SDK audioStartupRepro enabled: frequency=${audioStartupRepro.frequencyHz}Hz gain=${audioStartupRepro.gain} delayMs=${audioStartupRepro.delayMs}. Tone source is created when SDK local media is ready; audible tone starts after delay.`,
-      });
-    }
+    const sdkCallOpts = { ...callOptions };
+    delete sdkCallOpts.autoAnswerInbound;
+    delete sdkCallOpts.localStreamRepro;
 
     pushLog({
       id: 'callingDestination',
       description: `Calling: ${callOptions.destinationNumber}`,
     });
 
-    client.newCall(sdkOptions);
+    client.newCall(sdkCallOpts);
   };
 
   const isDialButtonDisabled = useMemo(() => {

@@ -1,3 +1,5 @@
+import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import { useClientOptions } from '@/atoms/clientOptions';
 import {
   Card,
   CardContent,
@@ -14,17 +16,21 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { ExternalLinkIcon } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-
-import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { ExternalLinkIcon } from 'lucide-react';
 import { useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import CodecSelectInput from './CodecInput';
 import CustomHeadersInput from './CustomHeadersInput';
-import { useClientOptions } from '@/atoms/clientOptions';
-import { Switch } from '@/components/ui/switch';
 
 const CallOptions = () => {
   const [clientOptions] = useClientOptions();
@@ -40,11 +46,14 @@ const CallOptions = () => {
       debugOutput: 'socket',
       keepConnectionAliveOnSocketClose: false,
       autoAnswerInbound: false,
-      audioStartupRepro: {
+      localStreamRepro: {
         enabled: false,
-        frequencyHz: 440,
-        gain: 0.2,
+        source: 'sine',
+        startMode: 'after-answer',
         delayMs: 0,
+        frequencyHz: 440,
+        amplitude: 1,
+        logTiming: true,
       },
     },
     values: callOptions,
@@ -63,7 +72,7 @@ const CallOptions = () => {
     ),
   );
 
-  const repro = callOptions.audioStartupRepro;
+  const repro = callOptions.localStreamRepro;
 
   return (
     <Card>
@@ -173,12 +182,14 @@ const CallOptions = () => {
             />
 
             <div className="border-t pt-6 space-y-4">
-              <h3 className="text-sm font-semibold">SDK Audio Startup Repro</h3>
+              <h3 className="text-sm font-semibold">
+                LocalStream Startup Repro
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Uses the SDK <code>audioStartupRepro</code> option from{' '}
-                <code>team-telnyx/webrtc#feat/audio-startup-repro-harness</code>
-                . When enabled, the SDK replaces outbound mic audio with a sine
-                tone. Delay defaults to 0 ms, matching immediate startup.
+                Customer-compatible flow: on inbound call event, create a
+                looping WebAudio <code>AudioBufferSourceNode</code>, assign its
+                stream to <code>call.options.localStream</code>, call{' '}
+                <code>answer()</code>, then start audio immediately after.
               </p>
 
               <FormField
@@ -190,7 +201,7 @@ const CallOptions = () => {
                       <FormLabel>Auto-answer inbound calls</FormLabel>
                       <FormDescription>
                         Demo-app repro mode: immediately answer inbound calls
-                        with the configured call options and startup tone.
+                        with the configured localStream repro options.
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -206,14 +217,14 @@ const CallOptions = () => {
 
               <FormField
                 control={form.control}
-                name="audioStartupRepro.enabled"
+                name="localStreamRepro.enabled"
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between">
                     <div>
-                      <FormLabel>Enable SDK startup tone repro</FormLabel>
+                      <FormLabel>Enable localStream repro</FormLabel>
                       <FormDescription>
-                        Pass <code>audioStartupRepro</code> to SDK
-                        newCall/answer
+                        Mutate <code>call.options.localStream</code> before
+                        answer, matching the customer app.
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -231,23 +242,27 @@ const CallOptions = () => {
                 <>
                   <FormField
                     control={form.control}
-                    name="audioStartupRepro.frequencyHz"
+                    name="localStreamRepro.source"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Frequency Hz</FormLabel>
+                        <FormLabel>Source</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={20}
-                            max={4000}
-                            value={field.value ?? 440}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 440)
-                            }
-                          />
+                          <Select
+                            value={field.value ?? 'sine'}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select source" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sine">Sine tone</SelectItem>
+                              <SelectItem value="noise">White noise</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </FormControl>
                         <FormDescription>
-                          SDK clamps to 20–4000 Hz. Default: 440 Hz.
+                          Uses a looping AudioBufferSourceNode, not the
+                          microphone.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -256,17 +271,107 @@ const CallOptions = () => {
 
                   <FormField
                     control={form.control}
-                    name="audioStartupRepro.gain"
+                    name="localStreamRepro.startMode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Gain (0–1)</FormLabel>
+                        <FormLabel>Start mode</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value ?? 'after-answer'}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select start mode" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="after-answer">
+                                Immediately after answer() — baseline
+                              </SelectItem>
+                              <SelectItem value="after-answer-delay">
+                                After answer() + delay — A/B check
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormDescription>
+                          Baseline starts right after <code>answer()</code>, not
+                          on call.active/ICE/DTLS connected.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {repro.startMode === 'after-answer-delay' && (
+                    <FormField
+                      control={form.control}
+                      name="localStreamRepro.delayMs"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Delay after answer, ms</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={10000}
+                              step={100}
+                              value={field.value ?? 0}
+                              onChange={(e) => {
+                                let v = Number(e.target.value) || 0;
+                                if (v < 0) v = 0;
+                                if (v > 10000) v = 10000;
+                                field.onChange(v);
+                              }}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Use 1000–2000 ms to validate the customer-observed
+                            mitigation.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="localStreamRepro.frequencyHz"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Frequency Hz</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={20}
+                            max={20000}
+                            value={field.value ?? 440}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 440)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Used when source is sine. Default: 440 Hz.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="localStreamRepro.amplitude"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Buffer amplitude (0–1)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
                             min={0}
                             max={1}
                             step={0.05}
-                            value={field.value ?? 0.2}
+                            value={field.value ?? 1}
                             onChange={(e) => {
                               let v = Number(e.target.value);
                               if (v < 0) v = 0;
@@ -276,38 +381,7 @@ const CallOptions = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          SDK default is 0.2. Keep low enough to avoid clipping.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="audioStartupRepro.delayMs"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tone delay ms</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={10000}
-                            step={100}
-                            value={field.value ?? 0}
-                            onChange={(e) => {
-                              let v = Number(e.target.value) || 0;
-                              if (v < 0) v = 0;
-                              if (v > 10000) v = 10000;
-                              field.onChange(v);
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          SDK default is 0 ms. Use this to compare immediate
-                          tone against delayed first audio. SDK clamps to
-                          0–10000 ms.
+                          Direct buffer amplitude. No GainNode/ramp is added.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

@@ -1,9 +1,13 @@
 import { useCallOptions } from '@/atoms/callOptions';
+import { useLog } from '@/atoms/log';
+import {
+  buildLocalStreamRepro,
+  LocalStreamReproController,
+} from '@/lib/localStreamRepro';
 import { Call } from '@telnyx/webrtc';
 import { useRive } from '@rive-app/react-canvas-lite';
-import { Button } from './ui/button';
-import { useLog } from '@/atoms/log';
 import { useCallback, useEffect, useRef } from 'react';
+import { Button } from './ui/button';
 
 type Props = {
   call: Call;
@@ -17,33 +21,38 @@ const IncomingCall = ({ call }: Props) => {
   const [callOptions] = useCallOptions();
   const { pushLog } = useLog();
   const answerCalledRef = useRef(false);
+  const reproControllerRef = useRef<LocalStreamReproController | null>(null);
 
   const handleAnswer = useCallback(() => {
     if (answerCalledRef.current) return;
     answerCalledRef.current = true;
 
-    if (callOptions.audioStartupRepro?.enabled) {
+    let reproController: LocalStreamReproController | null = null;
+
+    if (callOptions.localStreamRepro?.enabled) {
+      reproController = buildLocalStreamRepro(callOptions.localStreamRepro);
+      reproControllerRef.current = reproController;
+
+      // Required to match the customer integration: answer() does not accept
+      // localStream params, so their app mutates call.options before answer().
+      // eslint-disable-next-line react-hooks/immutability
+      call.options.localStream = reproController.stream;
+
       pushLog({
-        id: 'audioStartupReproEnabled',
-        description: `[Repro] SDK audioStartupRepro enabled for inbound answer: frequency=${callOptions.audioStartupRepro.frequencyHz}Hz gain=${callOptions.audioStartupRepro.gain} delayMs=${callOptions.audioStartupRepro.delayMs}. Tone source is created when SDK local media is ready; audible tone starts after delay.`,
+        id: 'localStreamReproEnabled',
+        description: `[Repro] localStream AudioBufferSource enabled for inbound answer: source=${callOptions.localStreamRepro.source} frequency=${callOptions.localStreamRepro.frequencyHz}Hz amplitude=${callOptions.localStreamRepro.amplitude} startMode=${callOptions.localStreamRepro.startMode} delayMs=${callOptions.localStreamRepro.delayMs}`,
       });
     }
 
     const answerParams = {
       customHeaders: callOptions.customHeaders,
       video: callOptions.video,
-      ...(callOptions.audioStartupRepro?.enabled
-        ? {
-            audioStartupRepro: {
-              enabled: true,
-              frequencyHz: callOptions.audioStartupRepro.frequencyHz,
-              gain: callOptions.audioStartupRepro.gain,
-              delayMs: callOptions.audioStartupRepro.delayMs,
-            },
-          }
-        : {}),
     };
     call.answer(answerParams);
+
+    if (reproController) {
+      reproController.start('right after call.answer()');
+    }
   }, [call, callOptions, pushLog]);
 
   useEffect(() => {
@@ -53,10 +62,17 @@ const IncomingCall = ({ call }: Props) => {
     pushLog({
       id: 'autoAnswerInbound',
       description:
-        '[Repro] Auto-answering inbound call from demo app with configured call options.',
+        '[Repro] Auto-answering inbound call from demo app with configured localStream repro options.',
     });
     handleAnswer();
   }, [call.direction, callOptions.autoAnswerInbound, handleAnswer, pushLog]);
+
+  useEffect(() => {
+    return () => {
+      reproControllerRef.current?.cleanup();
+      reproControllerRef.current = null;
+    };
+  }, []);
 
   return (
     <div className="IncomingCallAlert container mx-auto my-4 border rounded p-4">
