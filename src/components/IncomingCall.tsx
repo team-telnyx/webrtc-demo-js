@@ -23,7 +23,7 @@ const IncomingCall = ({ call }: Props) => {
   const answerCalledRef = useRef(false);
   const reproControllerRef = useRef<LocalStreamReproController | null>(null);
 
-  const handleAnswer = useCallback(() => {
+  const handleAnswer = useCallback(async () => {
     if (answerCalledRef.current) return;
     answerCalledRef.current = true;
 
@@ -42,13 +42,15 @@ const IncomingCall = ({ call }: Props) => {
         id: 'localStreamReproEnabled',
         description: `[Repro] localStream AudioBufferSource enabled for inbound answer: source=${callOptions.localStreamRepro.source} frequency=${callOptions.localStreamRepro.frequencyHz}Hz amplitude=${callOptions.localStreamRepro.amplitude} startMode=${callOptions.localStreamRepro.startMode} delayMs=${callOptions.localStreamRepro.delayMs}`,
       });
+
+      await reproController.prepare('after localStream assignment, before call.answer()');
     }
 
     const answerParams = {
       customHeaders: callOptions.customHeaders,
       video: callOptions.video,
     };
-    call.answer(answerParams);
+    void call.answer(answerParams);
 
     if (reproController) {
       void reproController.start('right after call.answer()');

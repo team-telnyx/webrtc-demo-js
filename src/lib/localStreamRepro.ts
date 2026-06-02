@@ -5,6 +5,7 @@ export type ReproStatus = 'armed' | 'audible' | 'stopped' | 'failed';
 export interface LocalStreamReproController {
   stream: MediaStream;
   status: ReproStatus;
+  prepare: (reason: string) => Promise<void>;
   start: (reason: string) => Promise<void>;
   cleanup: () => void;
   getStatus: () => ReproStatus;
@@ -78,13 +79,38 @@ export function buildLocalStreamRepro(
 
   const stream = destination.stream;
 
+  const describeTracks = () =>
+    stream.getAudioTracks().map((track) => ({
+      id: track.id,
+      enabled: track.enabled,
+      muted: track.muted,
+      readyState: track.readyState,
+    }));
+
+  const prepare = async (reason: string) => {
+    try {
+      if (audioCtx.state === 'suspended') {
+        log('audioContext.resume() before answer()', reason);
+        await audioCtx.resume();
+      }
+
+      log('audio context prepared', {
+        reason,
+        audioContextState: audioCtx.state,
+        tracks: describeTracks(),
+      });
+    } catch (error) {
+      status = 'failed';
+      console.error('[LocalStreamRepro] failed to prepare audio context', error);
+    }
+  };
+
   const startNow = async (reason: string) => {
     if (hasStarted) return;
 
     try {
       if (audioCtx.state === 'suspended') {
-        log('audioContext.resume() before source.start()', reason);
-        await audioCtx.resume();
+        log('audioContext is still suspended at source.start()', reason);
       }
 
       sourceNode.start();
@@ -93,12 +119,7 @@ export function buildLocalStreamRepro(
       log('source.start()', {
         reason,
         audioContextState: audioCtx.state,
-        tracks: stream.getAudioTracks().map((track) => ({
-          id: track.id,
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-        })),
+        tracks: describeTracks(),
       });
     } catch (error) {
       status = 'failed';
@@ -162,6 +183,7 @@ export function buildLocalStreamRepro(
     get status() {
       return status;
     },
+    prepare,
     start,
     cleanup,
     getStatus: () => status,
