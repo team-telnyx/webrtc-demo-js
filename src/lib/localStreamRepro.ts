@@ -5,7 +5,7 @@ export type ReproStatus = 'armed' | 'audible' | 'stopped' | 'failed';
 export interface LocalStreamReproController {
   stream: MediaStream;
   status: ReproStatus;
-  start: (reason: string) => void;
+  start: (reason: string) => Promise<void>;
   cleanup: () => void;
   getStatus: () => ReproStatus;
 }
@@ -78,34 +78,46 @@ export function buildLocalStreamRepro(
 
   const stream = destination.stream;
 
-  const startNow = (reason: string) => {
+  const startNow = async (reason: string) => {
     if (hasStarted) return;
 
     try {
       if (audioCtx.state === 'suspended') {
-        void audioCtx.resume();
+        log('audioContext.resume() before source.start()', reason);
+        await audioCtx.resume();
       }
 
       sourceNode.start();
       hasStarted = true;
       status = 'audible';
-      log('source.start()', reason);
+      log('source.start()', {
+        reason,
+        audioContextState: audioCtx.state,
+        tracks: stream.getAudioTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+        })),
+      });
     } catch (error) {
       status = 'failed';
       console.error('[LocalStreamRepro] failed to start source', error);
     }
   };
 
-  const start = (reason: string) => {
+  const start = async (reason: string) => {
     if (options.startMode === 'after-answer-delay' && options.delayMs > 0) {
-      delayTimeout = setTimeout(() => {
-        delayTimeout = null;
-        startNow(`${reason} + ${options.delayMs}ms`);
-      }, options.delayMs);
+      await new Promise<void>((resolve) => {
+        delayTimeout = setTimeout(() => {
+          delayTimeout = null;
+          void startNow(`${reason} + ${options.delayMs}ms`).finally(resolve);
+        }, options.delayMs);
+      });
       return;
     }
 
-    startNow(reason);
+    await startNow(reason);
   };
 
   const cleanup = () => {

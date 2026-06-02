@@ -51,7 +51,7 @@ const IncomingCall = ({ call }: Props) => {
     call.answer(answerParams);
 
     if (reproController) {
-      reproController.start('right after call.answer()');
+      void reproController.start('right after call.answer()');
     }
   }, [call, callOptions, pushLog]);
 
