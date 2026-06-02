@@ -16,6 +16,7 @@ import InCallQualityMetrics from './InCallQualityMetrics';
 import Keyboard from './Keyboard';
 import { Button } from './ui/button';
 import CheckRegistrationButton from './CheckRegistrationButton';
+import { LocalStreamReproController } from '@/lib/localStreamRepro';
 import { Switch } from './ui/switch';
 import {
   Select,
@@ -32,6 +33,10 @@ type Props = {
   title?: string;
 };
 
+type CallWithLocalStreamRepro = Call & {
+  __localStreamReproController?: LocalStreamReproController;
+};
+
 const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const devices = useDevices();
   const audioInDevices = useMemo(() => {
@@ -42,6 +47,14 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
   const [newAudioInDeviceMuted, setNewAudioInDeviceMuted] = useState(
     call.isAudioMuted,
   );
+
+  useEffect(() => {
+    return () => {
+      const callWithRepro = call as CallWithLocalStreamRepro;
+      callWithRepro.__localStreamReproController?.cleanup();
+      delete callWithRepro.__localStreamReproController;
+    };
+  }, [call]);
 
   const onDTMFClick = useCallback(
     ({ digit }: { digit: string }) => {

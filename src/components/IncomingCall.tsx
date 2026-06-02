@@ -13,6 +13,10 @@ type Props = {
   call: Call;
 };
 
+type CallWithLocalStreamRepro = Call & {
+  __localStreamReproController?: LocalStreamReproController;
+};
+
 const IncomingCall = ({ call }: Props) => {
   const { RiveComponent: Animation } = useRive({
     autoplay: true,
@@ -32,6 +36,9 @@ const IncomingCall = ({ call }: Props) => {
     if (callOptions.localStreamRepro?.enabled) {
       reproController = buildLocalStreamRepro(callOptions.localStreamRepro);
       reproControllerRef.current = reproController;
+
+      (call as CallWithLocalStreamRepro).__localStreamReproController =
+        reproController;
 
       // Required to match the customer integration: answer() does not accept
       // localStream params, so their app mutates call.options before answer().
@@ -71,6 +78,13 @@ const IncomingCall = ({ call }: Props) => {
 
   useEffect(() => {
     return () => {
+      if (answerCalledRef.current) {
+        // The incoming-call card unmounts as soon as the call becomes active.
+        // Do not stop the generated localStream there: the SDK still needs this
+        // exact track for the active call. ActiveCall owns cleanup after answer.
+        return;
+      }
+
       reproControllerRef.current?.cleanup();
       reproControllerRef.current = null;
     };
