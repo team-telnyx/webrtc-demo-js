@@ -11,6 +11,7 @@ export interface IClientOptionsDemo extends IClientOptions {
   stunServers?: string[];
   turnServers?: TurnServer;
   video?: boolean;
+  skipTrailing?: boolean;
 }
 
 export type TurnServer = {
