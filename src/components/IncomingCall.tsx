@@ -25,7 +25,7 @@ const IncomingCall = ({ call }: Props) => {
           </p>
         </div>
         <Button
-          data-testid="btn-answer-call"
+          data-testid="btn-answer-call-broken"
           onClick={() => call.answer(callOptions)}
         >
           Answer
