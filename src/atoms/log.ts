@@ -5,14 +5,23 @@ type LogItemType = {
   description: string;
 };
 
-const logAtom = atom<LogItemType[]>([]);
+type StoredLogItemType = LogItemType & {
+  key: string;
+};
+
+let logSequence = 0;
+
+const logAtom = atom<StoredLogItemType[]>([]);
 
 export const useLog = () => {
   const [logs, setLogs] = useAtom(logAtom);
 
   const pushLog = useCallback(
     (item: LogItemType) => {
-      setLogs((prev) => [item, ...prev]);
+      setLogs((prev) => [
+        { ...item, key: `${item.id}-${logSequence++}` },
+        ...prev,
+      ]);
     },
     [setLogs],
   );

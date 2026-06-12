@@ -44,18 +44,21 @@ const BlackBoxTestLog = () => {
       </CardHeader>
       <CardContent className="flex-1">
         <pre data-testid="log-webrtc" className="font-mono">
-          {logs.map((log, index) => (
-            <div
-              data-testid={`log-webrtc-children-${log.id}`}
-              key={`${log.id}_${index}`}
-            >
+          {logs.map((log) => (
+            <div data-testid={`log-webrtc-children-${log.id}`} key={log.key}>
               {log.description}
             </div>
           ))}
         </pre>
       </CardContent>
       <CardFooter>
-        <Button variant="outline" className="w-full" onClick={clear}>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={clear}
+          data-testid="btn-clear-logs"
+        >
           Clear Logs
         </Button>
       </CardFooter>
