@@ -1,73 +1,84 @@
-import { useTelnyxNotification } from '@/atoms/telnyxNotification';
-import IncomingCall from './IncomingCall';
+import { useTelnyxCalls } from '@/atoms/telnyxNotification';
 import ActiveCall from './ActiveCall';
 import ConnectingCall from './ConnectingCall';
 import HeldCall from './HeldCall';
+import IncomingCall from './IncomingCall';
 import { capitalizeFirstLetter } from '@/lib/string';
+import { Call as TelnyxCall } from '@telnyx/webrtc';
+
+const ACTIVE_CALL_STATES = new Set(['new', 'connecting', 'active']);
+const CONNECTING_CALL_STATES = new Set(['connecting', 'trying']);
+const INCOMING_CALL_STATES = new Set(['ringing', 'requesting']);
+
+type CallStateRendererProps = {
+  call: TelnyxCall;
+};
+
+const CallStateRenderer = ({ call }: CallStateRendererProps) => {
+  if (call.options.keepConnectionAliveOnSocketClose) {
+    if (['trying', 'requesting'].includes(call.state)) {
+      return <IncomingCall call={call} />;
+    }
+
+    if (call.state === 'ringing') {
+      if (call.direction === 'inbound') {
+        return <IncomingCall call={call} />;
+      }
+
+      return (
+        <ActiveCall
+          call={call}
+          title={`${capitalizeFirstLetter(call.state)} Call`}
+        />
+      );
+    }
+
+    if (ACTIVE_CALL_STATES.has(call.state)) {
+      return (
+        <ActiveCall
+          call={call}
+          title={`${capitalizeFirstLetter(call.state)} Call`}
+        />
+      );
+    }
+
+    if (call.state === 'held') {
+      return <HeldCall call={call} />;
+    }
+
+    return null;
+  }
+
+  if (CONNECTING_CALL_STATES.has(call.state)) {
+    return <ConnectingCall call={call} />;
+  }
+
+  if (INCOMING_CALL_STATES.has(call.state)) {
+    return <IncomingCall call={call} />;
+  }
+
+  if (call.state === 'active') {
+    return <ActiveCall call={call} />;
+  }
+
+  if (call.state === 'held') {
+    return <HeldCall call={call} />;
+  }
+
+  return null;
+};
 
 export const Call = () => {
-  const [notification] = useTelnyxNotification();
-  if (!notification || !notification.call) return null;
+  const [calls] = useTelnyxCalls();
+  const activeCalls = Object.values(calls);
 
-  if (notification.call.options.keepConnectionAliveOnSocketClose) {
-    switch (notification.call.state) {
-      case 'trying':
-      case 'requesting': {
-        return <IncomingCall call={notification.call} />;
-      }
+  if (!activeCalls.length) return null;
 
-      case 'ringing': {
-        if (notification.call.direction === 'inbound') {
-          return <IncomingCall call={notification.call} />;
-        }
-
-        return (
-          <ActiveCall
-            call={notification.call}
-            title={`${capitalizeFirstLetter(notification.call.state)} Call`}
-          />
-        );
-      }
-
-      case 'new':
-      case 'connecting':
-      case 'active': {
-        return (
-          <ActiveCall
-            call={notification.call}
-            title={`${capitalizeFirstLetter(notification.call.state)} Call`}
-          />
-        );
-      }
-
-      case 'held': {
-        return <HeldCall call={notification.call} />;
-      }
-      default: {
-        return null;
-      }
-    }
-  }
-
-  switch (notification.call.state) {
-    case 'connecting':
-    case 'trying': {
-      return <ConnectingCall call={notification.call} />;
-    }
-    case 'ringing':
-    case 'requesting': {
-      return <IncomingCall call={notification.call} />;
-    }
-
-    case 'active': {
-      return <ActiveCall call={notification.call} />;
-    }
-
-    case 'held': {
-      return <HeldCall call={notification.call} />;
-    }
-    default: {
-      return null;
-    }
-  }
+  return (
+    <div className="container mx-auto my-4 space-y-4" data-testid="call-list">
+      {activeCalls.map((call) => (
+        <CallStateRenderer key={call.id} call={call} />
+      ))}
+    </div>
+  );
 };

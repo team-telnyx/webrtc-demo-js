@@ -2,7 +2,7 @@ import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
 import { useLog } from '@/atoms/log';
 import { useLoginMethod } from '@/atoms/loginMethod';
 import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
-import { useTelnyxNotification } from '@/atoms/telnyxNotification';
+import { useTelnyxCalls } from '@/atoms/telnyxNotification';
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Phone, PhoneOff } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { DialButton, DialButtonData } from './DialButton';
@@ -20,7 +20,7 @@ const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
   const [connectionStatus] = useConnectionStatus();
   const { pushLog } = useLog();
-  const [notification] = useTelnyxNotification();
+  const [calls] = useTelnyxCalls();
   const [loginMethod] = useLoginMethod();
 
   const [client] = useTelnyxSdkClient();
@@ -34,33 +34,9 @@ const Dialer = () => {
     [setCallOptions],
   );
 
-  const hasActiveCall =
-    notification?.call &&
-    [
-      'active',
-      'held',
-      'connecting',
-      'trying',
-      'ringing',
-      'requesting',
-    ].includes(notification.call.state);
-
-  const onHangupCall = () => {
-    if (notification?.call) {
-      pushLog({
-        id: 'hangingUpCall',
-        description: 'Hanging up call',
-      });
-      notification.call.hangup();
-    }
-  };
+  const activeCallCount = Object.keys(calls).length;
 
   const onStartCall = () => {
-    if (hasActiveCall) {
-      onHangupCall();
-      return;
-    }
-
     if (!client) {
       toast('Telnyx client not initialized');
       return;
@@ -84,14 +60,11 @@ const Dialer = () => {
   };
 
   const isDialButtonDisabled = useMemo(() => {
-    if (hasActiveCall) {
-      return false;
-    }
     if (connectionStatus !== 'registered') {
       return true;
     }
     return false;
-  }, [connectionStatus, hasActiveCall]);
+  }, [connectionStatus]);
   return (
     <Card>
       <CardHeader>
@@ -131,17 +104,19 @@ const Dialer = () => {
           <DialButton className="hidden" digit="Call" />
         </div>
       </CardContent>
-      <CardFooter className="justify-center">
+      <CardFooter className="flex-col justify-center gap-2">
+        {activeCallCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {activeCallCount} call{activeCallCount === 1 ? '' : 's'} in
+            progress. Use each call card to hold, unhold, or hang up.
+          </p>
+        )}
         <DialButton
-          data-testid={hasActiveCall ? 'btn-hangup' : 'btn-call'}
+          data-testid="btn-call"
           disabled={isDialButtonDisabled}
           onClick={onStartCall}
-          digit={hasActiveCall ? <PhoneOff /> : <Phone />}
-          className={
-            hasActiveCall
-              ? 'bg-red-500 text-white hover:bg-red-600 w-10 h-10'
-              : 'bg-[#00E3AA] text-black hover:bg-[#00C99B] disabled:opacity-75 disabled:cursor-not-allowed w-10 h-10'
-          }
+          digit={<Phone />}
+          className="bg-[#00E3AA] text-black hover:bg-[#00C99B] disabled:opacity-75 disabled:cursor-not-allowed w-10 h-10"
         ></DialButton>
       </CardFooter>
     </Card>

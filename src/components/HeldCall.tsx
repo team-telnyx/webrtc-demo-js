@@ -1,11 +1,3 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Call } from '@telnyx/webrtc';
 import { Button } from './ui/button';
 
@@ -14,46 +6,42 @@ type Props = {
 };
 const HeldCall = ({ call }: Props) => {
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) {
-          call.hangup();
-        }
-      }}
+    <div
+      className="container mx-auto my-4 rounded border bg-background p-4 shadow-sm"
+      data-testid="held-call"
+      data-call-id={call.id}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>The Call is held</DialogTitle>
-          <DialogDescription>
-            Resume call to {call.options.remoteCallerNumber} (
-            {call.options.remoteCallerName})
-          </DialogDescription>
-        </DialogHeader>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold">The Call is held</h2>
+        <p className="text-sm text-muted-foreground">
+          Resume call to {call.options.remoteCallerNumber} (
+          {call.options.remoteCallerName})
+        </p>
+        <p className="text-xs text-muted-foreground">Call ID: {call.id}</p>
+      </div>
 
-        <DialogFooter>
-          <Button
-            data-testid="btn-end-call"
-            size="lg"
-            variant={'outline'}
-            className="w-full"
-            onClick={() => call.unhold()}
-          >
-            Unhold
-          </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          data-testid="btn-end-call"
+          size="lg"
+          variant={'outline'}
+          className="w-full"
+          onClick={() => call.unhold()}
+        >
+          Unhold
+        </Button>
 
-          <Button
-            data-testid="btn-hold-call"
-            size="lg"
-            variant={'destructive'}
-            className="w-full"
-            onClick={() => call.hangup()}
-          >
-            Hangup
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <Button
+          data-testid="btn-hold-call"
+          size="lg"
+          variant={'destructive'}
+          className="w-full"
+          onClick={() => call.hangup()}
+        >
+          Hangup
+        </Button>
+      </div>
+    </div>
   );
 };
 

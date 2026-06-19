@@ -7,7 +7,11 @@ type Props = {
 };
 const ConnectingCall = ({ call }: Props) => {
   return (
-    <div className="container mx-auto my-4 flex items-center rounded border p-4">
+    <div
+      className="container mx-auto my-4 flex items-center rounded border p-4"
+      data-testid="connecting-call"
+      data-call-id={call.id}
+    >
       <RadioTower className="mr-4" />
       <div>
         <h1 className="font-medium">Call is connecting ... </h1>

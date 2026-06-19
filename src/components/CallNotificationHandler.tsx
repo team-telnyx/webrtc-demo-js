@@ -1,12 +1,15 @@
 import { useLog } from '@/atoms/log';
 import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
-import { useTelnyxNotification } from '@/atoms/telnyxNotification';
+import {
+  isTerminalCallState,
+  useTelnyxCalls,
+} from '@/atoms/telnyxNotification';
 import { INotification, TelnyxRTC } from '@telnyx/webrtc';
 import { useEffect } from 'react';
 
 const CallNotificationHandler = () => {
   const [client] = useTelnyxSdkClient();
-  const [, setNotification] = useTelnyxNotification();
+  const [, setCalls] = useTelnyxCalls();
   const { pushLog } = useLog();
 
   useEffect(() => {
@@ -16,11 +19,14 @@ const CallNotificationHandler = () => {
       if (notification.type !== 'callUpdate') return;
       if (!notification.call) return;
 
-      notification.call = TelnyxRTC.telnyxStateCall(notification.call);
+      const call = TelnyxRTC.telnyxStateCall(notification.call);
+      notification.call = call;
+
       //  Log Call Status
-      const status = notification.call.state;
-      const sipReason = notification.call.sipReason;
-      const sipCallId = notification.call.sipCallId;
+      const status = call.state;
+      const sipReason = call.sipReason;
+      const sipCallId = call.sipCallId;
+      const callLogPrefix = call.id ? `Call ${call.id}: ` : '';
 
       if (sipReason) {
         pushLog({
@@ -29,26 +35,36 @@ const CallNotificationHandler = () => {
         });
 
         pushLog({
-          id: status,
-          description: `Call State: ${status} ${`(${sipReason})`}`,
+          id: `${call.id}-${status}`,
+          description: `${callLogPrefix}Call State: ${status} ${`(${sipReason})`}`,
         });
       } else {
         pushLog({
-          id: notification.call.state,
-          description: `Call State: ${notification.call.state}${
-            notification.call.cause ? ` (${notification.call.cause})` : ''
+          id: `${call.id}-${status}`,
+          description: `${callLogPrefix}Call State: ${status}${
+            call.cause ? ` (${call.cause})` : ''
           }`,
         });
       }
 
-      setNotification(notification);
+      setCalls((prevCalls) => {
+        const nextCalls = { ...prevCalls };
+
+        if (isTerminalCallState(call.state)) {
+          delete nextCalls[call.id];
+          return nextCalls;
+        }
+
+        nextCalls[call.id] = call;
+        return nextCalls;
+      });
     };
 
     client.on('telnyx.notification', onNotification);
     return () => {
       client.off('telnyx.notification', onNotification);
     };
-  }, [client, pushLog, setNotification]);
+  }, [client, pushLog, setCalls]);
   return null;
 };
 

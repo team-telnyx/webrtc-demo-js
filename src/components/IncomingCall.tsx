@@ -13,7 +13,11 @@ const IncomingCall = ({ call }: Props) => {
   });
   const [callOptions] = useCallOptions();
   return (
-    <div className="IncomingCallAlert container mx-auto my-4 border rounded p-4">
+    <div
+      className="IncomingCallAlert container mx-auto my-4 border rounded p-4"
+      data-testid="incoming-call"
+      data-call-id={call.id}
+    >
       <div className="flex items-center gap-2">
         <span className="inline-block w-14 h-14 rounded-full overflow-hidden">
           <Animation />
@@ -23,6 +27,7 @@ const IncomingCall = ({ call }: Props) => {
           <p className="text-xs text-muted-foreground">
             {call.options.callerName} ({call.options.callerNumber})
           </p>
+          <p className="text-xs text-muted-foreground">Call ID: {call.id}</p>
         </div>
         <Button
           data-testid="btn-answer-call"
