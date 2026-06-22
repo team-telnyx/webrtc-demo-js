@@ -17,7 +17,7 @@ import SimpleUserDialer from './components/SimpleUserDialer';
 import SimpleUserCallOptions from './components/SimpleUserCallOptions';
 import SipJsCallNotificationHandler from './components/SipJsCallNotificationHandler';
 import { SipJsCall } from './components/SipJsCall';
-import AiAgentView from './components/AiAgentView';
+import AiAgentTabView from './components/AiAgentTabView';
 import MediaRecoveryDialog from './components/MediaRecoveryDialog';
 
 const SdkDemoView = () => (
@@ -57,7 +57,7 @@ const App = () => {
             {mode === 'sipjs' ? (
               <SipJsDemoView />
             ) : mode === 'aiagent' ? (
-              <AiAgentView />
+              <AiAgentTabView />
             ) : (
               <SdkDemoView />
             )}
