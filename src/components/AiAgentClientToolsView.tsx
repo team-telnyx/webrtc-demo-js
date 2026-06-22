@@ -1,11 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  TelnyxAIAgentProvider,
-  useClient,
-  useConnectionState,
-  useTranscript,
-  useAgentState,
-} from '@telnyx/ai-agent-lib';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IS_DEV_ENV } from '@/lib/vite';
 import {
   Card,
@@ -18,29 +11,58 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useTheme } from '@/providers/ThemeProvider';
 import { toast } from 'sonner';
 
 /**
  * Client-Side Tools example for the AI Agent tab.
  *
- * Unlike the "Widget Embed" sub-tab (which embeds the published
- * `@telnyx/ai-agent-widget` web component in an iframe), this view drives the
- * `@telnyx/ai-agent-lib` developer API directly so it can demonstrate the
- * client-side tool registration/execution flow added in VSDK-253:
+ * This view embeds the published `@telnyx/ai-agent-widget` web component
+ * (pinned to the beta that ships the client-side tool API) directly in the
+ * React tree — rather than in an iframe like the "Widget Embed" sub-tab — so it
+ * can grab the element and register a client-side tool imperatively:
  *
- *   agent emits `function_call` → the lib runs your registered handler in the
- *   browser → the return value is sent back to the assistant as the tool output.
+ *   agent emits a `client_side_tool` call → the widget runs your registered
+ *   handler in the browser → the return value is sent back to the assistant as
+ *   the tool output (`function_call_output`).
  *
- * The handlers below are intentionally simple, real-world-ish examples:
- *   - get_current_time   — no args, returns client clock + timezone
- *   - get_browser_info   — no args, reads navigator/screen state
- *   - lookup_order       — takes { orderId }, returns data the page "owns"
- *   - set_theme          — takes { theme }, performs a real UI side effect
- *
- * Configure tools with matching names on your assistant, then ask it to use
- * them during the conversation.
+ * We register a single, real-world example: `send_message`, which sends an SMS
+ * via the Telnyx Messaging API (POST /v2/messages). Configure a tool with the
+ * same name on your assistant, then ask it to text someone during the call.
  */
+
+// Beta widget version that ships registerClientTool/getClientTools/etc.
+// (the client_side_tool flow from PR-531). Pinned intentionally.
+const WIDGET_VERSION = '0.33.8-beta.0';
+const WIDGET_SCRIPT_SRC = `https://unpkg.com/@telnyx/ai-agent-widget@${WIDGET_VERSION}`;
+
+// The widget element exposes these imperatively (not via HTML attributes).
+type ClientToolContext = {
+  callId: string;
+  toolName: string;
+  rawArguments: string;
+};
+type ClientToolHandler = (
+  args: unknown,
+  context: ClientToolContext,
+) => unknown | Promise<unknown>;
+type TelnyxAiAgentEl = HTMLElement & {
+  registerClientTool: (name: string, handler: ClientToolHandler) => void;
+  unregisterClientTool: (name: string) => boolean;
+  getClientTools: () => string[];
+};
+
+// Allow <telnyx-ai-agent> in JSX without pulling in widget types.
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'telnyx-ai-agent': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & { 'agent-id'?: string },
+        HTMLElement
+      >;
+    }
+  }
+}
 
 type ToolLogEntry = {
   id: string;
@@ -51,179 +73,198 @@ type ToolLogEntry = {
   timestamp: Date;
 };
 
-// Tiny fake "order database" the lookup_order tool reads from. In a real app
-// this would be page state, a cache, or an API the browser is authed for.
-const FAKE_ORDERS: Record<
-  string,
-  { status: string; total: string; eta: string }
-> = {
-  '1001': { status: 'shipped', total: '$42.00', eta: '2 days' },
-  '1002': { status: 'processing', total: '$128.50', eta: '5 days' },
-  '1003': { status: 'delivered', total: '$9.99', eta: 'delivered' },
-};
-
 function asRecord(args: unknown): Record<string, unknown> {
-  return args && typeof args === 'object' ? (args as Record<string, unknown>) : {};
+  return args && typeof args === 'object'
+    ? (args as Record<string, unknown>)
+    : {};
 }
 
-/**
- * The interactive console. Must be rendered inside <TelnyxAIAgentProvider>,
- * since it relies on useClient()/useConnectionState()/etc.
- */
-function ClientToolsConsole({ onDisconnect }: { onDisconnect: () => void }) {
-  const client = useClient();
-  const connectionState = useConnectionState();
-  const transcript = useTranscript();
-  const agentState = useAgentState();
-  const { setTheme } = useTheme();
+// Load the widget script once (shared across mounts).
+let widgetScriptPromise: Promise<void> | null = null;
+function loadWidgetScript(): Promise<void> {
+  if (customElements.get('telnyx-ai-agent')) return Promise.resolve();
+  if (widgetScriptPromise) return widgetScriptPromise;
 
+  widgetScriptPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${WIDGET_SCRIPT_SRC}"]`,
+    );
+    if (existing) {
+      customElements
+        .whenDefined('telnyx-ai-agent')
+        .then(() => resolve())
+        .catch(reject);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = WIDGET_SCRIPT_SRC;
+    script.async = true;
+    script.onload = () =>
+      customElements
+        .whenDefined('telnyx-ai-agent')
+        .then(() => resolve())
+        .catch(reject);
+    script.onerror = () =>
+      reject(new Error(`Failed to load widget from ${WIDGET_SCRIPT_SRC}`));
+    document.head.appendChild(script);
+  });
+  return widgetScriptPromise;
+}
+
+type SmsConfig = {
+  apiKey: string;
+  fromNumber: string;
+};
+
+const ClientToolsConsole = ({
+  agentId,
+  sms,
+  onDisconnect,
+}: {
+  agentId: string;
+  sms: SmsConfig;
+  onDisconnect: () => void;
+}) => {
+  const widgetRef = useRef<TelnyxAiAgentEl | null>(null);
+  const [widgetReady, setWidgetReady] = useState(false);
   const [registeredTools, setRegisteredTools] = useState<string[]>([]);
   const [toolLog, setToolLog] = useState<ToolLogEntry[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [inCall, setInCall] = useState(false);
 
-  const pushLog = useCallback((entry: Omit<ToolLogEntry, 'id' | 'timestamp'>) => {
-    setToolLog((prev) => [
-      {
-        ...entry,
-        id: crypto.randomUUID(),
-        timestamp: new Date(),
-      },
-      ...prev,
-    ]);
+  // Keep the latest SMS config available to the (stable) tool handler.
+  const smsRef = useRef(sms);
+  useEffect(() => {
+    smsRef.current = sms;
+  }, [sms]);
+
+  const pushLog = useCallback(
+    (entry: Omit<ToolLogEntry, 'id' | 'timestamp'>) => {
+      setToolLog((prev) => [
+        { ...entry, id: crypto.randomUUID(), timestamp: new Date() },
+        ...prev,
+      ]);
+    },
+    [],
+  );
+
+  // Make sure the custom element is defined before we render it.
+  useEffect(() => {
+    let cancelled = false;
+    loadWidgetScript()
+      .then(() => {
+        if (!cancelled) setWidgetReady(true);
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(String(err?.message ?? err));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Register the example client-side tools once the client is available.
+  // Register the single example client tool: send_message (SMS via Telnyx).
   useEffect(() => {
-    client.registerClientTool('get_current_time', () => ({
-      iso: new Date().toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    }));
+    if (!widgetReady) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
 
-    client.registerClientTool('get_browser_info', () => ({
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      viewport: { width: window.innerWidth, height: window.innerHeight },
-    }));
+    widget.registerClientTool('send_message', async (args) => {
+      const a = asRecord(args);
+      const to = String(a.to ?? '').trim();
+      const text = String(a.text ?? a.message ?? '').trim();
+      const { apiKey, fromNumber } = smsRef.current;
 
-    client.registerClientTool('lookup_order', (args) => {
-      const orderId = String(asRecord(args).orderId ?? '').trim();
-      const order = FAKE_ORDERS[orderId];
-      if (!order) {
-        return { found: false, orderId, message: 'No order with that id.' };
+      if (!to || !text) {
+        return { sent: false, error: 'Both "to" and "text" are required.' };
       }
-      return { found: true, orderId, ...order };
+      if (!apiKey || !fromNumber) {
+        return {
+          sent: false,
+          error:
+            'Demo is missing a Telnyx API key or "from" number; cannot send.',
+        };
+      }
+
+      try {
+        const res = await fetch('https://api.telnyx.com/v2/messages', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ from: fromNumber, to, text }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail =
+            body?.errors?.[0]?.detail ?? `HTTP ${res.status}`;
+          return { sent: false, to, error: detail };
+        }
+        toast.success(`SMS sent to ${to}`);
+        return {
+          sent: true,
+          to,
+          messageId: body?.data?.id ?? null,
+        };
+      } catch (err) {
+        return {
+          sent: false,
+          to,
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
     });
 
-    client.registerClientTool('set_theme', (args) => {
-      const requested = String(asRecord(args).theme ?? '').toLowerCase();
-      if (requested !== 'light' && requested !== 'dark') {
-        return { applied: false, error: 'theme must be "light" or "dark"' };
-      }
-      setTheme(requested);
-      toast.success(`Theme switched to ${requested} by the assistant`);
-      return { applied: true, theme: requested };
-    });
-
-    // Mirror the registry into React state for display. Deferred to a
-    // microtask so we don't call setState synchronously inside the effect body
-    // (avoids the cascading-render lint rule / extra render pass).
-    queueMicrotask(() => setRegisteredTools(client.getClientTools()));
+    queueMicrotask(() => setRegisteredTools(widget.getClientTools()));
 
     return () => {
-      client.unregisterClientTool('get_current_time');
-      client.unregisterClientTool('get_browser_info');
-      client.unregisterClientTool('lookup_order');
-      client.unregisterClientTool('set_theme');
+      widget.unregisterClientTool('send_message');
     };
-  }, [client, setTheme]);
+  }, [widgetReady]);
 
-  // Observe tool lifecycle events (no payloads — only safe correlation fields).
+  // Observe tool lifecycle events (safe correlation fields only — no payloads).
   useEffect(() => {
-    const onInvoked = ({
-      callId,
-      toolName,
-    }: {
-      callId: string;
-      toolName: string;
-    }) => pushLog({ kind: 'invoked', toolName, callId });
+    if (!widgetReady) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
 
-    const onCompleted = ({
-      callId,
-      toolName,
-      isError,
-    }: {
-      callId: string;
-      toolName: string;
-      isError: boolean;
-    }) =>
+    const onInvoked = (e: Event) => {
+      const { callId, toolName } = (e as CustomEvent).detail ?? {};
+      pushLog({ kind: 'invoked', toolName, callId });
+    };
+    const onCompleted = (e: Event) => {
+      const { callId, toolName, isError } = (e as CustomEvent).detail ?? {};
       pushLog({
         kind: 'completed',
         toolName,
         callId,
         detail: isError ? 'returned error output' : 'returned result',
       });
+    };
+    const onError = (e: Event) => {
+      const { callId, toolName, reason } = (e as CustomEvent).detail ?? {};
+      pushLog({ kind: 'error', toolName, callId, detail: reason });
+    };
 
-    const onError = ({
-      callId,
-      toolName,
-      reason,
-    }: {
-      callId: string;
-      toolName: string;
-      reason: string;
-    }) => pushLog({ kind: 'error', toolName, callId, detail: reason });
-
-    client.on('client.tool.invoked', onInvoked);
-    client.on('client.tool.completed', onCompleted);
-    client.on('client.tool.error', onError);
+    widget.addEventListener('client.tool.invoked', onInvoked);
+    widget.addEventListener('client.tool.completed', onCompleted);
+    widget.addEventListener('client.tool.error', onError);
 
     return () => {
-      client.off('client.tool.invoked', onInvoked);
-      client.off('client.tool.completed', onCompleted);
-      client.off('client.tool.error', onError);
+      widget.removeEventListener('client.tool.invoked', onInvoked);
+      widget.removeEventListener('client.tool.completed', onCompleted);
+      widget.removeEventListener('client.tool.error', onError);
     };
-  }, [client, pushLog]);
+  }, [widgetReady, pushLog]);
 
-  const handleStart = useCallback(async () => {
-    try {
-      await client.startConversation();
-      setInCall(true);
-    } catch (err) {
-      toast.error(
-        `Failed to start conversation: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
-    }
-  }, [client]);
-
-  const handleEnd = useCallback(async () => {
-    await client.endConversation();
-    setInCall(false);
-  }, [client]);
-
-  const handleSendChat = useCallback(() => {
-    const text = chatInput.trim();
-    if (!text) return;
-    client.sendConversationMessage(text);
-    setChatInput('');
-  }, [client, chatInput]);
-
-  const connectionBadge = useMemo(() => {
-    const variant =
-      connectionState === 'connected'
-        ? 'default'
-        : connectionState === 'error'
-          ? 'destructive'
-          : 'secondary';
-    return (
-      <Badge variant={variant} data-testid="ct-connection-state">
-        {connectionState}
-      </Badge>
-    );
-  }, [connectionState]);
+  const toolsBadges = useMemo(
+    () =>
+      registeredTools.map((name) => (
+        <Badge key={name} variant="outline" className="font-mono">
+          {name}
+        </Badge>
+      )),
+    [registeredTools],
+  );
 
   return (
     <div className="space-y-4">
@@ -231,10 +272,12 @@ function ClientToolsConsole({ onDisconnect }: { onDisconnect: () => void }) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Conversation</CardTitle>
+              <CardTitle>AI Agent Widget</CardTitle>
               <CardDescription>
-                Connection {connectionBadge} · agent state:{' '}
-                <span className="font-mono">{agentState.state}</span>
+                <code className="text-xs">
+                  @telnyx/ai-agent-widget@{WIDGET_VERSION}
+                </code>{' '}
+                · agent <span className="font-mono">{agentId}</span>
               </CardDescription>
             </div>
             <Button
@@ -248,49 +291,21 @@ function ClientToolsConsole({ onDisconnect }: { onDisconnect: () => void }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            {!inCall ? (
-              <Button
-                onClick={handleStart}
-                disabled={connectionState !== 'connected'}
-                data-testid="ct-start-conversation"
-              >
-                Start Conversation
-              </Button>
-            ) : (
-              <Button
-                variant="destructive"
-                onClick={handleEnd}
-                data-testid="ct-end-conversation"
-              >
-                End Conversation
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Send a text message to the assistant…"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSendChat();
-              }}
-              disabled={!inCall}
-              data-testid="ct-chat-input"
+          {widgetReady ? (
+            <telnyx-ai-agent
+              ref={widgetRef as React.Ref<HTMLElement>}
+              agent-id={agentId}
+              {...(IS_DEV_ENV ? { environment: 'development' } : {})}
+              data-testid="ct-widget"
             />
-            <Button
-              variant="secondary"
-              onClick={handleSendChat}
-              disabled={!inCall}
-              data-testid="ct-chat-send"
-            >
-              Send
-            </Button>
-          </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Loading widget…</p>
+          )}
           <p className="text-xs text-muted-foreground">
-            Try asking the assistant: “what time is it?”, “look up order 1002”,
-            or “switch to light mode”. The assistant must have matching tools
-            configured by name.
+            Start a call from the widget, then ask the assistant to text
+            someone — e.g. “send a message to +1555… saying the order shipped”.
+            The assistant must have a <code className="text-xs">send_message</code>{' '}
+            tool configured by name.
           </p>
         </CardContent>
       </Card>
@@ -307,11 +322,7 @@ function ClientToolsConsole({ onDisconnect }: { onDisconnect: () => void }) {
             <p className="text-sm text-muted-foreground">No tools registered.</p>
           ) : (
             <div className="flex flex-wrap gap-2" data-testid="ct-registered-tools">
-              {registeredTools.map((name) => (
-                <Badge key={name} variant="outline" className="font-mono">
-                  {name}
-                </Badge>
-              ))}
+              {toolsBadges}
             </div>
           )}
         </CardContent>
@@ -331,7 +342,7 @@ function ClientToolsConsole({ onDisconnect }: { onDisconnect: () => void }) {
           {toolLog.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No tool calls yet. Start a conversation and ask the assistant to
-              use one of the tools.
+              send a message.
             </p>
           ) : (
             <div className="space-y-1">
@@ -370,60 +381,85 @@ function ClientToolsConsole({ onDisconnect }: { onDisconnect: () => void }) {
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Transcript</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[200px] overflow-y-auto space-y-1">
-          {transcript.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No transcript yet.</p>
-          ) : (
-            transcript.map((item) => (
-              <div key={item.id} className="text-sm">
-                <span className="font-semibold">{item.role}: </span>
-                <span>{item.content}</span>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
-}
+};
 
 const AiAgentClientToolsView = () => {
   const [agentIdInput, setAgentIdInput] = useState('');
-  const [connectedAgentId, setConnectedAgentId] = useState<string | null>(null);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [fromInput, setFromInput] = useState('');
+  const [connected, setConnected] = useState<{
+    agentId: string;
+    sms: SmsConfig;
+  } | null>(null);
 
-  if (!connectedAgentId) {
+  const canConnect = agentIdInput.trim().length > 0;
+
+  if (!connected) {
     return (
       <Card className="max-w-xl">
         <CardHeader>
-          <CardTitle>Client-Side Tools (SDK)</CardTitle>
+          <CardTitle>Client-Side Tools</CardTitle>
           <CardDescription>
-            Drives <code className="text-xs">@telnyx/ai-agent-lib</code>{' '}
-            directly to demonstrate client-side tool registration and execution.
-            Enter an Agent ID and connect to register the example tools.
+            Embeds <code className="text-xs">@telnyx/ai-agent-widget@{WIDGET_VERSION}</code>{' '}
+            and registers a single client-side tool —{' '}
+            <code className="text-xs">send_message</code> — that sends an SMS via
+            the Telnyx Messaging API. Configure a matching tool on your assistant.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="assistant-xxx"
-            value={agentIdInput}
-            onChange={(e) => setAgentIdInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && agentIdInput.trim()) {
-                setConnectedAgentId(agentIdInput.trim());
-              }
-            }}
-            data-testid="ct-agent-id"
-          />
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Agent ID</label>
+            <Input
+              placeholder="assistant-xxx"
+              value={agentIdInput}
+              onChange={(e) => setAgentIdInput(e.target.value)}
+              data-testid="ct-agent-id"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">
+              Telnyx API key (for send_message)
+            </label>
+            <Input
+              type="password"
+              placeholder="KEY..."
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              data-testid="ct-sms-api-key"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">
+              From number (E.164)
+            </label>
+            <Input
+              placeholder="+1..."
+              value={fromInput}
+              onChange={(e) => setFromInput(e.target.value)}
+              data-testid="ct-sms-from"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            The API key is used only in your browser to call{' '}
+            <code className="text-xs">POST /v2/messages</code>. Leave the SMS
+            fields blank to register the tool in “dry” mode (it will return a
+            safe error instead of sending).
+          </p>
         </CardContent>
         <CardFooter className="justify-end">
           <Button
-            onClick={() => setConnectedAgentId(agentIdInput.trim())}
-            disabled={!agentIdInput.trim()}
+            onClick={() =>
+              setConnected({
+                agentId: agentIdInput.trim(),
+                sms: {
+                  apiKey: apiKeyInput.trim(),
+                  fromNumber: fromInput.trim(),
+                },
+              })
+            }
+            disabled={!canConnect}
             data-testid="ct-connect"
           >
             Connect
@@ -434,12 +470,11 @@ const AiAgentClientToolsView = () => {
   }
 
   return (
-    <TelnyxAIAgentProvider
-      agentId={connectedAgentId}
-      environment={IS_DEV_ENV ? 'development' : 'production'}
-    >
-      <ClientToolsConsole onDisconnect={() => setConnectedAgentId(null)} />
-    </TelnyxAIAgentProvider>
+    <ClientToolsConsole
+      agentId={connected.agentId}
+      sms={connected.sms}
+      onDisconnect={() => setConnected(null)}
+    />
   );
 };
 

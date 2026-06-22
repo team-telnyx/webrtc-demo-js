@@ -9,8 +9,9 @@ type AiAgentSubMode = 'widget' | 'client-tools';
  * Wraps the AI Agent tab in two sub-views:
  *  - "Widget Embed": the published <telnyx-ai-agent> web component, embedded
  *    in an iframe (existing demo).
- *  - "Client-Side Tools": drives @telnyx/ai-agent-lib directly to demonstrate
- *    the client-side tool registration/execution API (VSDK-253).
+ *  - "Client-Side Tools": embeds @telnyx/ai-agent-widget (beta) and registers
+ *    a single client-side tool (send_message / SMS) to demonstrate the
+ *    client-side tool registration/execution API (VSDK-253).
  */
 const AiAgentTabView = () => {
   const [subMode, setSubMode] = useState<AiAgentSubMode>('widget');
