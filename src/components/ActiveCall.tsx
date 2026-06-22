@@ -2,7 +2,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { playDTMFTone } from '@/lib/dtmf';
 import { Call } from '@telnyx/webrtc';
 import { useCallback, useMemo, useState } from 'react';
-import AudioPlayer from './AudioPlayer';
 import AudioVisualizer from './AudioVisualizer';
 import InCallQualityMetrics from './InCallQualityMetrics';
 import Keyboard from './Keyboard';
@@ -207,7 +206,12 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             <h1>Outbound</h1>
             <AudioVisualizer mediaStream={call.localStream} color="#fff" />
           </div>
-          <AudioPlayer mediaStream={call.remoteStream} />
+          <p className="text-xs text-muted-foreground">
+            Remote audio playback is intentionally handled by the shared SDK
+            remoteElement above, not by a per-call AudioPlayer. This makes
+            shared-element ownership issues reproducible when multiple calls are
+            active.
+          </p>
           <Tabs defaultValue="keyboard">
             <div className="flex justify-center">
               <TabsList>

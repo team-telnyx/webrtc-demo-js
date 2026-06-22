@@ -22,6 +22,7 @@ export interface ICallOptions {
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
+  remoteElement?: string | HTMLMediaElement;
 }
 
 const callOptionsAtom = atom({

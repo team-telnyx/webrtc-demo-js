@@ -12,6 +12,13 @@ const IncomingCall = ({ call }: Props) => {
     src: '/incoming.riv',
   });
   const [callOptions] = useCallOptions();
+
+  const answerCall = () => {
+    // Inbound calls inherit remoteElement from TelnyxRTC client options. Keep
+    // answer params focused on fields the SDK currently applies at answer time.
+    call.answer({ customHeaders: callOptions.customHeaders });
+  };
+
   return (
     <div
       className="IncomingCallAlert container mx-auto my-4 border rounded p-4"
@@ -29,10 +36,7 @@ const IncomingCall = ({ call }: Props) => {
           </p>
           <p className="text-xs text-muted-foreground">Call ID: {call.id}</p>
         </div>
-        <Button
-          data-testid="btn-answer-call"
-          onClick={() => call.answer(callOptions)}
-        >
+        <Button data-testid="btn-answer-call" onClick={answerCall}>
           Answer
         </Button>
         <Button onClick={() => call.hangup()} variant={'outline'}>

@@ -15,6 +15,7 @@ import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { DialButton, DialButtonData } from './DialButton';
 import { Input } from './ui/input';
+import { SDK_REMOTE_ELEMENT_ID } from '@/lib/sdkRemoteElement';
 
 const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -56,7 +57,10 @@ const Dialer = () => {
       description: `Calling: ${callOptions.destinationNumber}`,
     });
 
-    client.newCall(callOptions);
+    client.newCall({
+      ...callOptions,
+      remoteElement: SDK_REMOTE_ELEMENT_ID,
+    });
   };
 
   const isDialButtonDisabled = useMemo(() => {
