@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import {
   Form,
   FormControl,
@@ -110,6 +110,12 @@ type ToolLogEntry = {
   timestamp: Date;
 };
 
+type WidgetVersionOption = {
+  value: string;
+  label: string;
+  isBeta: boolean;
+};
+
 // ── Constants ──
 
 const REGION_OPTIONS = [
@@ -145,9 +151,70 @@ function asRecord(args: unknown): Record<string, unknown> {
 // injection via the version picker — the value is user-selected but should
 // never contain HTML/URL metacharacters.
 function isSafeVersion(version: string): boolean {
-  return /^(next|latest|[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9._-]+)?)$/.test(
+  return /^(next|latest|beta|[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9._-]+)?)$/.test(
     version,
   );
+}
+
+function isBetaVersion(version: string): boolean {
+  return /(?:^|[-.])beta(?:[-.]|$)/i.test(version);
+}
+
+function resolveWidgetVersionTag(
+  version: string,
+  distTags: Record<string, string>,
+): string {
+  return distTags[version] ?? version;
+}
+
+function isBetaWidgetVersion(
+  version: string | undefined,
+  distTags: Record<string, string>,
+): boolean {
+  if (!version) return false;
+  return (
+    isBetaVersion(version) ||
+    isBetaVersion(resolveWidgetVersionTag(version, distTags))
+  );
+}
+
+function buildWidgetVersionOptions(
+  availableVersions: string[],
+  distTags: Record<string, string>,
+): WidgetVersionOption[] {
+  const baseOptions: WidgetVersionOption[] = [
+    {
+      value: 'next',
+      label: distTags.next ? `Next (${distTags.next})` : 'Next',
+      isBeta: isBetaWidgetVersion('next', distTags),
+    },
+    {
+      value: 'latest',
+      label: distTags.latest ? `Latest (${distTags.latest})` : 'Latest',
+      isBeta: isBetaWidgetVersion('latest', distTags),
+    },
+  ];
+
+  if (distTags.beta) {
+    baseOptions.push({
+      value: 'beta',
+      label: `Beta (${distTags.beta})`,
+      isBeta: true,
+    });
+  }
+
+  const seen = new Set(baseOptions.map((option) => option.value));
+  for (const version of availableVersions) {
+    if (seen.has(version)) continue;
+    baseOptions.push({
+      value: version,
+      label: version,
+      isBeta: isBetaWidgetVersion(version, distTags),
+    });
+    seen.add(version);
+  }
+
+  return baseOptions;
 }
 
 // Load the widget script once per version (shared across mounts). Custom
@@ -252,6 +319,9 @@ const AiAgentView = () => {
   >([]);
   const [invertBackground, setInvertBackground] = useState(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
+  const [widgetDistTags, setWidgetDistTags] = useState<Record<string, string>>(
+    {},
+  );
   const [versionsLoading, setVersionsLoading] = useState(true);
   const [events, setEvents] = useState<AiAgentEvent[]>([]);
   const [widgetConnectionInfo, setWidgetConnectionInfo] = useState<{
@@ -295,8 +365,23 @@ const AiAgentView = () => {
     },
   });
 
+  const selectedWidgetVersion = useWatch({
+    control: form.control,
+    name: 'version',
+  });
+  const versionOptions = useMemo(
+    () => buildWidgetVersionOptions(availableVersions, widgetDistTags),
+    [availableVersions, widgetDistTags],
+  );
+  const clientToolsAvailableForSelectedVersion = isBetaWidgetVersion(
+    selectedWidgetVersion,
+    widgetDistTags,
+  );
+
   const clientToolsActive =
-    isEmbedded && !!currentFormValues?.clientToolsEnabled;
+    isEmbedded &&
+    !!currentFormValues?.clientToolsEnabled &&
+    isBetaWidgetVersion(currentFormValues.version, widgetDistTags);
 
   const handleWidgetEvent = useCallback((event: MessageEvent) => {
     if (
@@ -345,6 +430,7 @@ const AiAgentView = () => {
           'https://registry.npmjs.org/@telnyx/ai-agent-widget',
         );
         const data = await response.json();
+        setWidgetDistTags((data['dist-tags'] as Record<string, string>) ?? {});
 
         const filteredVersions = Object.entries(
           data.versions as Record<string, { deprecated?: string }>,
@@ -385,6 +471,12 @@ const AiAgentView = () => {
     };
     fetchVersions();
   }, []);
+
+  useEffect(() => {
+    if (!clientToolsAvailableForSelectedVersion) {
+      form.setValue('clientToolsEnabled', false);
+    }
+  }, [clientToolsAvailableForSelectedVersion, form]);
 
   // Keep the latest SMS config available to the (stable) tool handler.
   useEffect(() => {
@@ -430,6 +522,17 @@ const AiAgentView = () => {
     if (!widgetScriptReady || !clientToolsActive) return;
     const widget = widgetRef.current;
     if (!widget) return;
+
+    if (
+      typeof widget.registerClientTool !== 'function' ||
+      typeof widget.unregisterClientTool !== 'function' ||
+      typeof widget.getClientTools !== 'function'
+    ) {
+      toast.error(
+        'Selected widget version does not support client-side tools yet.',
+      );
+      return;
+    }
 
     widget.registerClientTool('send_message', async (args) => {
       const a = asRecord(args);
@@ -617,7 +720,19 @@ const AiAgentView = () => {
   const onSubmit = (values: FormValues) => {
     if (!values.agentId.trim()) return;
 
-    setCurrentFormValues({ ...values, agentId: values.agentId.trim() });
+    const clientToolsEnabled =
+      values.clientToolsEnabled &&
+      isBetaWidgetVersion(values.version, widgetDistTags);
+
+    if (values.clientToolsEnabled && !clientToolsEnabled) {
+      toast.error('Client-side tools require a beta widget version.');
+    }
+
+    setCurrentFormValues({
+      ...values,
+      agentId: values.agentId.trim(),
+      clientToolsEnabled,
+    });
     setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
     setToolLog([]);
@@ -756,13 +871,13 @@ const AiAgentView = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="next">Next</SelectItem>
-                            <SelectItem value="latest">Latest</SelectItem>
-                            {availableVersions.map((version) => (
-                              <SelectItem key={version} value={version}>
-                                {version.includes('-')
-                                  ? `${version} 🧪`
-                                  : version}
+                            {versionOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                                {option.isBeta ? ' 🧪' : ''}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1076,21 +1191,40 @@ const AiAgentView = () => {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
-                          <FormLabel>Register send_message (SMS) tool</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormLabel>
+                              Register send_message (SMS) tool
+                            </FormLabel>
+                            <Badge variant="outline">Beta only</Badge>
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             Embeds the widget directly (not in an iframe) and
                             registers a <code className="text-xs">send_message</code>{' '}
                             client-side tool that sends an SMS via the Telnyx
-                            Messaging API. Requires a beta widget version that
-                            ships the client-side tool API (e.g.{' '}
-                            <code className="text-xs">0.33.8-beta.0</code>).
+                            Messaging API. Select a beta-marked widget version
+                            (🧪) to enable this feature.
                           </p>
+                          {!clientToolsAvailableForSelectedVersion && (
+                            <p className="text-xs text-muted-foreground">
+                              Client-side tools are disabled for this widget
+                              version because the API is currently beta-only.
+                            </p>
+                          )}
                         </div>
                         <FormControl>
                           <Switch
                             data-testid="switch-client-tools"
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
+                            checked={
+                              field.value &&
+                              clientToolsAvailableForSelectedVersion
+                            }
+                            disabled={!clientToolsAvailableForSelectedVersion}
+                            onCheckedChange={(checked) =>
+                              field.onChange(
+                                clientToolsAvailableForSelectedVersion &&
+                                  checked,
+                              )
+                            }
                           />
                         </FormControl>
                       </FormItem>
