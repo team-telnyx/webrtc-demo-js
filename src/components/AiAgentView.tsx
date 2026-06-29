@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { IS_DEV_ENV } from '@/lib/vite';
 import {
   Card,
@@ -28,23 +28,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PlusIcon, TrashIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import AiAgentEventLog, { type AiAgentEvent } from './AiAgentEventLog';
 import { Textarea } from '@/components/ui/textarea';
+
+// ── Types ──
 
 interface CustomAttribute {
   name: string;
   value: string;
 }
-
-const REGION_OPTIONS = [
-  { value: 'auto', label: 'AUTO' },
-  { value: 'eu', label: 'EU' },
-  { value: 'us-central', label: 'US-CENTRAL' },
-  { value: 'us-east', label: 'US-EAST' },
-  { value: 'us-west', label: 'US-WEST' },
-  { value: 'ca-central', label: 'CA-CENTRAL' },
-  { value: 'apac', label: 'APAC' },
-] as const;
 
 interface FormValues {
   agentId: string;
@@ -67,7 +61,66 @@ interface FormValues {
   callAudio: string;
   // VAD
   vad: string;
+  // Client-side tools
+  clientToolsEnabled: boolean;
+  smsApiKey: string;
+  smsFromNumber: string;
 }
+
+// ── Client-side tool types ──
+
+type ClientToolContext = {
+  callId: string;
+  toolName: string;
+  rawArguments: string;
+};
+type ClientToolHandler = (
+  args: unknown,
+  context: ClientToolContext,
+) => unknown | Promise<unknown>;
+type TelnyxAiAgentEl = HTMLElement & {
+  registerClientTool: (name: string, handler: ClientToolHandler) => void;
+  unregisterClientTool: (name: string) => boolean;
+  getClientTools: () => string[];
+};
+
+// Allow <telnyx-ai-agent> in JSX without pulling in widget types.
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'telnyx-ai-agent': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          'agent-id'?: string;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          [key: string]: any;
+        },
+        HTMLElement
+      >;
+    }
+  }
+}
+
+type ToolLogEntry = {
+  id: string;
+  kind: 'invoked' | 'completed' | 'error';
+  toolName: string;
+  callId: string;
+  detail?: string;
+  timestamp: Date;
+};
+
+// ── Constants ──
+
+const REGION_OPTIONS = [
+  { value: 'auto', label: 'AUTO' },
+  { value: 'eu', label: 'EU' },
+  { value: 'us-central', label: 'US-CENTRAL' },
+  { value: 'us-east', label: 'US-EAST' },
+  { value: 'us-west', label: 'US-WEST' },
+  { value: 'ca-central', label: 'CA-CENTRAL' },
+  { value: 'apac', label: 'APAC' },
+] as const;
 
 const WIDGET_EVENTS = [
   'agent.connected',
@@ -78,6 +131,103 @@ const WIDGET_EVENTS = [
   'agent.audio.mute',
   'agent.error',
 ];
+
+// ── Helpers ──
+
+function asRecord(args: unknown): Record<string, unknown> {
+  return args && typeof args === 'object'
+    ? (args as Record<string, unknown>)
+    : {};
+}
+
+// Load the widget script once per version (shared across mounts). Custom
+// elements can only be defined once per document, so the first version loaded
+// wins; changing the version afterwards requires a page refresh for the
+// direct-embed mode.
+const widgetScriptPromises = new Map<string, Promise<void>>();
+function loadWidgetScript(version: string): Promise<void> {
+  if (customElements.get('telnyx-ai-agent')) return Promise.resolve();
+  const src = `https://unpkg.com/@telnyx/ai-agent-widget@${version}`;
+  const cached = widgetScriptPromises.get(src);
+  if (cached) return cached;
+
+  const promise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${src}"]`,
+    );
+    if (existing) {
+      customElements
+        .whenDefined('telnyx-ai-agent')
+        .then(() => resolve())
+        .catch(reject);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () =>
+      customElements
+        .whenDefined('telnyx-ai-agent')
+        .then(() => resolve())
+        .catch(reject);
+    script.onerror = () =>
+      reject(new Error(`Failed to load widget from ${src}`));
+    document.head.appendChild(script);
+  });
+  widgetScriptPromises.set(src, promise);
+  return promise;
+}
+
+// Build a props object for the direct-embed <telnyx-ai-agent> element from the
+// same form values used by the iframe srcDoc — so both embed modes stay in
+// sync with the single form.
+function buildWidgetElementProps(
+  values: FormValues,
+  extraAttributes: CustomAttribute[],
+): Record<string, string> {
+  const props: Record<string, string> = {
+    'agent-id': values.agentId,
+  };
+
+  if (values.versionId.trim())
+    props['version-id'] = values.versionId.trim();
+  if (values.conversationId.trim())
+    props['conversation-id'] = values.conversationId.trim();
+
+  if (values.region && values.region !== 'auto')
+    props['region'] = values.region;
+
+  if (values.trickleIce) props['trickle-ice'] = 'true';
+  if (values.chatMode) props['chat-mode'] = 'true';
+  if (values.debug) props['debug'] = 'true';
+  if (values.showUserPerceivedLatency)
+    props['show-user-perceived-latency'] = 'true';
+  if (values.showGreetingLatency) props['show-greeting-latency'] = 'true';
+  if (!values.skipLastVoiceSdkId) props['skip-last-voice-sdk-id'] = 'false';
+
+  if (values.callDestinationNumber.trim())
+    props['call-destination-number'] = values.callDestinationNumber.trim();
+  if (values.callCallerNumber.trim())
+    props['call-caller-number'] = values.callCallerNumber.trim();
+  if (values.callCallerName.trim())
+    props['call-caller-name'] = values.callCallerName.trim();
+  if (values.callCustomHeaders.trim())
+    props['call-custom-headers'] = values.callCustomHeaders.trim();
+  if (values.callAudio.trim()) props['call-audio'] = values.callAudio.trim();
+  if (values.vad.trim()) props['vad'] = values.vad.trim();
+
+  if (IS_DEV_ENV) props['environment'] = 'development';
+
+  for (const attr of extraAttributes) {
+    if (attr.name.trim() && attr.value.trim()) {
+      props[attr.name.trim()] = attr.value.trim();
+    }
+  }
+
+  return props;
+}
+
+// ── Component ──
 
 const AiAgentView = () => {
   const [isEmbedded, setIsEmbedded] = useState(false);
@@ -100,6 +250,13 @@ const AiAgentView = () => {
     [],
   );
 
+  // Client-side tools state
+  const widgetRef = useRef<TelnyxAiAgentEl | null>(null);
+  const [widgetScriptReady, setWidgetScriptReady] = useState(false);
+  const [registeredTools, setRegisteredTools] = useState<string[]>([]);
+  const [toolLog, setToolLog] = useState<ToolLogEntry[]>([]);
+  const smsConfigRef = useRef({ apiKey: '', fromNumber: '' });
+
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: '',
@@ -119,8 +276,14 @@ const AiAgentView = () => {
       callCustomHeaders: '',
       callAudio: '',
       vad: '',
+      clientToolsEnabled: false,
+      smsApiKey: '',
+      smsFromNumber: '',
     },
   });
+
+  const clientToolsActive =
+    isEmbedded && !!currentFormValues?.clientToolsEnabled;
 
   const handleWidgetEvent = useCallback((event: MessageEvent) => {
     if (
@@ -136,11 +299,6 @@ const AiAgentView = () => {
       };
       setEvents((prev) => [newEvent, ...prev]);
 
-      // Capture widget-side connection metadata from `agent.connected`.
-      // The widget emits `{ dc, region, callReportId }` in the event detail
-      // (see telnyx-voice-ai-widget#NN). On SDK versions that pre-date
-      // team-telnyx/webrtc#583 the dc/region fields will be null; the
-      // callReportId works with any version that ships BaseSession.callReportId.
       if (event.data.eventType === 'agent.connected') {
         const detail = event.data.detail as
           | {
@@ -175,11 +333,10 @@ const AiAgentView = () => {
         );
         const data = await response.json();
 
-        // Filter out deprecated versions, keep stable + beta
         const filteredVersions = Object.entries(
           data.versions as Record<string, { deprecated?: string }>,
         )
-          .filter(([_, metadata]) => {
+          .filter(([, metadata]) => {
             // Exclude deprecated versions
             if (metadata.deprecated) return false;
             return true;
@@ -202,7 +359,6 @@ const AiAgentView = () => {
             const diff = (vB.parts[i] || 0) - (vA.parts[i] || 0);
             if (diff !== 0) return diff;
           }
-          // Same major.minor.patch: stable before prerelease, then alpha by tag
           if (!vA.pre && vB.pre) return -1;
           if (vA.pre && !vB.pre) return 1;
           return vA.pre.localeCompare(vB.pre);
@@ -217,16 +373,148 @@ const AiAgentView = () => {
     fetchVersions();
   }, []);
 
+  // Keep the latest SMS config available to the (stable) tool handler.
+  useEffect(() => {
+    if (currentFormValues) {
+      smsConfigRef.current = {
+        apiKey: currentFormValues.smsApiKey.trim(),
+        fromNumber: currentFormValues.smsFromNumber.trim(),
+      };
+    }
+  }, [currentFormValues]);
+
+  const pushLog = useCallback(
+    (entry: Omit<ToolLogEntry, 'id' | 'timestamp'>) => {
+      setToolLog((prev) => [
+        { ...entry, id: crypto.randomUUID(), timestamp: new Date() },
+        ...prev,
+      ]);
+    },
+    [],
+  );
+
+  // Load the widget script when client-tools embed is active.
+  useEffect(() => {
+    if (!clientToolsActive) {
+      setWidgetScriptReady(false);
+      return;
+    }
+    let cancelled = false;
+    loadWidgetScript(currentFormValues!.version)
+      .then(() => {
+        if (!cancelled) setWidgetScriptReady(true);
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(String(err?.message ?? err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientToolsActive, currentFormValues?.version]);
+
+  // Register the send_message client tool.
+  useEffect(() => {
+    if (!widgetScriptReady || !clientToolsActive) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
+
+    widget.registerClientTool('send_message', async (args) => {
+      const a = asRecord(args);
+      const to = String(a.to ?? '').trim();
+      const text = String(a.text ?? a.message ?? '').trim();
+      const { apiKey, fromNumber } = smsConfigRef.current;
+
+      if (!to || !text) {
+        return { sent: false, error: 'Both "to" and "text" are required.' };
+      }
+      if (!apiKey || !fromNumber) {
+        return {
+          sent: false,
+          error:
+            'Demo is missing a Telnyx API key or "from" number; cannot send.',
+        };
+      }
+
+      try {
+        const res = await fetch('https://api.telnyx.com/v2/messages', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ from: fromNumber, to, text }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = body?.errors?.[0]?.detail ?? `HTTP ${res.status}`;
+          return { sent: false, to, error: detail };
+        }
+        toast.success(`SMS sent to ${to}`);
+        return {
+          sent: true,
+          to,
+          messageId: body?.data?.id ?? null,
+        };
+      } catch (err) {
+        return {
+          sent: false,
+          to,
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    });
+
+    queueMicrotask(() => setRegisteredTools(widget.getClientTools()));
+
+    return () => {
+      widget.unregisterClientTool('send_message');
+      setRegisteredTools([]);
+    };
+  }, [widgetScriptReady, clientToolsActive]);
+
+  // Observe tool lifecycle events (safe correlation fields only — no payloads).
+  useEffect(() => {
+    if (!widgetScriptReady || !clientToolsActive) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
+
+    const onInvoked = (e: Event) => {
+      const { callId, toolName } = (e as CustomEvent).detail ?? {};
+      pushLog({ kind: 'invoked', toolName, callId });
+    };
+    const onCompleted = (e: Event) => {
+      const { callId, toolName, isError } = (e as CustomEvent).detail ?? {};
+      pushLog({
+        kind: 'completed',
+        toolName,
+        callId,
+        detail: isError ? 'returned error output' : 'returned result',
+      });
+    };
+    const onError = (e: Event) => {
+      const { callId, toolName, reason } = (e as CustomEvent).detail ?? {};
+      pushLog({ kind: 'error', toolName, callId, detail: reason });
+    };
+
+    widget.addEventListener('client.tool.invoked', onInvoked);
+    widget.addEventListener('client.tool.completed', onCompleted);
+    widget.addEventListener('client.tool.error', onError);
+
+    return () => {
+      widget.removeEventListener('client.tool.invoked', onInvoked);
+      widget.removeEventListener('client.tool.completed', onCompleted);
+      widget.removeEventListener('client.tool.error', onError);
+    };
+  }, [widgetScriptReady, clientToolsActive, pushLog]);
+
   const getIframeSrcDoc = (
     values: FormValues,
     extraAttributes: CustomAttribute[],
   ) => {
     const versionSuffix = `@${values.version}`;
 
-    // Build attribute string from form values
     const attrs: string[] = [`agent-id="${values.agentId}"`];
 
-    // Boolean toggles
     if (values.trickleIce) attrs.push('trickle-ice="true"');
     if (values.chatMode) attrs.push('chat-mode="true"');
     if (values.debug) attrs.push('debug="true"');
@@ -234,18 +522,13 @@ const AiAgentView = () => {
       attrs.push('show-user-perceived-latency="true"');
     if (values.showGreetingLatency)
       attrs.push('show-greeting-latency="true"');
-    // skip-last-voice-sdk-id defaults to true in the widget, but we
-    // explicitly emit it when the user opts out so the demo is transparent.
     if (!values.skipLastVoiceSdkId) attrs.push('skip-last-voice-sdk-id="false"');
 
-    // Region (skip if auto — let the SDK use default)
     if (values.region && values.region !== 'auto')
       attrs.push(`region="${values.region}"`);
 
-    // Environment
     if (IS_DEV_ENV) attrs.push('environment="development"');
 
-    // String attributes (only include if non-empty)
     if (values.versionId.trim())
       attrs.push(`version-id="${values.versionId.trim()}"`);
     if (values.conversationId.trim())
@@ -266,7 +549,6 @@ const AiAgentView = () => {
       attrs.push(`call-audio='${values.callAudio.trim()}'`);
     if (values.vad.trim()) attrs.push(`vad='${values.vad.trim()}'`);
 
-    // Extra custom attributes
     const customAttrsStr = extraAttributes
       .filter((attr) => attr.name.trim() && attr.value.trim())
       .map((attr) => `${attr.name.trim()}="${attr.value.trim()}"`)
@@ -325,6 +607,7 @@ const AiAgentView = () => {
     setCurrentFormValues({ ...values, agentId: values.agentId.trim() });
     setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
+    setToolLog([]);
   };
 
   const handleReset = () => {
@@ -334,6 +617,9 @@ const AiAgentView = () => {
     setEvents([]);
     setWidgetConnectionInfo(null);
     setCustomAttributes([]);
+    setToolLog([]);
+    setRegisteredTools([]);
+    setWidgetScriptReady(false);
     form.reset();
   };
 
@@ -360,6 +646,25 @@ const AiAgentView = () => {
       return next;
     });
   };
+
+  const toolsBadges = useMemo(
+    () =>
+      registeredTools.map((name) => (
+        <Badge key={name} variant="outline" className="font-mono">
+          {name}
+        </Badge>
+      )),
+    [registeredTools],
+  );
+
+  const embedKey = JSON.stringify({
+    ...currentFormValues,
+    customAttrs: currentCustomAttrs,
+  });
+
+  const directEmbedProps = currentFormValues
+    ? buildWidgetElementProps(currentFormValues, currentCustomAttrs)
+    : {};
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
@@ -747,6 +1052,80 @@ const AiAgentView = () => {
                   />
                 </div>
 
+                {/* ── Client-Side Tools ── */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Client-Side Tools
+                  </h3>
+                  <FormField
+                    control={form.control}
+                    name="clientToolsEnabled"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Register send_message (SMS) tool</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Embeds the widget directly (not in an iframe) and
+                            registers a <code className="text-xs">send_message</code>{' '}
+                            client-side tool that sends an SMS via the Telnyx
+                            Messaging API. Requires a beta widget version that
+                            ships the client-side tool API (e.g.{' '}
+                            <code className="text-xs">0.33.8-beta.0</code>).
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-client-tools"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="smsApiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telnyx API Key (for send_message)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            data-testid="input-sms-api-key"
+                            placeholder="KEY..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="smsFromNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>From Number (E.164)</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-sms-from"
+                            placeholder="+1..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The API key is used only in your browser to call{' '}
+                    <code className="text-xs">POST /v2/messages</code>. Leave the
+                    SMS fields blank to register the tool in "dry" mode (it will
+                    return a safe error instead of sending).
+                  </p>
+                </div>
+
                 {/* ── Custom Attributes ── */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -820,7 +1199,90 @@ const AiAgentView = () => {
             </form>
           </Form>
         </Card>
+
         <AiAgentEventLog events={events} />
+
+        {clientToolsActive && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Registered Client Tools</CardTitle>
+                <CardDescription>
+                  Live result of{' '}
+                  <code className="text-xs">getClientTools()</code>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {registeredTools.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No tools registered.
+                  </p>
+                ) : (
+                  <div
+                    className="flex flex-wrap gap-2"
+                    data-testid="ct-registered-tools"
+                  >
+                    {toolsBadges}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Tool Invocation Log</CardTitle>
+                <CardDescription>
+                  <code className="text-xs">client.tool.invoked</code> /{' '}
+                  <code className="text-xs">completed</code> /{' '}
+                  <code className="text-xs">error</code> — no arguments or
+                  outputs are logged, only the tool name and call_id.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[260px] overflow-y-auto">
+                {toolLog.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No tool calls yet. Start a conversation and ask the
+                    assistant to send a message.
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {toolLog.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-start gap-2 border-b py-1 text-xs"
+                        data-testid={`ct-tool-log-${entry.kind}`}
+                      >
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          {entry.timestamp.toLocaleTimeString()}
+                        </span>
+                        <Badge
+                          variant={
+                            entry.kind === 'error'
+                              ? 'destructive'
+                              : entry.kind === 'completed'
+                                ? 'default'
+                                : 'secondary'
+                          }
+                        >
+                          {entry.kind}
+                        </Badge>
+                        <span className="font-mono">{entry.toolName}</span>
+                        {entry.detail && (
+                          <span className="text-muted-foreground">
+                            — {entry.detail}
+                          </span>
+                        )}
+                        <span className="ml-auto font-mono text-muted-foreground truncate max-w-[120px]">
+                          {entry.callId}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <Card className="flex flex-col min-h-[600px]">
@@ -829,7 +1291,9 @@ const AiAgentView = () => {
             <CardTitle>Widget Preview</CardTitle>
             <CardDescription>
               {isEmbedded && currentFormValues
-                ? `Showing agent: ${currentFormValues.agentId}`
+                ? clientToolsActive
+                  ? `Direct embed (client tools) — agent: ${currentFormValues.agentId}`
+                  : `Showing agent: ${currentFormValues.agentId}`
                 : 'Enter an Agent ID and click Embed to see the widget.'}
             </CardDescription>
             {widgetConnectionInfo &&
@@ -879,16 +1343,36 @@ const AiAgentView = () => {
             data-testid="widget-container"
           >
             {isEmbedded && currentFormValues ? (
-              <iframe
-                key={JSON.stringify({
-                  ...currentFormValues,
-                  customAttrs: currentCustomAttrs,
-                })}
-                srcDoc={getIframeSrcDoc(currentFormValues, currentCustomAttrs)}
-                className="h-full w-full border-0"
-                allow="microphone; camera; autoplay"
-                title="AI Agent Widget"
-              />
+              clientToolsActive ? (
+                <div key={embedKey} className="h-full w-full" data-testid="widget-direct-embed">
+                  {widgetScriptReady ? (
+                    <telnyx-ai-agent
+                      ref={widgetRef as React.Ref<HTMLElement>}
+                      data-testid="ct-widget"
+                      {...directEmbedProps}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Loading widget…
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2 p-2">
+                    Start a call from the widget, then ask the assistant to text
+                    someone — e.g. &ldquo;send a message to +1555… saying the
+                    order shipped&rdquo;. The assistant must have a{' '}
+                    <code className="text-xs">send_message</code> tool configured
+                    by name.
+                  </p>
+                </div>
+              ) : (
+                <iframe
+                  key={embedKey}
+                  srcDoc={getIframeSrcDoc(currentFormValues, currentCustomAttrs)}
+                  className="h-full w-full border-0"
+                  allow="microphone; camera; autoplay"
+                  title="AI Agent Widget"
+                />
+              )
             ) : (
               <p
                 className={invertBackground ? 'text-zinc-500' : 'text-zinc-400'}
