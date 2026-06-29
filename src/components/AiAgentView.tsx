@@ -140,12 +140,25 @@ function asRecord(args: unknown): Record<string, unknown> {
     : {};
 }
 
+// Validate that a widget version string only contains safe characters
+// (npm version naming: digits, dots, hyphens, letters). This prevents DOM
+// injection via the version picker — the value is user-selected but should
+// never contain HTML/URL metacharacters.
+function isSafeVersion(version: string): boolean {
+  return /^(next|latest|[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9._-]+)?)$/.test(
+    version,
+  );
+}
+
 // Load the widget script once per version (shared across mounts). Custom
 // elements can only be defined once per document, so the first version loaded
 // wins; changing the version afterwards requires a page refresh for the
 // direct-embed mode.
 const widgetScriptPromises = new Map<string, Promise<void>>();
 function loadWidgetScript(version: string): Promise<void> {
+  if (!isSafeVersion(version)) {
+    return Promise.reject(new Error(`Invalid widget version: ${version}`));
+  }
   if (customElements.get('telnyx-ai-agent')) return Promise.resolve();
   const src = `https://unpkg.com/@telnyx/ai-agent-widget@${version}`;
   const cached = widgetScriptPromises.get(src);
