@@ -86,6 +86,7 @@ const ClientOptions = () => {
       singleInterfaceIce: false,
       hangupOnBeforeUnload: true,
       useCanaryRtcServer: false,
+      skipTrailing: false,
       ringbackFile: '/ringback.mp3',
       ringtoneFile: '/ringtone.mp3',
       rtcIp: '',
@@ -587,6 +588,32 @@ const ClientOptions = () => {
                   <FormControl>
                     <Switch
                       data-testid="switch-canary-rtc-server"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="skipTrailing"
+              render={({ field }) => (
+                <FormItem className="flex items-center mb-4 justify-between">
+                  <div>
+                    <FormLabel>Skip Trailing</FormLabel>
+                    <FormDescription>
+                      Skip VSP pre-routing identity resolution (trailing
+                      release routing). Intended for internal/test-infra
+                      usage only.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      data-testid="switch-skip-trailing"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
