@@ -13,6 +13,7 @@ const clientOptionsDefault: IClientOptionsDemo = {
   forceRelayCandidate: false,
   trickleIce: false,
   singleInterfaceIce: false,
+  iceServersMode: 'merge',
   keepConnectionAliveOnSocketClose: false,
   hangupOnBeforeUnload: true,
   useCanaryRtcServer: false,
