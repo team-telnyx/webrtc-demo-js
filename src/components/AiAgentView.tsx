@@ -343,7 +343,7 @@ const AiAgentView = () => {
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: '',
-      version: 'next',
+      version: 'beta',
       versionId: '',
       conversationId: '',
       region: 'auto',
@@ -1201,8 +1201,9 @@ const AiAgentView = () => {
                             Embeds the widget directly (not in an iframe) and
                             registers a <code className="text-xs">send_message</code>{' '}
                             client-side tool that sends an SMS via the Telnyx
-                            Messaging API. Select a beta-marked widget version
-                            (🧪) to enable this feature.
+                            Messaging API. The demo defaults to the widget beta
+                            dist-tag so this exercises the latest client-side
+                            tool API.
                           </p>
                           {!clientToolsAvailableForSelectedVersion && (
                             <p className="text-xs text-muted-foreground">
