@@ -63,8 +63,8 @@ interface FormValues {
   vad: string;
   // Client-side tools
   clientToolsEnabled: boolean;
-  smsApiKey: string;
-  smsFromNumber: string;
+  clientToolName: string;
+  clientToolFunction: string;
 }
 
 // ── Client-side tool types ──
@@ -138,12 +138,60 @@ const WIDGET_EVENTS = [
   'agent.error',
 ];
 
+const DEFAULT_CLIENT_TOOL_NAME = 'send_telegram';
+const DEFAULT_CLIENT_TOOL_FUNCTION = `const { telegram_id, message } = asRecord(args);
+
+if (!telegram_id) {
+  return { sent: false, error: 'telegram_id is required' };
+}
+
+toast.info(\`send_telegram called for \${telegram_id}\`);
+
+// Replace this demo response with your own client-side action, e.g. a fetch()
+// call to an API your browser session is allowed to use.
+return {
+  sent: true,
+  telegram_id,
+  message: message ?? null,
+};`;
+
+const CLIENT_TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
 // ── Helpers ──
 
 function asRecord(args: unknown): Record<string, unknown> {
   return args && typeof args === 'object'
     ? (args as Record<string, unknown>)
     : {};
+}
+
+function isValidClientToolName(name: string): boolean {
+  return CLIENT_TOOL_NAME_PATTERN.test(name);
+}
+
+function createClientToolHandler(source: string): ClientToolHandler {
+  const run = new Function(
+    'args',
+    'context',
+    'toast',
+    'asRecord',
+    `"use strict"; return (async () => {\n${source}\n})();`,
+  ) as (
+    args: unknown,
+    context: ClientToolContext,
+    toastApi: typeof toast,
+    asRecordHelper: typeof asRecord,
+  ) => Promise<unknown>;
+
+  return async (args, context) => {
+    try {
+      return await run(args, context, toast, asRecord);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Client tool handler failed: ${message}`);
+      return { error: 'handler_error', detail: message };
+    }
+  };
 }
 
 // Validate that a widget version string only contains safe characters
@@ -269,8 +317,7 @@ function buildWidgetElementProps(
     'agent-id': values.agentId,
   };
 
-  if (values.versionId.trim())
-    props['version-id'] = values.versionId.trim();
+  if (values.versionId.trim()) props['version-id'] = values.versionId.trim();
   if (values.conversationId.trim())
     props['conversation-id'] = values.conversationId.trim();
 
@@ -337,13 +384,18 @@ const AiAgentView = () => {
   const widgetRef = useRef<TelnyxAiAgentEl | null>(null);
   const [widgetScriptReady, setWidgetScriptReady] = useState(false);
   const [registeredTools, setRegisteredTools] = useState<string[]>([]);
+  // Client-side tools the assistant is configured with, discovered from the
+  // VSP `widget_settings` message via the widget's `client.tools.configured`
+  // event (rather than hardcoding the name here).
+  const [configuredClientTools, setConfiguredClientTools] = useState<
+    Array<{ name: string; timeout_ms?: number }>
+  >([]);
   const [toolLog, setToolLog] = useState<ToolLogEntry[]>([]);
-  const smsConfigRef = useRef({ apiKey: '', fromNumber: '' });
 
   const form = useForm<FormValues>({
     defaultValues: {
       agentId: '',
-      version: 'next',
+      version: 'beta',
       versionId: '',
       conversationId: '',
       region: 'auto',
@@ -360,8 +412,8 @@ const AiAgentView = () => {
       callAudio: '',
       vad: '',
       clientToolsEnabled: false,
-      smsApiKey: '',
-      smsFromNumber: '',
+      clientToolName: DEFAULT_CLIENT_TOOL_NAME,
+      clientToolFunction: DEFAULT_CLIENT_TOOL_FUNCTION,
     },
   });
 
@@ -450,11 +502,7 @@ const AiAgentView = () => {
           };
           const vA = parseVersion(a);
           const vB = parseVersion(b);
-          for (
-            let i = 0;
-            i < Math.max(vA.parts.length, vB.parts.length);
-            i++
-          ) {
+          for (let i = 0; i < Math.max(vA.parts.length, vB.parts.length); i++) {
             const diff = (vB.parts[i] || 0) - (vA.parts[i] || 0);
             if (diff !== 0) return diff;
           }
@@ -478,16 +526,6 @@ const AiAgentView = () => {
     }
   }, [clientToolsAvailableForSelectedVersion, form]);
 
-  // Keep the latest SMS config available to the (stable) tool handler.
-  useEffect(() => {
-    if (currentFormValues) {
-      smsConfigRef.current = {
-        apiKey: currentFormValues.smsApiKey.trim(),
-        fromNumber: currentFormValues.smsFromNumber.trim(),
-      };
-    }
-  }, [currentFormValues]);
-
   const pushLog = useCallback(
     (entry: Omit<ToolLogEntry, 'id' | 'timestamp'>) => {
       setToolLog((prev) => [
@@ -498,14 +536,16 @@ const AiAgentView = () => {
     [],
   );
 
+  const currentWidgetVersion = currentFormValues?.version;
+
   // Load the widget script when client-tools embed is active.
   useEffect(() => {
-    if (!clientToolsActive) {
+    if (!clientToolsActive || !currentWidgetVersion) {
       setWidgetScriptReady(false);
       return;
     }
     let cancelled = false;
-    loadWidgetScript(currentFormValues!.version)
+    loadWidgetScript(currentWidgetVersion)
       .then(() => {
         if (!cancelled) setWidgetScriptReady(true);
       })
@@ -515,13 +555,14 @@ const AiAgentView = () => {
     return () => {
       cancelled = true;
     };
-  }, [clientToolsActive, currentFormValues?.version]);
+  }, [clientToolsActive, currentWidgetVersion]);
 
-  // Register the send_message client tool.
+  // Register the configured client tool.
   useEffect(() => {
     if (!widgetScriptReady || !clientToolsActive) return;
     const widget = widgetRef.current;
     if (!widget) return;
+    if (!currentFormValues) return;
 
     if (
       typeof widget.registerClientTool !== 'function' ||
@@ -534,59 +575,28 @@ const AiAgentView = () => {
       return;
     }
 
-    widget.registerClientTool('send_message', async (args) => {
-      const a = asRecord(args);
-      const to = String(a.to ?? '').trim();
-      const text = String(a.text ?? a.message ?? '').trim();
-      const { apiKey, fromNumber } = smsConfigRef.current;
+    // Prefer the tool name(s) the assistant is configured with (from VSP);
+    // fall back to the manually entered name until that message arrives.
+    const toolName =
+      configuredClientTools[0]?.name || currentFormValues.clientToolName.trim();
+    const handler = createClientToolHandler(
+      currentFormValues.clientToolFunction,
+    );
 
-      if (!to || !text) {
-        return { sent: false, error: 'Both "to" and "text" are required.' };
-      }
-      if (!apiKey || !fromNumber) {
-        return {
-          sent: false,
-          error:
-            'Demo is missing a Telnyx API key or "from" number; cannot send.',
-        };
-      }
-
-      try {
-        const res = await fetch('https://api.telnyx.com/v2/messages', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ from: fromNumber, to, text }),
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const detail = body?.errors?.[0]?.detail ?? `HTTP ${res.status}`;
-          return { sent: false, to, error: detail };
-        }
-        toast.success(`SMS sent to ${to}`);
-        return {
-          sent: true,
-          to,
-          messageId: body?.data?.id ?? null,
-        };
-      } catch (err) {
-        return {
-          sent: false,
-          to,
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
-    });
+    widget.registerClientTool(toolName, handler);
 
     queueMicrotask(() => setRegisteredTools(widget.getClientTools()));
 
     return () => {
-      widget.unregisterClientTool('send_message');
+      widget.unregisterClientTool(toolName);
       setRegisteredTools([]);
     };
-  }, [widgetScriptReady, clientToolsActive]);
+  }, [
+    widgetScriptReady,
+    clientToolsActive,
+    currentFormValues,
+    configuredClientTools,
+  ]);
 
   // Observe tool lifecycle events (safe correlation fields only — no payloads).
   useEffect(() => {
@@ -611,15 +621,26 @@ const AiAgentView = () => {
       const { callId, toolName, reason } = (e as CustomEvent).detail ?? {};
       pushLog({ kind: 'error', toolName, callId, detail: reason });
     };
+    // The assistant's configured client-side tools, sent by VSP in the
+    // widget_settings message and surfaced by the widget. We take the tool
+    // name(s) from here instead of hardcoding them.
+    const onConfigured = (e: Event) => {
+      const tools = (e as CustomEvent).detail?.tools;
+      if (Array.isArray(tools)) {
+        setConfiguredClientTools(tools);
+      }
+    };
 
     widget.addEventListener('client.tool.invoked', onInvoked);
     widget.addEventListener('client.tool.completed', onCompleted);
     widget.addEventListener('client.tool.error', onError);
+    widget.addEventListener('client.tools.configured', onConfigured);
 
     return () => {
       widget.removeEventListener('client.tool.invoked', onInvoked);
       widget.removeEventListener('client.tool.completed', onCompleted);
       widget.removeEventListener('client.tool.error', onError);
+      widget.removeEventListener('client.tools.configured', onConfigured);
     };
   }, [widgetScriptReady, clientToolsActive, pushLog]);
 
@@ -636,9 +657,9 @@ const AiAgentView = () => {
     if (values.debug) attrs.push('debug="true"');
     if (values.showUserPerceivedLatency)
       attrs.push('show-user-perceived-latency="true"');
-    if (values.showGreetingLatency)
-      attrs.push('show-greeting-latency="true"');
-    if (!values.skipLastVoiceSdkId) attrs.push('skip-last-voice-sdk-id="false"');
+    if (values.showGreetingLatency) attrs.push('show-greeting-latency="true"');
+    if (!values.skipLastVoiceSdkId)
+      attrs.push('skip-last-voice-sdk-id="false"');
 
     if (values.region && values.region !== 'auto')
       attrs.push(`region="${values.region}"`);
@@ -658,9 +679,7 @@ const AiAgentView = () => {
     if (values.callCallerName.trim())
       attrs.push(`call-caller-name="${values.callCallerName.trim()}"`);
     if (values.callCustomHeaders.trim())
-      attrs.push(
-        `call-custom-headers='${values.callCustomHeaders.trim()}'`,
-      );
+      attrs.push(`call-custom-headers='${values.callCustomHeaders.trim()}'`);
     if (values.callAudio.trim())
       attrs.push(`call-audio='${values.callAudio.trim()}'`);
     if (values.vad.trim()) attrs.push(`vad='${values.vad.trim()}'`);
@@ -723,15 +742,39 @@ const AiAgentView = () => {
     const clientToolsEnabled =
       values.clientToolsEnabled &&
       isBetaWidgetVersion(values.version, widgetDistTags);
+    const clientToolName = values.clientToolName.trim();
+    const clientToolFunction = values.clientToolFunction.trim();
 
     if (values.clientToolsEnabled && !clientToolsEnabled) {
       toast.error('Client-side tools require a beta widget version.');
+    }
+
+    if (clientToolsEnabled) {
+      if (!isValidClientToolName(clientToolName)) {
+        toast.error(
+          'Client-side tool name must use only letters, numbers, underscores, or hyphens.',
+        );
+        return;
+      }
+      if (!clientToolFunction) {
+        toast.error('Client-side tool handler body is required.');
+        return;
+      }
+      try {
+        createClientToolHandler(clientToolFunction);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(`Client-side tool handler has a syntax error: ${message}`);
+        return;
+      }
     }
 
     setCurrentFormValues({
       ...values,
       agentId: values.agentId.trim(),
       clientToolsEnabled,
+      clientToolName,
+      clientToolFunction,
     });
     setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
@@ -1192,17 +1235,16 @@ const AiAgentView = () => {
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <FormLabel>
-                              Register send_message (SMS) tool
-                            </FormLabel>
+                            <FormLabel>Register client-side tool</FormLabel>
                             <Badge variant="outline">Beta only</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
                             Embeds the widget directly (not in an iframe) and
-                            registers a <code className="text-xs">send_message</code>{' '}
-                            client-side tool that sends an SMS via the Telnyx
-                            Messaging API. Select a beta-marked widget version
-                            (🧪) to enable this feature.
+                            registers the tool name and handler below. Match the
+                            name to a Portal client-side tool such as{' '}
+                            <code className="text-xs">send_telegram</code>.
+                            Select a beta-marked widget version (🧪) to enable
+                            this feature.
                           </p>
                           {!clientToolsAvailableForSelectedVersion && (
                             <p className="text-xs text-muted-foreground">
@@ -1232,44 +1274,58 @@ const AiAgentView = () => {
                   />
                   <FormField
                     control={form.control}
-                    name="smsApiKey"
+                    name="clientToolName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Telnyx API Key (for send_message)</FormLabel>
+                        <FormLabel>Tool name</FormLabel>
                         <FormControl>
                           <Input
-                            type="password"
-                            data-testid="input-sms-api-key"
-                            placeholder="KEY..."
+                            data-testid="input-client-tool-name"
+                            placeholder="send_telegram"
                             {...field}
                           />
                         </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Must match the client-side tool configured on the AI
+                          assistant.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField
                     control={form.control}
-                    name="smsFromNumber"
+                    name="clientToolFunction"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>From Number (E.164)</FormLabel>
+                        <FormLabel>Handler function body</FormLabel>
                         <FormControl>
-                          <Input
-                            data-testid="input-sms-from"
-                            placeholder="+1..."
+                          <Textarea
+                            data-testid="input-client-tool-function"
+                            className="font-mono text-xs"
+                            rows={12}
+                            placeholder={DEFAULT_CLIENT_TOOL_FUNCTION}
                             {...field}
                           />
                         </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Runs as an async function body with{' '}
+                          <code className="text-xs">args</code>,{' '}
+                          <code className="text-xs">context</code>,{' '}
+                          <code className="text-xs">toast</code>, and{' '}
+                          <code className="text-xs">asRecord</code> in scope.
+                          Return value is sent back to the assistant.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <p className="text-xs text-muted-foreground">
-                    The API key is used only in your browser to call{' '}
-                    <code className="text-xs">POST /v2/messages</code>. Leave the
-                    SMS fields blank to register the tool in "dry" mode (it will
-                    return a safe error instead of sending).
+                    Example Portal schema for this default handler:{' '}
+                    <code className="text-xs">
+                      {'{ telegram_id: string, message: string }'}
+                    </code>
+                    . Avoid pasting secrets into this public demo page.
                   </p>
                 </div>
 
@@ -1491,7 +1547,11 @@ const AiAgentView = () => {
           >
             {isEmbedded && currentFormValues ? (
               clientToolsActive ? (
-                <div key={embedKey} className="h-full w-full" data-testid="widget-direct-embed">
+                <div
+                  key={embedKey}
+                  className="h-full w-full"
+                  data-testid="widget-direct-embed"
+                >
                   {widgetScriptReady ? (
                     <telnyx-ai-agent
                       ref={widgetRef as React.Ref<HTMLElement>}
@@ -1504,17 +1564,21 @@ const AiAgentView = () => {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2 p-2">
-                    Start a call from the widget, then ask the assistant to text
-                    someone — e.g. &ldquo;send a message to +1555… saying the
-                    order shipped&rdquo;. The assistant must have a{' '}
-                    <code className="text-xs">send_message</code> tool configured
-                    by name.
+                    Start a call from the widget, then ask the assistant to use{' '}
+                    <code className="text-xs">
+                      {currentFormValues.clientToolName}
+                    </code>
+                    . The assistant must have a matching client-side tool
+                    configured by name in the Portal.
                   </p>
                 </div>
               ) : (
                 <iframe
                   key={embedKey}
-                  srcDoc={getIframeSrcDoc(currentFormValues, currentCustomAttrs)}
+                  srcDoc={getIframeSrcDoc(
+                    currentFormValues,
+                    currentCustomAttrs,
+                  )}
                   className="h-full w-full border-0"
                   allow="microphone; camera; autoplay"
                   title="AI Agent Widget"
