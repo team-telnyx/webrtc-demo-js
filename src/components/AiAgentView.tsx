@@ -384,6 +384,12 @@ const AiAgentView = () => {
   const widgetRef = useRef<TelnyxAiAgentEl | null>(null);
   const [widgetScriptReady, setWidgetScriptReady] = useState(false);
   const [registeredTools, setRegisteredTools] = useState<string[]>([]);
+  // Client-side tools the assistant is configured with, discovered from the
+  // VSP `widget_settings` message via the widget's `client.tools.configured`
+  // event (rather than hardcoding the name here).
+  const [configuredClientTools, setConfiguredClientTools] = useState<
+    Array<{ name: string; timeout_ms?: number }>
+  >([]);
   const [toolLog, setToolLog] = useState<ToolLogEntry[]>([]);
 
   const form = useForm<FormValues>({
@@ -569,7 +575,10 @@ const AiAgentView = () => {
       return;
     }
 
-    const toolName = currentFormValues.clientToolName.trim();
+    // Prefer the tool name(s) the assistant is configured with (from VSP);
+    // fall back to the manually entered name until that message arrives.
+    const toolName =
+      configuredClientTools[0]?.name || currentFormValues.clientToolName.trim();
     const handler = createClientToolHandler(
       currentFormValues.clientToolFunction,
     );
@@ -582,7 +591,12 @@ const AiAgentView = () => {
       widget.unregisterClientTool(toolName);
       setRegisteredTools([]);
     };
-  }, [widgetScriptReady, clientToolsActive, currentFormValues]);
+  }, [
+    widgetScriptReady,
+    clientToolsActive,
+    currentFormValues,
+    configuredClientTools,
+  ]);
 
   // Observe tool lifecycle events (safe correlation fields only — no payloads).
   useEffect(() => {
@@ -607,15 +621,26 @@ const AiAgentView = () => {
       const { callId, toolName, reason } = (e as CustomEvent).detail ?? {};
       pushLog({ kind: 'error', toolName, callId, detail: reason });
     };
+    // The assistant's configured client-side tools, sent by VSP in the
+    // widget_settings message and surfaced by the widget. We take the tool
+    // name(s) from here instead of hardcoding them.
+    const onConfigured = (e: Event) => {
+      const tools = (e as CustomEvent).detail?.tools;
+      if (Array.isArray(tools)) {
+        setConfiguredClientTools(tools);
+      }
+    };
 
     widget.addEventListener('client.tool.invoked', onInvoked);
     widget.addEventListener('client.tool.completed', onCompleted);
     widget.addEventListener('client.tool.error', onError);
+    widget.addEventListener('client.tools.configured', onConfigured);
 
     return () => {
       widget.removeEventListener('client.tool.invoked', onInvoked);
       widget.removeEventListener('client.tool.completed', onCompleted);
       widget.removeEventListener('client.tool.error', onError);
+      widget.removeEventListener('client.tools.configured', onConfigured);
     };
   }, [widgetScriptReady, clientToolsActive, pushLog]);
 
