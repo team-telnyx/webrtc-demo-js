@@ -20,6 +20,7 @@ const clientOptionsDefault: IClientOptionsDemo = {
   skipTrailing: false,
   mutedMicOnStart: false,
   enableCallReports: true,
+  enableCallRecording: false,
   mediaPermissionsRecovery: {
     enabled: true,
     timeout: 20000,
