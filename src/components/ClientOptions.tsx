@@ -59,6 +59,37 @@ const formatIceServerCredentials = (server: RTCIceServer) => {
   return ` (${server.username || 'no username'} / ${server.credential ? 'credential set' : 'no credential'})`;
 };
 
+const getIceServerKey = (server: RTCIceServer) =>
+  `${formatIceServerUrls(server)}-${server.username ?? ''}-${String(server.credential ?? '')}`;
+
+const IceServerList = ({
+  title,
+  servers,
+  emptyMessage,
+}: {
+  title: string;
+  servers: RTCIceServer[];
+  emptyMessage?: string;
+}) => (
+  <div>
+    <div className="mb-1 font-medium">{title}</div>
+    {servers.length === 0 ? (
+      <div className="text-muted-foreground">
+        {emptyMessage ?? 'No ICE servers configured'}
+      </div>
+    ) : (
+      <ol className="list-decimal space-y-1 pl-5">
+        {servers.map((server) => (
+          <li key={getIceServerKey(server)}>
+            <span className="font-mono">{formatIceServerUrls(server)}</span>
+            {formatIceServerCredentials(server)}
+          </li>
+        ))}
+      </ol>
+    )}
+  </div>
+);
+
 const ClientOptions = () => {
   const [profiles, setProfiles] = useClientProfiles();
   const [clientOptions, setClientOptions] = useClientOptions();
@@ -488,37 +519,30 @@ const ClientOptions = () => {
               )}
             />
             <div className="mb-4 rounded-md border p-3 text-sm">
-              <div className="mb-2 font-medium">Effective ICE servers</div>
-              <div className="mb-2 text-muted-foreground">
-                SDK defaults ({IS_DEV_ENV ? 'development' : 'production'}):{' '}
-                {defaultIceServers.length}. Custom added:{' '}
-                {customIceServers.length}. Effective:{' '}
-                {displayedIceServers.length}.
+              <div className="mb-2 font-medium">ICE server preview</div>
+              <div className="mb-3 text-muted-foreground">
+                Defaults are the SDK {IS_DEV_ENV ? 'development' : 'production'}
+                {' '}ICE servers. Choose merge to append custom entries to the
+                defaults, or custom only to replace the defaults for this
+                client.
               </div>
-              <ol className="list-decimal space-y-1 pl-5">
-                {displayedIceServers.map((server) => {
-                  const serverKey = `${formatIceServerUrls(server)}-${server.username ?? ''}-${String(server.credential ?? '')}`;
-                  const isDefault = defaultIceServers.some(
-                    (defaultServer) =>
-                      formatIceServerUrls(defaultServer) ===
-                        formatIceServerUrls(server) &&
-                      defaultServer.username === server.username &&
-                      defaultServer.credential === server.credential,
-                  );
-
-                  return (
-                    <li key={serverKey}>
-                      <span className="font-mono">
-                        {formatIceServerUrls(server)}
-                      </span>
-                      {formatIceServerCredentials(server)}
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {isDefault ? 'default' : 'custom'}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
+              <div className="grid gap-4 md:grid-cols-2">
+                <IceServerList
+                  title={`SDK defaults (${defaultIceServers.length})`}
+                  servers={defaultIceServers}
+                />
+                <IceServerList
+                  title={`Custom from UI (${customIceServers.length})`}
+                  servers={customIceServers}
+                  emptyMessage="No custom STUN/TURN servers added"
+                />
+              </div>
+              <div className="mt-4 border-t pt-3">
+                <IceServerList
+                  title={`Effective ${watchedIceServersMode === 'replace' ? 'custom-only' : 'merged'} list sent to the SDK (${displayedIceServers.length})`}
+                  servers={displayedIceServers}
+                />
+              </div>
             </div>
             <FormField
               control={form.control}
