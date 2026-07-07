@@ -1,5 +1,7 @@
 import { IClientOptions } from '@telnyx/webrtc';
 
+export type IceServersMode = 'merge' | 'replace';
+
 export interface IClientOptionsDemo extends IClientOptions {
   rtcIp?: string;
   rtcPort?: number;
@@ -10,6 +12,7 @@ export interface IClientOptionsDemo extends IClientOptions {
   hangupOnBeforeUnload?: boolean;
   stunServers?: string[];
   turnServers?: TurnServer;
+  iceServersMode?: IceServersMode;
   video?: boolean;
   skipTrailing?: boolean;
 }

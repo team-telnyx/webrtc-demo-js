@@ -114,7 +114,8 @@ function createTelnyxRTCClient(
     host,
     region: region !== 'auto' ? region : undefined,
 
-    // We can not set iceServers explicitly here, because WebRTC SDK use Telnyx STUN/TURN servers internally based on environment
+    // When iceServers is undefined, the SDK applies its environment-specific defaults.
+    // ClientOptions can also pass a UI-computed merge of defaults + custom servers.
     env: IS_DEV_ENV ? 'development' : 'production',
   });
 }

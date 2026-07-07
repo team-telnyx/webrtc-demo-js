@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ExternalLinkIcon } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { Button } from './ui/button';
 
 import {
@@ -31,38 +31,32 @@ import { useClientOptions, useClientProfiles } from '@/atoms/clientOptions';
 import { LoginMethod, useLoginMethod } from '@/atoms/loginMethod';
 import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { Input } from '@/components/ui/input';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import FileUploadButton from './FileUploadButton';
 import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Switch } from './ui/switch';
 import { IClientOptionsDemo } from '@/lib/types';
+import {
+  configureIceServers,
+  getCustomIceServers,
+  getDefaultIceServers,
+  getDisplayedIceServers,
+} from '@/lib/iceServers';
 import { TurnServersFormField } from './TurnServersFormField';
 import { StunServersFormField } from './StunServersFormField';
 import { IS_DEV_ENV } from '@/lib/vite';
 
-const configureIceServers = (
-  stunServers: IClientOptionsDemo['stunServers'],
-  turnServers: IClientOptionsDemo['turnServers'],
-): IClientOptionsDemo['iceServers'] => {
-  const iceServers: RTCIceServer[] = [];
+const formatIceServerUrls = (server: RTCIceServer) =>
+  Array.isArray(server.urls) ? server.urls.join(', ') : server.urls;
 
-  if (stunServers) {
-    iceServers.push(
-      ...stunServers.filter(Boolean).map((value) => ({ urls: value })),
-    );
+const formatIceServerCredentials = (server: RTCIceServer) => {
+  if (!server.username && !server.credential) {
+    return '';
   }
 
-  if (turnServers && turnServers.urls) {
-    iceServers.push({
-      urls: turnServers.urls,
-      username: turnServers.username,
-      credential: turnServers.password,
-    });
-  }
-
-  return iceServers.length > 0 ? iceServers : undefined;
+  return ` (${server.username || 'no username'} / ${server.credential ? 'credential set' : 'no credential'})`;
 };
 
 const ClientOptions = () => {
@@ -84,6 +78,7 @@ const ClientOptions = () => {
       forceRelayCandidate: false,
       trickleIce: false,
       singleInterfaceIce: false,
+      iceServersMode: 'merge',
       hangupOnBeforeUnload: true,
       useCanaryRtcServer: false,
       skipTrailing: false,
@@ -101,6 +96,27 @@ const ClientOptions = () => {
     },
   });
 
+  const [watchedStunServers, watchedTurnServers, watchedIceServersMode] =
+    useWatch({
+      control: form.control,
+      name: ['stunServers', 'turnServers', 'iceServersMode'],
+    });
+
+  const defaultIceServers = useMemo(() => getDefaultIceServers(), []);
+  const customIceServers = useMemo(
+    () => getCustomIceServers(watchedStunServers, watchedTurnServers),
+    [watchedStunServers, watchedTurnServers],
+  );
+  const displayedIceServers = useMemo(
+    () =>
+      getDisplayedIceServers(
+        watchedStunServers,
+        watchedTurnServers,
+        watchedIceServersMode,
+      ),
+    [watchedIceServersMode, watchedStunServers, watchedTurnServers],
+  );
+
   const setLoginMethod = useCallback(
     (method: string) => {
       form.setValue('login_token', '');
@@ -117,6 +133,7 @@ const ClientOptions = () => {
     values.iceServers = configureIceServers(
       values.stunServers,
       values.turnServers,
+      values.iceServersMode,
     );
 
     setClientOptions(values);
@@ -427,6 +444,82 @@ const ClientOptions = () => {
               name="turnServers"
               wrapperClassName="mb-4"
             />
+            <FormField
+              control={form.control}
+              name="iceServersMode"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>ICE Server Handling</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      value={field.value ?? 'merge'}
+                      className="flex flex-col gap-2 md:flex-row md:gap-6"
+                      onValueChange={field.onChange}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value="merge"
+                          id="radio-ice-merge"
+                          data-testid="radio-ice-merge"
+                        />
+                        <Label htmlFor="radio-ice-merge">
+                          Merge defaults + custom
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value="replace"
+                          id="radio-ice-replace"
+                          data-testid="radio-ice-replace"
+                        />
+                        <Label htmlFor="radio-ice-replace">
+                          Use custom only
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormDescription>
+                    Merge keeps the SDK default Telnyx/Google STUN and Telnyx
+                    TURN servers, then appends the STUN/TURN entries above.
+                    Custom only passes exactly the UI-provided entries.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="mb-4 rounded-md border p-3 text-sm">
+              <div className="mb-2 font-medium">Effective ICE servers</div>
+              <div className="mb-2 text-muted-foreground">
+                SDK defaults ({IS_DEV_ENV ? 'development' : 'production'}):{' '}
+                {defaultIceServers.length}. Custom added:{' '}
+                {customIceServers.length}. Effective:{' '}
+                {displayedIceServers.length}.
+              </div>
+              <ol className="list-decimal space-y-1 pl-5">
+                {displayedIceServers.map((server) => {
+                  const serverKey = `${formatIceServerUrls(server)}-${server.username ?? ''}-${String(server.credential ?? '')}`;
+                  const isDefault = defaultIceServers.some(
+                    (defaultServer) =>
+                      formatIceServerUrls(defaultServer) ===
+                        formatIceServerUrls(server) &&
+                      defaultServer.username === server.username &&
+                      defaultServer.credential === server.credential,
+                  );
+
+                  return (
+                    <li key={serverKey}>
+                      <span className="font-mono">
+                        {formatIceServerUrls(server)}
+                      </span>
+                      {formatIceServerCredentials(server)}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {isDefault ? 'default' : 'custom'}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
             <FormField
               control={form.control}
               name="trickleIce"
