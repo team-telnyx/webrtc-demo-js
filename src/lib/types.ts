@@ -15,6 +15,10 @@ export interface IClientOptionsDemo extends IClientOptions {
   iceServersMode?: IceServersMode;
   video?: boolean;
   skipTrailing?: boolean;
+  // Opt-in call recording. Defaults to false — recording must be explicitly
+  // enabled. TODO: remove when enableCallRecording is added to IClientOptions
+  // in @telnyx/webrtc.
+  enableCallRecording?: boolean;
 }
 
 export type TurnServer = {

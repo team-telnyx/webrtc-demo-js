@@ -119,6 +119,7 @@ const ClientOptions = () => {
       rtcPort: undefined,
       mutedMicOnStart: false,
       enableCallReports: true,
+      enableCallRecording: false,
       video: false,
       anonymous_login: {
         target_type: '',
@@ -778,6 +779,29 @@ const ClientOptions = () => {
                     <Switch
                       data-testid="switch-call-reports"
                       checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="enableCallRecording"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Call Recording</FormLabel>
+                    <FormDescription>
+                      Record calls made with the SDK. Opt-in — off by default.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      data-testid="switch-call-recording"
+                      checked={field.value ?? false}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
