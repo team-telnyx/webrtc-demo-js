@@ -1,4 +1,5 @@
 import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
+import { useRemoteElements } from '@/atoms/remoteElements';
 import { useLog } from '@/atoms/log';
 import { useLoginMethod } from '@/atoms/loginMethod';
 import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
@@ -15,7 +16,7 @@ import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { DialButton, DialButtonData } from './DialButton';
 import { Input } from './ui/input';
-import { SDK_REMOTE_ELEMENT_ID } from '@/lib/sdkRemoteElement';
+import { allocateRemoteElementId } from '@/lib/remoteElementAllocator';
 
 const Dialer = () => {
   const [callOptions, setCallOptions] = useCallOptions();
@@ -25,6 +26,7 @@ const Dialer = () => {
   const [loginMethod] = useLoginMethod();
 
   const [client] = useTelnyxSdkClient();
+  const [, setRemoteElements] = useRemoteElements();
   const onDialButtonClick = useCallback(
     (data: DialButtonData) => {
       setCallOptions((prev: ICallOptions) => ({
@@ -57,10 +59,18 @@ const Dialer = () => {
       description: `Calling: ${callOptions.destinationNumber}`,
     });
 
-    client.newCall({
+    // Allocate a per-call remoteElement id (shared_1, shared_2, …) so this
+    // call attaches its remote stream to its own <audio> element instead of
+    // sharing one (VSUP-121 / PR #725). Register the call->element mapping so
+    // PerCallRemoteAudio renders the matching <audio> for the SDK to attach to.
+    const remoteElementId = allocateRemoteElementId();
+    const call = client.newCall({
       ...callOptions,
-      remoteElement: SDK_REMOTE_ELEMENT_ID,
+      remoteElement: remoteElementId,
     });
+    if (call) {
+      setRemoteElements((prev) => ({ ...prev, [call.id]: remoteElementId }));
+    }
   };
 
   const isDialButtonDisabled = useMemo(() => {

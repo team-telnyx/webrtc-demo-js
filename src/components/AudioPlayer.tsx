@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-type Props = React.HTMLAttributes<HTMLAudioElement> & {
+type Props = React.AudioHTMLAttributes<HTMLAudioElement> & {
   /**
    * Remote media element id the SDK attaches the remote stream to.
    *

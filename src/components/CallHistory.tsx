@@ -4,6 +4,7 @@ import {
   useCallHistory,
 } from '@/atoms/callHistory';
 import { useCallOptions } from '@/atoms/callOptions';
+import { useRemoteElements } from '@/atoms/remoteElements';
 import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { PhoneIncoming, PhoneOutgoing, TrashIcon } from 'lucide-react';
 import {
@@ -17,6 +18,7 @@ import { useEffect } from 'react';
 import { Button } from './ui/button';
 import List from './List';
 import { INotification } from '@telnyx/webrtc';
+import { allocateRemoteElementId } from '@/lib/remoteElementAllocator';
 
 const CallDirectionIcon = (props: { direction: 'inbound' | 'outbound' }) => {
   return props.direction === 'inbound' ? (
@@ -30,6 +32,7 @@ const CallHistory = () => {
   const addCallHistory = useAddCallHistory();
   const [client] = useTelnyxSdkClient();
   const [callOptions, setCallOptions] = useCallOptions();
+  const [, setRemoteElements] = useRemoteElements();
 
   const onItemClick = (item: CallHistoryEntry) => {
     const newCallOptions = {
@@ -38,7 +41,15 @@ const CallHistory = () => {
     };
     setCallOptions(newCallOptions);
 
-    client?.newCall(newCallOptions);
+    // Allocate a per-call remoteElement id for this redial (VSUP-121 / PR #725).
+    const remoteElementId = allocateRemoteElementId();
+    const call = client?.newCall({
+      ...newCallOptions,
+      remoteElement: remoteElementId,
+    });
+    if (call) {
+      setRemoteElements((prev) => ({ ...prev, [call.id]: remoteElementId }));
+    }
   };
 
   useEffect(() => {

@@ -2,7 +2,8 @@ import { Call } from '@telnyx/webrtc';
 import { useRive } from '@rive-app/react-canvas-lite';
 import { Button } from './ui/button';
 import { useCallOptions } from '@/atoms/callOptions';
-import { SDK_REMOTE_ELEMENT_ID } from '@/lib/sdkRemoteElement';
+import { useRemoteElements } from '@/atoms/remoteElements';
+import { allocateRemoteElementId } from '@/lib/remoteElementAllocator';
 type Props = {
   call: Call;
 };
@@ -13,16 +14,21 @@ const IncomingCall = ({ call }: Props) => {
     src: '/incoming.riv',
   });
   const [callOptions] = useCallOptions();
+  const [, setRemoteElements] = useRemoteElements();
 
   const answerCall = () => {
-    // Pass the shared remoteElement explicitly at answer time (VSUP-121 / PR
-    // #725: AnswerParams now accepts remoteElement). The SDK attaches the
-    // remote stream to the shared <audio id=SDK_REMOTE_ELEMENT_ID> rendered by
-    // SharedSdkRemoteAudio, so last-writer-wins behavior across concurrent
-    // calls stays observable. Requires @telnyx/webrtc >= 2.27.4.
+    // Allocate a per-call remoteElement id (shared_1, shared_2, …) and pass it
+    // at answer time (VSUP-121 / PR #725: AnswerParams now accepts
+    // remoteElement). The SDK attaches this call's remote stream to its own
+    // <audio> element rendered by PerCallRemoteAudio, so concurrent calls no
+    // longer conflict on one shared element. Register the call->element
+    // mapping before answering so the element is rendered before the SDK
+    // attaches. Requires @telnyx/webrtc >= 2.27.4.
+    const remoteElementId = allocateRemoteElementId();
+    setRemoteElements((prev) => ({ ...prev, [call.id]: remoteElementId }));
     call.answer({
       customHeaders: callOptions.customHeaders,
-      remoteElement: SDK_REMOTE_ELEMENT_ID,
+      remoteElement: remoteElementId,
     });
   };
 

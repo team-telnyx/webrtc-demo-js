@@ -207,10 +207,11 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
             <AudioVisualizer mediaStream={call.localStream} color="#fff" />
           </div>
           <p className="text-xs text-muted-foreground">
-            Remote audio playback is intentionally handled by the shared SDK
-            remoteElement above, not by a per-call AudioPlayer. This makes
-            shared-element ownership issues reproducible when multiple calls are
-            active.
+            Remote audio playback is intentionally handled by the per-call SDK
+            remoteElement (shared_1, shared_2, …) rendered in the Per-call SDK
+            remoteElement panel, not by a per-call AudioPlayer here. Each call
+            attaches to its own element (VSUP-121 / PR #725), so concurrent
+            calls no longer conflict on one shared element.
           </p>
           <Tabs defaultValue="keyboard">
             <div className="flex justify-center">

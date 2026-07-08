@@ -19,14 +19,14 @@ import SipJsCallNotificationHandler from './components/SipJsCallNotificationHand
 import { SipJsCall } from './components/SipJsCall';
 import AiAgentView from './components/AiAgentView';
 import MediaRecoveryDialog from './components/MediaRecoveryDialog';
-import SharedSdkRemoteAudio from './components/SharedSdkRemoteAudio';
+import PerCallRemoteAudio from './components/PerCallRemoteAudio';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
     <ClientOptions />
     <Dialer />
     <CallOptions />
-    <SharedSdkRemoteAudio />
+    <PerCallRemoteAudio />
 
     <div className="col-span-2">
       <WebSocketMessageLog />
