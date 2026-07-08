@@ -1,6 +1,7 @@
 import { useTelnyxCalls } from '@/atoms/telnyxNotification';
 import { SDK_REMOTE_ELEMENT_ID } from '@/lib/sdkRemoteElement';
 import { useEffect, useMemo, useState } from 'react';
+import AudioPlayer from './AudioPlayer';
 
 const describeSrcObject = (srcObject: MediaProvider | null) => {
   if (!srcObject) {
@@ -63,10 +64,9 @@ const SharedSdkRemoteAudio = () => {
           </span>
         </p>
       </div>
-      <audio
-        id={SDK_REMOTE_ELEMENT_ID}
+      <AudioPlayer
+        remoteElement={SDK_REMOTE_ELEMENT_ID}
         data-testid="sdk-shared-remote-audio"
-        autoPlay
         controls
         className="w-full"
       />

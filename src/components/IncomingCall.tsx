@@ -2,6 +2,7 @@ import { Call } from '@telnyx/webrtc';
 import { useRive } from '@rive-app/react-canvas-lite';
 import { Button } from './ui/button';
 import { useCallOptions } from '@/atoms/callOptions';
+import { SDK_REMOTE_ELEMENT_ID } from '@/lib/sdkRemoteElement';
 type Props = {
   call: Call;
 };
@@ -14,9 +15,15 @@ const IncomingCall = ({ call }: Props) => {
   const [callOptions] = useCallOptions();
 
   const answerCall = () => {
-    // Inbound calls inherit remoteElement from TelnyxRTC client options. Keep
-    // answer params focused on fields the SDK currently applies at answer time.
-    call.answer({ customHeaders: callOptions.customHeaders });
+    // Pass the shared remoteElement explicitly at answer time (VSUP-121 / PR
+    // #725: AnswerParams now accepts remoteElement). The SDK attaches the
+    // remote stream to the shared <audio id=SDK_REMOTE_ELEMENT_ID> rendered by
+    // SharedSdkRemoteAudio, so last-writer-wins behavior across concurrent
+    // calls stays observable. Requires @telnyx/webrtc >= 2.27.4.
+    call.answer({
+      customHeaders: callOptions.customHeaders,
+      remoteElement: SDK_REMOTE_ELEMENT_ID,
+    });
   };
 
   return (
