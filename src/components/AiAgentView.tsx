@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import {
   Form,
   FormControl,
@@ -417,23 +417,13 @@ const AiAgentView = () => {
     },
   });
 
-  const selectedWidgetVersion = useWatch({
-    control: form.control,
-    name: 'version',
-  });
   const versionOptions = useMemo(
     () => buildWidgetVersionOptions(availableVersions, widgetDistTags),
     [availableVersions, widgetDistTags],
   );
-  const clientToolsAvailableForSelectedVersion = isBetaWidgetVersion(
-    selectedWidgetVersion,
-    widgetDistTags,
-  );
 
   const clientToolsActive =
-    isEmbedded &&
-    !!currentFormValues?.clientToolsEnabled &&
-    isBetaWidgetVersion(currentFormValues.version, widgetDistTags);
+    isEmbedded && !!currentFormValues?.clientToolsEnabled;
 
   const handleWidgetEvent = useCallback((event: MessageEvent) => {
     if (
@@ -519,12 +509,6 @@ const AiAgentView = () => {
     };
     fetchVersions();
   }, []);
-
-  useEffect(() => {
-    if (!clientToolsAvailableForSelectedVersion) {
-      form.setValue('clientToolsEnabled', false);
-    }
-  }, [clientToolsAvailableForSelectedVersion, form]);
 
   const pushLog = useCallback(
     (entry: Omit<ToolLogEntry, 'id' | 'timestamp'>) => {
@@ -739,15 +723,9 @@ const AiAgentView = () => {
   const onSubmit = (values: FormValues) => {
     if (!values.agentId.trim()) return;
 
-    const clientToolsEnabled =
-      values.clientToolsEnabled &&
-      isBetaWidgetVersion(values.version, widgetDistTags);
+    const clientToolsEnabled = values.clientToolsEnabled;
     const clientToolName = values.clientToolName.trim();
     const clientToolFunction = values.clientToolFunction.trim();
-
-    if (values.clientToolsEnabled && !clientToolsEnabled) {
-      toast.error('Client-side tools require a beta widget version.');
-    }
 
     if (clientToolsEnabled) {
       if (!isValidClientToolName(clientToolName)) {
@@ -1236,37 +1214,19 @@ const AiAgentView = () => {
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
                             <FormLabel>Register client-side tool</FormLabel>
-                            <Badge variant="outline">Beta only</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
                             Embeds the widget directly (not in an iframe) and
                             registers the tool name and handler below. Match the
                             name to a Portal client-side tool such as{' '}
                             <code className="text-xs">send_telegram</code>.
-                            Select a beta-marked widget version (🧪) to enable
-                            this feature.
                           </p>
-                          {!clientToolsAvailableForSelectedVersion && (
-                            <p className="text-xs text-muted-foreground">
-                              Client-side tools are disabled for this widget
-                              version because the API is currently beta-only.
-                            </p>
-                          )}
                         </div>
                         <FormControl>
                           <Switch
                             data-testid="switch-client-tools"
-                            checked={
-                              field.value &&
-                              clientToolsAvailableForSelectedVersion
-                            }
-                            disabled={!clientToolsAvailableForSelectedVersion}
-                            onCheckedChange={(checked) =>
-                              field.onChange(
-                                clientToolsAvailableForSelectedVersion &&
-                                  checked,
-                              )
-                            }
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
                           />
                         </FormControl>
                       </FormItem>
