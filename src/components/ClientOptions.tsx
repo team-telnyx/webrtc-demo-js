@@ -105,6 +105,7 @@ const ClientOptions = () => {
       login: '',
       password: '',
       login_token: '',
+      pushWhenActive: false,
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
       trickleIce: false,
@@ -415,6 +416,32 @@ const ClientOptions = () => {
               </div>
             </RadioGroup>
             {loginMethodForm()}
+            {loginMethod !== 'anonymous' && (
+              <FormField
+                control={form.control}
+                name="pushWhenActive"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between mb-4">
+                    <div>
+                      <FormLabel>Simultaneous Web/Mobile Ringing</FormLabel>
+                      <FormDescription>
+                        Allow this credential&apos;s mobile push targets to ring
+                        while the browser is active. Applies on
+                        Connect/Reconnect; the browser is not a push target.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        data-testid="switch-push-when-active"
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="debug"
