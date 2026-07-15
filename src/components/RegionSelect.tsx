@@ -22,6 +22,7 @@ const RegionSelect = () => {
         <SelectItem value="us-west">US-WEST</SelectItem>
         <SelectItem value="ca-central">CA-CENTRAL</SelectItem>
         <SelectItem value="apac">APAC</SelectItem>
+        <SelectItem value="south-asia">SOUTH-ASIA</SelectItem>
       </SelectContent>
     </Select>
   );
