@@ -1192,10 +1192,10 @@
     babel-runtime "^6.26.0"
     sip.js "0.21.2"
 
-"@telnyx/webrtc@2.27.5-beta.0":
-  version "2.27.5-beta.0"
-  resolved "https://registry.yarnpkg.com/@telnyx/webrtc/-/webrtc-2.27.5-beta.0.tgz#efe19974b47a61b9e9101eb96eba580d6b7f7d28"
-  integrity sha512-eJJcsxjXBUH9IoTdIYuVPdF4+bXH48StZ41DmRH5cSwrwDMN8zdkLWTXax0uIS9eeaJDLIj/Ug7Ij8l0yfgwOA==
+"@telnyx/webrtc@2.27.5":
+  version "2.27.5"
+  resolved "https://registry.yarnpkg.com/@telnyx/webrtc/-/webrtc-2.27.5.tgz#52e34be03317e964ce9f74fdaf357e90be32cbaa"
+  integrity sha512-i7b1XEX9GIescGntumFIkJiD3F3nc9HYebKpkxj1U0DgHlE2rqKlGUazBWBsC/2tdQ7JlbQR2rA/EumRn7V9YA==
   dependencies:
     "@peermetrics/webrtc-stats" "^5.7.1"
     loglevel "^1.6.8"
