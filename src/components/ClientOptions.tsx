@@ -423,11 +423,14 @@ const ClientOptions = () => {
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between mb-4">
                     <div>
-                      <FormLabel>Simultaneous Web/Mobile Ringing</FormLabel>
+                      <FormLabel>
+                        Mobile Push Notifications While Web Client Is Active
+                      </FormLabel>
                       <FormDescription>
-                        Allow this credential&apos;s mobile push targets to ring
-                        while the browser is active. Applies on
-                        Connect/Reconnect; the browser is not a push target.
+                        Send push notifications to registered mobile apps even
+                        when this credential has an active connected web client.
+                        Disabled by default; when off, the server does not send
+                        mobile push while the web client is connected.
                       </FormDescription>
                     </div>
                     <FormControl>
