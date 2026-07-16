@@ -20,9 +20,11 @@ import {
   type IClientOptions,
   type PreCallDiagnosticReason,
   type PreCallDiagnosticReport,
+  type PreCallEstablishmentTimings,
   type PreCallIceReport,
   type PreCallNetworkReport,
   type PreCallServerTestReport,
+  type PreCallTimingsReport,
   SwEvent,
   type TelnyxRTC,
 } from '@telnyx/webrtc';
@@ -282,36 +284,48 @@ const ReasonList = ({
   );
 };
 
+const getEstablishmentDuration = (timings?: PreCallTimingsReport) => {
+  const steps = timings?.callEstablishment?.steps;
+  if (!steps?.length) return undefined;
+
+  return Math.max(...steps.map((step) => step.fromStart));
+};
+
+const EstablishmentTimeline = ({
+  establishment,
+}: {
+  establishment?: PreCallEstablishmentTimings;
+}) => {
+  if (!establishment?.steps.length) return null;
+
+  return (
+    <div>
+      <div className="mb-2 text-sm font-medium">
+        Call establishment ({establishment.mode}, {establishment.direction})
+      </div>
+      <div className="space-y-2">
+        {establishment.steps.map((step) => (
+          <div
+            key={`${step.label}-${step.fromStart}-${step.delta}`}
+            className="grid grid-cols-[1fr_auto_auto] gap-3 rounded-md border px-3 py-2 text-sm"
+          >
+            <span>{step.label}</span>
+            <span className="font-mono text-muted-foreground">
+              +{formatMs(step.delta)}
+            </span>
+            <span className="font-mono">{formatMs(step.fromStart)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const TimingsReport = ({ report }: { report: PreCallDiagnosticReport }) => {
   const timings = report.timings;
   if (!timings) return null;
 
-  const iceGatheringDuration =
-    timings.iceGatheringMs ??
-    (timings.iceGatheringStartedMs !== undefined &&
-    timings.iceGatheringCompletedMs !== undefined
-      ? timings.iceGatheringCompletedMs - timings.iceGatheringStartedMs
-      : undefined);
-  const firstServerCandidateDuration =
-    timings.firstNonHostCandidateMs !== undefined &&
-    timings.iceGatheringStartedMs !== undefined
-      ? Math.max(
-          0,
-          timings.firstNonHostCandidateMs - timings.iceGatheringStartedMs,
-        )
-      : undefined;
-  const values = [
-    ['Total', timings.totalMs],
-    ['Call setup', timings.callSetupMs],
-    ['Call answered', timings.callAnsweredMs],
-    ['ICE connected', timings.iceConnectedMs],
-    ['DTLS connected', timings.dtlsConnectedMs],
-    ['First media stats', timings.firstMediaStatsMs],
-    ['ICE gathering', iceGatheringDuration],
-    ['Gathering started', timings.iceGatheringStartedMs],
-    ['Gathering completed', timings.iceGatheringCompletedMs],
-    ['First server candidate', firstServerCandidateDuration],
-  ] as const;
+  const establishment = timings.callEstablishment;
 
   return (
     <Card>
@@ -320,36 +334,32 @@ const TimingsReport = ({ report }: { report: PreCallDiagnosticReport }) => {
           <Timer className="h-4 w-4" /> Timings
         </CardTitle>
         <CardDescription>
-          Call setup and ICE gathering milestones.
+          Diagnostic, ICE gathering, and SDK call-establishment timings.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {values.map(([label, value]) => (
-            <Metric key={label} label={label} value={formatMs(value)} />
-          ))}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <Metric label="Total" value={formatMs(timings.totalMs)} />
+          <Metric
+            label="ICE gathering"
+            value={formatMs(timings.iceGatheringMs)}
+          />
+          <Metric
+            label="First server candidate"
+            value={formatMs(timings.firstNonHostCandidateMs)}
+          />
+          <Metric
+            label="Establishment"
+            value={formatMs(getEstablishmentDuration(timings))}
+          />
+          <Metric
+            label="Steps"
+            value={formatNumber(establishment?.steps.length, 0)}
+          />
+          <Metric label="Mode" value={establishment?.mode ?? '—'} />
+          <Metric label="Direction" value={establishment?.direction ?? '—'} />
         </div>
-        {timings.callEstablishment?.steps.length ? (
-          <div>
-            <div className="mb-2 text-sm font-medium">
-              Call establishment ({timings.callEstablishment.mode})
-            </div>
-            <div className="space-y-2">
-              {timings.callEstablishment.steps.map((step) => (
-                <div
-                  key={`${step.label}-${step.fromStart}-${step.delta}`}
-                  className="grid grid-cols-[1fr_auto_auto] gap-3 rounded-md border px-3 py-2 text-sm"
-                >
-                  <span>{step.label}</span>
-                  <span className="font-mono text-muted-foreground">
-                    +{formatMs(step.delta)}
-                  </span>
-                  <span className="font-mono">{formatMs(step.fromStart)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <EstablishmentTimeline establishment={establishment} />
       </CardContent>
     </Card>
   );
@@ -636,7 +646,7 @@ const MicrophoneReport = ({
         >
           <Metric
             label="Permission"
-            value={microphone.permissionState ?? '—'}
+            value={microphone.currentPermissionState}
           />
           <Metric
             label="Devices"
@@ -666,7 +676,13 @@ const MicrophoneReport = ({
           />
           <Metric
             label="Capture"
-            value={microphone.activeCapturePerformed ? 'Completed' : 'Not run'}
+            value={
+              microphone.isGetUserMediaFailed
+                ? 'Failed'
+                : microphone.activeCapturePerformed
+                  ? 'Completed'
+                  : 'Not run'
+            }
           />
           <Metric
             label="Recording"
@@ -740,20 +756,6 @@ const ServerTest = ({
     : test.server.urls;
   const timings = test.timings;
   const ice = test.ice;
-  const iceGatheringDuration =
-    timings?.iceGatheringMs ??
-    (timings?.iceGatheringStartedMs !== undefined &&
-    timings.iceGatheringCompletedMs !== undefined
-      ? timings.iceGatheringCompletedMs - timings.iceGatheringStartedMs
-      : undefined);
-  const firstServerCandidateDuration =
-    timings?.firstNonHostCandidateMs !== undefined &&
-    timings.iceGatheringStartedMs !== undefined
-      ? Math.max(
-          0,
-          timings.firstNonHostCandidateMs - timings.iceGatheringStartedMs,
-        )
-      : undefined;
   const selectedPair = ice?.selectedPair;
   const gatheredServerCandidates =
     ice?.serverCandidateComparison?.flatMap((entry) => entry.candidates) ??
@@ -801,31 +803,32 @@ const ServerTest = ({
       <div className="space-y-5 border-t p-4">
         <section>
           <h4 className="mb-3 flex items-center gap-2 text-sm font-medium">
-            <Timer className="h-4 w-4" /> Gathering & establishment timings
+            <Timer className="h-4 w-4" /> Diagnostic timings
           </h4>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <Metric label="Total test" value={formatMs(timings?.totalMs)} />
             <Metric
-              label="ICE gathering duration"
-              value={formatMs(iceGatheringDuration)}
+              label="ICE gathering"
+              value={formatMs(timings?.iceGatheringMs)}
             />
             <Metric
               label="First server candidate"
-              value={formatMs(firstServerCandidateDuration)}
+              value={formatMs(timings?.firstNonHostCandidateMs)}
             />
             <Metric
-              label="Gathering completed"
-              value={formatMs(timings?.iceGatheringCompletedMs)}
+              label="Establishment"
+              value={formatMs(getEstablishmentDuration(timings))}
             />
             <Metric
-              label="DTLS connected"
-              value={formatMs(timings?.dtlsConnectedMs)}
+              label="Steps"
+              value={formatNumber(timings?.callEstablishment?.steps.length, 0)}
             />
             <Metric
-              label="ICE connected"
-              value={formatMs(timings?.iceConnectedMs)}
+              label="Mode"
+              value={timings?.callEstablishment?.mode ?? '—'}
             />
           </div>
+          <EstablishmentTimeline establishment={timings?.callEstablishment} />
         </section>
 
         <section>
@@ -1034,7 +1037,6 @@ const PreCallDiagnosticsPage = () => {
   const [duration, setDuration] = useState(String(DEFAULT_DURATION_MS));
   const [customIceServers, setCustomIceServers] = useState('');
   const [recordMicrophone, setRecordMicrophone] = useState(false);
-  const [playRecording, setPlayRecording] = useState(true);
   const [runState, setRunState] = useState<RunState>('idle');
   const [activeKind, setActiveKind] = useState<DiagnosticKind | null>(null);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
@@ -1143,13 +1145,8 @@ const PreCallDiagnosticsPage = () => {
         report = await client.runMicrophoneCheck({
           durationMs,
           record: recordMicrophone,
-          playback: playRecording,
-          onRecordingConsent: recordMicrophone
-            ? async (notice) => {
-                if (!window.confirm(notice)) {
-                  throw new Error('Microphone recording was declined.');
-                }
-              }
+          warnOnRecording: recordMicrophone
+            ? (notice) => window.alert(notice)
             : undefined,
         });
       }
@@ -1353,14 +1350,15 @@ const PreCallDiagnosticsPage = () => {
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div>
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div>
                   <Label htmlFor="precall-recording">
                     Record microphone sample
                   </Label>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Explicit consent is requested before recording.
+                    A warning is shown before recording. Successful recordings
+                    play back automatically.
                   </p>
                 </div>
                 <Switch
@@ -1368,20 +1366,6 @@ const PreCallDiagnosticsPage = () => {
                   checked={recordMicrophone}
                   onCheckedChange={setRecordMicrophone}
                   disabled={busy || !('MediaRecorder' in window)}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <Label htmlFor="precall-playback">Automatic playback</Label>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Play the sample after a successful recording.
-                  </p>
-                </div>
-                <Switch
-                  id="precall-playback"
-                  checked={playRecording}
-                  onCheckedChange={setPlayRecording}
-                  disabled={busy || !recordMicrophone}
                 />
               </div>
             </div>
