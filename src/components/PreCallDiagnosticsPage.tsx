@@ -63,7 +63,6 @@ type CompletedRun = {
   completedAt: Date;
 };
 
-const DEFAULT_SETUP_TIMEOUT_MS = 30000;
 const DEFAULT_DURATION_MS = 5000;
 const CONNECTION_TIMEOUT_MS = 30000;
 
@@ -1031,9 +1030,6 @@ const PreCallDiagnosticsPage = () => {
   const [password, setPassword] = useState(savedOptions.password ?? '');
   const [token, setToken] = useState(savedOptions.login_token ?? '');
   const [destination, setDestination] = useState('');
-  const [setupTimeout, setSetupTimeout] = useState(
-    String(DEFAULT_SETUP_TIMEOUT_MS),
-  );
   const [duration, setDuration] = useState(String(DEFAULT_DURATION_MS));
   const [customIceServers, setCustomIceServers] = useState('');
   const [recordMicrophone, setRecordMicrophone] = useState(false);
@@ -1079,10 +1075,6 @@ const PreCallDiagnosticsPage = () => {
 
     try {
       const durationMs = parsePositiveNumber(duration, 'Duration');
-      const callSetupTimeoutMs = parsePositiveNumber(
-        setupTimeout,
-        'Setup timeout',
-      );
       const iceServers = parseIceServers(customIceServers);
 
       if (kind !== 'microphone' && !authenticated) {
@@ -1132,13 +1124,10 @@ const PreCallDiagnosticsPage = () => {
         report = await client.runPreCall({
           destinationNumber: destination.trim() || undefined,
           durationMs,
-          callSetupTimeoutMs,
           iceServers,
         });
       } else if (kind === 'network') {
         report = await client.runNetworkCheck({
-          destinationNumber: destination.trim() || undefined,
-          callSetupTimeoutMs,
           iceServers,
         });
       } else {
@@ -1292,7 +1281,7 @@ const PreCallDiagnosticsPage = () => {
               </div>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-3 lg:col-span-1">
                 <Label htmlFor="precall-destination">
                   Custom diagnostic destination
@@ -1302,17 +1291,6 @@ const PreCallDiagnosticsPage = () => {
                   value={destination}
                   onChange={(event) => setDestination(event.target.value)}
                   placeholder="Uses the SDK default when empty"
-                  disabled={busy}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="precall-timeout">Setup timeout (ms)</Label>
-                <Input
-                  id="precall-timeout"
-                  type="number"
-                  min="1"
-                  value={setupTimeout}
-                  onChange={(event) => setSetupTimeout(event.target.value)}
                   disabled={busy}
                 />
               </div>
