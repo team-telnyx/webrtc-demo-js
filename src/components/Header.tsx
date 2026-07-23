@@ -1,7 +1,6 @@
 import TelnyxLogo from '@/assets/TelnyxLogo';
 import ConnectionStatus from './ConnectionStatus';
 import SipJsConnectionStatus from './SipJsConnectionStatus';
-import PreCallDiagnosisButton from './PreCallDiagnosisButton';
 import CheckRegistrationButton from './CheckRegistrationButton';
 import SDKVersionDropdown from './SDKVersionDropdown';
 import H4 from './typography/H4';
@@ -18,14 +17,13 @@ const Header = () => {
         <H4>WebRTC Demo</H4>
         <SDKVersionDropdown />
         <RegionSelect />
-        <PreCallDiagnosisButton />
-        <CheckRegistrationButton />
+        {mode === 'sdk' && <CheckRegistrationButton />}
         <div className="flex justify-end flex-1 py-1">
           {mode === 'sipjs' ? (
             <SipJsConnectionStatus />
-          ) : mode === 'aiagent' ? null : (
+          ) : mode === 'sdk' ? (
             <ConnectionStatus />
-          )}
+          ) : null}
         </div>
       </div>
     </header>
