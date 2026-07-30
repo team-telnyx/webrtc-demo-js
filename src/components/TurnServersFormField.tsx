@@ -45,18 +45,18 @@ export function TurnServersFormField<
           <div className={props.wrapperClassName}>
             <div className="grid md:grid-cols-3 gap-4 mb-1">
               <FormItem>
-                <FormLabel>TURN Server URL</FormLabel>
+                <FormLabel>TURN/TURNS Server URL</FormLabel>
                 <FormControl>
                   <Input
                     data-testid="input-turn-server-url"
-                    placeholder="turn:turn.telnyx.com:3478?transport=tcp"
+                    placeholder="turns:turn.telnyx.com:443"
                     value={(turnServer?.urls as string) ?? ''}
                     onChange={(e) => updateTurnServer('urls', e.target.value)}
                   />
                 </FormControl>
               </FormItem>
               <FormItem>
-                <FormLabel>TURN Username</FormLabel>
+                <FormLabel>TURN/TURNS Username</FormLabel>
                 <FormControl>
                   <Input
                     data-testid="input-turn-username"
@@ -69,7 +69,7 @@ export function TurnServersFormField<
                 </FormControl>
               </FormItem>
               <FormItem>
-                <FormLabel>TURN Password</FormLabel>
+                <FormLabel>TURN/TURNS Password</FormLabel>
                 <FormControl>
                   <Input
                     data-testid="input-turn-password"
