@@ -17,7 +17,6 @@ const clientOptionsDefault: IClientOptionsDemo = {
   iceServersMode: 'merge',
   keepConnectionAliveOnSocketClose: false,
   hangupOnBeforeUnload: true,
-  useCanaryRtcServer: false,
   skipTrailing: false,
   mutedMicOnStart: false,
   enableCallReports: true,
