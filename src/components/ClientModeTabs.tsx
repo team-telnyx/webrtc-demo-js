@@ -1,4 +1,5 @@
 import { useClientMode } from '@/atoms/clientMode';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ClientModeTabs = () => {
@@ -24,8 +25,18 @@ const ClientModeTabs = () => {
         <TabsTrigger value="aiagent" data-testid="client-mode-tab-aiagent">
           AI Agent
         </TabsTrigger>
-        <TabsTrigger value="precall" data-testid="client-mode-tab-precall">
+        <TabsTrigger
+          value="precall"
+          data-testid="client-mode-tab-precall"
+          className="gap-2"
+        >
           Pre-call Diagnostics
+          <Badge
+            variant="secondary"
+            className="px-1.5 py-0 text-[10px] uppercase"
+          >
+            Beta
+          </Badge>
         </TabsTrigger>
       </TabsList>
     </Tabs>
