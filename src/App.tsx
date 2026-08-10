@@ -19,6 +19,7 @@ import SipJsCallNotificationHandler from './components/SipJsCallNotificationHand
 import { SipJsCall } from './components/SipJsCall';
 import AiAgentView from './components/AiAgentView';
 import MediaRecoveryDialog from './components/MediaRecoveryDialog';
+import PreCallDiagnosticsPage from './components/PreCallDiagnosticsPage';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -54,27 +55,22 @@ const App = () => {
         <PageLayout>
           <div className="p-4 space-y-4">
             <ClientModeTabs />
-            {mode === 'sipjs' ? (
-              <SipJsDemoView />
-            ) : mode === 'aiagent' ? (
-              <AiAgentView />
-            ) : (
-              <SdkDemoView />
-            )}
+            {mode === 'sipjs' && <SipJsDemoView />}
+            {mode === 'aiagent' && <AiAgentView />}
+            {mode === 'sdk' && <SdkDemoView />}
+            {mode === 'precall' && <PreCallDiagnosticsPage />}
           </div>
         </PageLayout>
 
-        {mode === 'sdk' ? (
+        {mode === 'sdk' && (
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
             <MediaRecoveryDialog />
           </>
-        ) : (
-          <SipJsCallNotificationHandler />
         )}
-
-        {mode === 'sdk' ? null : <SipJsCall />}
+        {mode === 'sipjs' && <SipJsCallNotificationHandler />}
+        {mode === 'sipjs' && <SipJsCall />}
       </TooltipProvider>
       <Toaster />
     </ThemeProvider>
