@@ -19,6 +19,16 @@ const TURN_SERVER: RTCIceServer[] = [
     username: 'testuser',
     credential: 'testpassword',
   },
+  {
+    urls: 'turns:turn.telnyx.com:443',
+    username: 'testuser',
+    credential: 'testpassword',
+  },
+  {
+    urls: 'turns:turn2.telnyx.com:443',
+    username: 'testuser',
+    credential: 'testpassword',
+  },
 ];
 const TURN_DEV_SERVER: RTCIceServer[] = [
   {
@@ -28,6 +38,11 @@ const TURN_DEV_SERVER: RTCIceServer[] = [
   },
   {
     urls: 'turn:turndev.telnyx.com:3478?transport=tcp',
+    username: 'testuser',
+    credential: 'testpassword',
+  },
+  {
+    urls: 'turns:turndev.telnyx.com:443',
     username: 'testuser',
     credential: 'testpassword',
   },

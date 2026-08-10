@@ -105,6 +105,7 @@ const ClientOptions = () => {
       login: '',
       password: '',
       login_token: '',
+      pushWhenActive: false,
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
       trickleIce: false,
@@ -415,6 +416,35 @@ const ClientOptions = () => {
               </div>
             </RadioGroup>
             {loginMethodForm()}
+            {loginMethod !== 'anonymous' && (
+              <FormField
+                control={form.control}
+                name="pushWhenActive"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between mb-4">
+                    <div>
+                      <FormLabel>
+                        Mobile Push Notifications While Web Client Is Active
+                      </FormLabel>
+                      <FormDescription>
+                        Send push notifications to registered mobile apps even
+                        when this credential has an active connected web client.
+                        Disabled by default; when off, the server does not send
+                        mobile push while the web client is connected.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        data-testid="switch-push-when-active"
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="debug"

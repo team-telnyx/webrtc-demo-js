@@ -19,6 +19,7 @@ export interface IClientOptionsDemo extends IClientOptions {
   // enabled. TODO: remove when enableCallRecording is added to IClientOptions
   // in @telnyx/webrtc.
   enableCallRecording?: boolean;
+  pushWhenActive?: boolean;
 }
 
 export type TurnServer = {
