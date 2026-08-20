@@ -123,7 +123,11 @@ const SDKVersionDropdown = () => {
       </SelectTrigger>
       <SelectContent>
         {versions.map((sdkVersion) => (
-          <SelectItem key={sdkVersion} value={sdkVersion}>
+          <SelectItem
+            key={sdkVersion}
+            value={sdkVersion}
+            data-testid={`sdk-version-option-${sdkVersion}`}
+          >
             {sdkVersion === 'latest' ? 'Latest' : sdkVersion}
           </SelectItem>
         ))}
