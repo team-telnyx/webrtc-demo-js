@@ -10,6 +10,7 @@ const clientOptionsDefault: IClientOptionsDemo = {
   password: '',
   login_token: '',
   pushWhenActive: false,
+  earlySdpAnswer: false,
   prefetchIceCandidates: false,
   forceRelayCandidate: false,
   trickleIce: false,
