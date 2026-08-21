@@ -106,6 +106,7 @@ const ClientOptions = () => {
       password: '',
       login_token: '',
       pushWhenActive: false,
+      earlySdpAnswer: false,
       prefetchIceCandidates: false,
       forceRelayCandidate: false,
       trickleIce: false,
@@ -440,6 +441,35 @@ const ClientOptions = () => {
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {loginMethod !== 'anonymous' && (
+              <FormField
+                control={form.control}
+                name="earlySdpAnswer"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between mb-4">
+                    <div>
+                      <FormLabel>Early SDP Answer</FormLabel>
+                      <FormDescription>
+                        Request early SDP answers at login, so the SDK receives
+                        media parameters before the call is answered. Sent as
+                        the <code>early_sdp_answer</code> login param. Does not
+                        apply to anonymous login.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        data-testid="switch-early-sdp-answer"
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+
                     <FormMessage />
                   </FormItem>
                 )}
