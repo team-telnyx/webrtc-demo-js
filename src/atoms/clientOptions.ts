@@ -20,6 +20,8 @@ const clientOptionsDefault: IClientOptionsDemo = {
   hangupOnBeforeUnload: true,
   useCanaryRtcServer: false,
   skipTrailing: false,
+  rtcIp: '',
+  rtcPort: undefined,
   mutedMicOnStart: false,
   enableCallReports: true,
   enableCallRecording: false,

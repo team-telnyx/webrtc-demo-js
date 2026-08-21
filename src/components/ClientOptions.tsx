@@ -350,13 +350,17 @@ const ClientOptions = () => {
                   <FormLabel>RTC IP</FormLabel>
                   <FormControl>
                     <Input
-                      data-testid="input-rtc_ip"
+                      data-testid="input-rtc-ip"
                       type="text"
-                      placeholder="RTC_IP"
+                      placeholder="Default RTC routing"
                       {...field}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
-
+                  <FormDescription>
+                    Optional RTC connection IP override. Leave blank to use the
+                    SDK default.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -367,16 +371,26 @@ const ClientOptions = () => {
               name="rtcPort"
               render={({ field }) => (
                 <FormItem className="mb-4">
-                  <FormLabel>RTC PORT</FormLabel>
+                  <FormLabel>RTC Port</FormLabel>
                   <FormControl>
                     <Input
-                      data-testid="input_rtc_port"
-                      type="text"
-                      placeholder="RTC PORT"
+                      data-testid="input-rtc-port"
+                      type="number"
+                      placeholder="Default RTC routing"
                       {...field}
+                      value={field.value ?? ''}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        field.onChange(
+                          value === '' ? undefined : Number(value),
+                        );
+                      }}
                     />
                   </FormControl>
-
+                  <FormDescription>
+                    Optional RTC connection port override. Only applied when RTC
+                    IP is also set.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -582,8 +596,8 @@ const ClientOptions = () => {
             <div className="mb-4 rounded-md border p-3 text-sm">
               <div className="mb-2 font-medium">ICE server preview</div>
               <div className="mb-3 text-muted-foreground">
-                Defaults are the SDK {IS_DEV_ENV ? 'development' : 'production'}
-                {' '}ICE servers. Choose merge to append custom entries to the
+                Defaults are the SDK {IS_DEV_ENV ? 'development' : 'production'}{' '}
+                ICE servers. Choose merge to append custom entries to the
                 defaults, or custom only to replace the defaults for this
                 client.
               </div>
@@ -784,9 +798,8 @@ const ClientOptions = () => {
                   <div>
                     <FormLabel>Skip Trailing</FormLabel>
                     <FormDescription>
-                      Skip VSP pre-routing identity resolution (trailing
-                      release routing). Intended for internal/test-infra
-                      usage only.
+                      Skip VSP pre-routing identity resolution (trailing release
+                      routing). Intended for internal/test-infra usage only.
                     </FormDescription>
                   </div>
                   <FormControl>
