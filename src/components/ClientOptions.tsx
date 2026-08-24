@@ -883,30 +883,28 @@ const ClientOptions = () => {
               )}
             />
 
-            {IS_DEV_ENV && (
-              <FormField
-                control={form.control}
-                name="video"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between mb-4">
-                    <div>
-                      <FormLabel>Video call</FormLabel>
-                      <FormDescription>
-                        Make and receive a video call. Be aware this feature
-                        enables video for all incoming and outgoing calls.
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="video"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Video call</FormLabel>
+                    <FormDescription>
+                      Make and receive a video call. Be aware this feature
+                      enables video for all incoming and outgoing calls.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
