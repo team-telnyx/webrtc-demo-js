@@ -221,7 +221,9 @@ export const StreamingAudioStats = ({
 
       {state.responses.length === 0 ? (
         <p className="p-2 text-sm text-muted-foreground">
-          Subscribed. Waiting for the assistant to speak.
+          {showSubscribeStats
+            ? 'Subscribed. Waiting for the assistant to speak.'
+            : 'Waiting for streaming audio from the widget. Pick a widget build that supports streaming-audio and make the assistant speak.'}
         </p>
       ) : (
         <div className="max-h-64 overflow-y-auto rounded border">

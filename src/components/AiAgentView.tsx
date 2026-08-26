@@ -34,6 +34,7 @@ import AiAgentEventLog, { type AiAgentEvent } from './AiAgentEventLog';
 import { Textarea } from '@/components/ui/textarea';
 import { StreamingAudioStats } from './StreamingAudioPanel';
 import { useWidgetStreamingAudio } from '@/hooks/useWidgetStreamingAudio';
+import { isWidgetConversationActive } from '@/lib/widgetEvents';
 
 // ── Types ──
 
@@ -477,11 +478,11 @@ const AiAgentView = () => {
       };
       setEvents((prev) => [newEvent, ...prev]);
 
-      if (eventType === 'conversation.update') {
-        const update = detail as { call?: { state?: string } } | undefined;
-        if (update?.call?.state === 'active') {
-          markCallActive();
-        }
+      if (
+        eventType === 'conversation.update' &&
+        isWidgetConversationActive(detail)
+      ) {
+        markCallActive();
       }
 
       if (event.data.eventType === 'agent.connected') {
@@ -685,10 +686,7 @@ const AiAgentView = () => {
     const onAudio = (e: Event) =>
       handleAudioEvent(e.type, (e as CustomEvent).detail);
     const onConversationUpdate = (e: Event) => {
-      const update = (e as CustomEvent).detail as
-        | { call?: { state?: string } }
-        | undefined;
-      if (update?.call?.state === 'active') {
+      if (isWidgetConversationActive((e as CustomEvent).detail)) {
         markCallActive();
       }
     };
