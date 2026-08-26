@@ -106,6 +106,102 @@ export function estimateAudioMs(
   return (bytes / (format.sampleRate * format.channels * bytesPerSample)) * 1000;
 }
 
+/** One pre-playout audio chunk, normalised across the SDK and widget sources. */
+export type AudioDelta = {
+  responseId: string;
+  sequence: number;
+  byteLength: number;
+  format: StreamingAudioFormat;
+};
+
+/**
+ * Fold one delta into the state.
+ *
+ * Pure, and shared by both producers: the raw-SDK handler reads deltas off
+ * `SwEvent.AIConversationMessage` and sizes them from the base64 payload, while
+ * the AI Agent tab reads them off the widget's `assistant.audio.delta` DOM
+ * event, which reports `byteLength` directly. Neither ordering nor arithmetic
+ * should differ between the two, so neither owns it.
+ *
+ * `offsetMs` is milliseconds since the call went active, or null when that is
+ * not known yet.
+ */
+export function applyAudioDelta(
+  state: StreamingAudioState,
+  delta: AudioDelta,
+  offsetMs: number | null,
+  ackPending: boolean,
+): StreamingAudioState {
+  const responses = [...state.responses];
+  const index = responses.findIndex(
+    (item) => item.responseId === delta.responseId,
+  );
+
+  if (index === -1) {
+    const created: StreamingAudioResponse = {
+      responseId: delta.responseId,
+      chunks: 1,
+      bytes: delta.byteLength,
+      firstSequence: delta.sequence,
+      lastSequence: delta.sequence,
+      missedSequences: 0,
+      firstDeltaOffsetMs: offsetMs,
+      spanMs: 0,
+      format: delta.format,
+      status: 'streaming',
+    };
+
+    return {
+      ...state,
+      audioBeforeAck: state.audioBeforeAck || ackPending,
+      responses: [...responses, created],
+    };
+  }
+
+  const existing = responses[index];
+  // Sequence is monotonic per response (ACA assigns it from a per-response
+  // counter starting at 0), so a jump means chunks were lost in flight rather
+  // than reordered.
+  const skipped = Math.max(0, delta.sequence - existing.lastSequence - 1);
+
+  responses[index] = {
+    ...existing,
+    chunks: existing.chunks + 1,
+    bytes: existing.bytes + delta.byteLength,
+    lastSequence: Math.max(existing.lastSequence, delta.sequence),
+    missedSequences: existing.missedSequences + skipped,
+    spanMs:
+      offsetMs === null || existing.firstDeltaOffsetMs === null
+        ? existing.spanMs
+        : offsetMs - existing.firstDeltaOffsetMs,
+    format: existing.format ?? delta.format,
+  };
+
+  return {
+    ...state,
+    audioBeforeAck: state.audioBeforeAck || ackPending,
+    responses,
+  };
+}
+
+/** Mark a response finished or interrupted. Unknown ids are ignored. */
+export function applyAudioLifecycle(
+  state: StreamingAudioState,
+  type: 'done' | 'interrupted',
+  responseId: string | undefined,
+): StreamingAudioState {
+  const index = state.responses.findIndex(
+    (item) => item.responseId === (responseId ?? 'unknown'),
+  );
+  if (index === -1) {
+    return state;
+  }
+
+  const responses = [...state.responses];
+  responses[index] = { ...responses[index], status: type };
+  return { ...state, responses };
+}
+
 export function totalChunks(state: StreamingAudioState): number {
   return state.responses.reduce((sum, response) => sum + response.chunks, 0);
 }

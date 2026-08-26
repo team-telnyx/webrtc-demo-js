@@ -4,11 +4,12 @@ import type { Call } from '@telnyx/webrtc';
 import { useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import { useTelnyxNotification } from '@/atoms/telnyxNotification';
 import {
+  applyAudioDelta,
+  applyAudioLifecycle,
   useResetStreamingAudio,
   useSetStreamingAudio,
   useStreamingAudioEnabled,
   type StreamingAudioFormat,
-  type StreamingAudioResponse,
 } from '@/atoms/streamingAudio';
 import { useLog } from '@/atoms/log';
 
@@ -256,75 +257,27 @@ const StreamingAudioHandler = () => {
       subscribedRef.current = true;
 
       setState((prev) => {
-        const responses = [...prev.responses];
         const responseId = audioEvent.response_id ?? 'unknown';
-        const index = responses.findIndex(
-          (item) => item.responseId === responseId,
-        );
 
         if (audioEvent.type !== 'response.audio.delta') {
-          if (index === -1) {
-            return prev;
-          }
-
-          responses[index] = {
-            ...responses[index],
-            status:
-              audioEvent.type === 'response.audio.done' ? 'done' : 'interrupted',
-          };
-          return { ...prev, responses };
-        }
-
-        const bytes = decodedByteLength(audioEvent.delta);
-        const offset = sinceActive();
-
-        if (index === -1) {
-          const created: StreamingAudioResponse = {
+          return applyAudioLifecycle(
+            prev,
+            audioEvent.type === 'response.audio.done' ? 'done' : 'interrupted',
             responseId,
-            chunks: 1,
-            bytes,
-            firstSequence: audioEvent.sequence,
-            lastSequence: audioEvent.sequence,
-            missedSequences: 0,
-            firstDeltaOffsetMs: offset,
-            spanMs: 0,
-            format: audioEvent.format,
-            status: 'streaming',
-          };
-
-          return {
-            ...prev,
-            audioBeforeAck: prev.audioBeforeAck || audioArrivedBeforeAck,
-            responses: [...responses, created],
-          };
+          );
         }
 
-        const existing = responses[index];
-        // Sequence is monotonic per response, so a jump means chunks were lost
-        // in flight rather than reordered.
-        const skipped = Math.max(
-          0,
-          audioEvent.sequence - existing.lastSequence - 1,
+        return applyAudioDelta(
+          prev,
+          {
+            responseId,
+            sequence: audioEvent.sequence,
+            byteLength: decodedByteLength(audioEvent.delta),
+            format: audioEvent.format,
+          },
+          sinceActive(),
+          audioArrivedBeforeAck,
         );
-
-        responses[index] = {
-          ...existing,
-          chunks: existing.chunks + 1,
-          bytes: existing.bytes + bytes,
-          lastSequence: Math.max(existing.lastSequence, audioEvent.sequence),
-          missedSequences: existing.missedSequences + skipped,
-          spanMs:
-            offset === null || existing.firstDeltaOffsetMs === null
-              ? existing.spanMs
-              : offset - existing.firstDeltaOffsetMs,
-          format: existing.format ?? audioEvent.format,
-        };
-
-        return {
-          ...prev,
-          audioBeforeAck: prev.audioBeforeAck || audioArrivedBeforeAck,
-          responses,
-        };
       });
     };
 

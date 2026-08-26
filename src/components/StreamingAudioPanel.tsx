@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Badge } from './ui/badge';
 import {
   Card,
@@ -100,16 +101,36 @@ const ResponseRow = ({ response }: { response: StreamingAudioResponse }) => {
  * non-zero start sequence is the greeting-truncation race: ACA had already
  * emitted chunks before the subscription existed, and those are gone.
  */
-export const StreamingAudioStats = () => {
+export const StreamingAudioStats = ({
+  enabled,
+  disabledHint,
+  showSubscribeStats = true,
+}: {
+  /** Defaults to the SDK tab's anonymous-login option when omitted. */
+  enabled?: boolean;
+  disabledHint?: ReactNode;
+  /**
+   * Whether the subscribe handshake is ours to report. False on the AI Agent
+   * tab, where @telnyx/ai-agent-lib owns the subscribe inside the widget and
+   * does not surface the ack — so an ack latency there would be a blank tile
+   * pretending to be a measurement.
+   */
+  showSubscribeStats?: boolean;
+} = {}) => {
   const [state] = useStreamingAudio();
-  const enabled = useStreamingAudioEnabled();
+  const sdkEnabled = useStreamingAudioEnabled();
+  const isEnabled = enabled ?? sdkEnabled;
 
-  if (!enabled) {
+  if (!isEnabled) {
     return (
       <p className="p-2 text-sm text-muted-foreground">
-        Turn on <span className="font-semibold">Streaming Audio</span> in Client
-        Options (anonymous login) to subscribe to the assistant's pre-playout
-        audio stream and measure it here.
+        {disabledHint ?? (
+          <>
+            Turn on <span className="font-semibold">Streaming Audio</span> in
+            Client Options (anonymous login) to subscribe to the assistant's
+            pre-playout audio stream and measure it here.
+          </>
+        )}
       </p>
     );
   }
@@ -122,29 +143,33 @@ export const StreamingAudioStats = () => {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat
-          label="Subscribe"
-          value={
-            state.ackOffsetMs !== null
-              ? 'acked'
-              : chunks > 0
-                ? // Audio without an ack still proves the subscription exists.
-                  'streaming'
-                : state.subscribeAttempts > 0
-                  ? 'pending'
-                  : 'idle'
-          }
-          hint={`${state.subscribeAttempts} attempt${
-            state.subscribeAttempts === 1 ? '' : 's'
-          }`}
-          testId="streaming-audio-subscribe"
-        />
-        <Stat
-          label="Ack after"
-          value={formatMs(state.ackOffsetMs)}
-          hint="from call active"
-          testId="streaming-audio-ack"
-        />
+        {showSubscribeStats && (
+          <>
+            <Stat
+              label="Subscribe"
+              value={
+                state.ackOffsetMs !== null
+                  ? 'acked'
+                  : chunks > 0
+                    ? // Audio without an ack still proves the subscription exists.
+                      'streaming'
+                    : state.subscribeAttempts > 0
+                      ? 'pending'
+                      : 'idle'
+              }
+              hint={`${state.subscribeAttempts} attempt${
+                state.subscribeAttempts === 1 ? '' : 's'
+              }`}
+              testId="streaming-audio-subscribe"
+            />
+            <Stat
+              label="Ack after"
+              value={formatMs(state.ackOffsetMs)}
+              hint="from call active"
+              testId="streaming-audio-ack"
+            />
+          </>
+        )}
         <Stat
           label="Chunks"
           value={String(chunks)}
@@ -157,10 +182,18 @@ export const StreamingAudioStats = () => {
           hint="first delta, from call active"
           testId="streaming-audio-greeting"
         />
+        {!showSubscribeStats && (
+          <Stat
+            label="Responses"
+            value={String(state.responses.length)}
+            hint={`${missed} sequence${missed === 1 ? '' : 's'} missed`}
+            testId="streaming-audio-responses"
+          />
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {state.audioBeforeAck && (
+        {showSubscribeStats && state.audioBeforeAck && (
           <Badge variant="default" data-testid="streaming-audio-init-subscribe">
             audio arrived before ack — server-side init-subscribe
           </Badge>
@@ -174,7 +207,9 @@ export const StreamingAudioStats = () => {
         {missed > 0 && (
           <Badge variant="destructive">{missed} sequences missed</Badge>
         )}
-        {state.subscribeAttempts >= 10 && state.ackOffsetMs === null && (
+        {showSubscribeStats &&
+          state.subscribeAttempts >= 10 &&
+          state.ackOffsetMs === null && (
           <Badge variant="destructive">
             subscribe retries exhausted — no ack from ACA
           </Badge>
