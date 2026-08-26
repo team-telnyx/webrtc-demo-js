@@ -20,6 +20,8 @@ import { SipJsCall } from './components/SipJsCall';
 import AiAgentView from './components/AiAgentView';
 import MediaRecoveryDialog from './components/MediaRecoveryDialog';
 import PreCallDiagnosticsPage from './components/PreCallDiagnosticsPage';
+import StreamingAudioPanel from './components/StreamingAudioPanel';
+import StreamingAudioHandler from './components/StreamingAudioHandler';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -35,6 +37,7 @@ const SdkDemoView = () => (
     <div className="col-span-2">
       <BlackBoxTestLog />
     </div>
+    <StreamingAudioPanel />
   </div>
 );
 
@@ -66,6 +69,7 @@ const App = () => {
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
+            <StreamingAudioHandler />
             <MediaRecoveryDialog />
           </>
         )}
