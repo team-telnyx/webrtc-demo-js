@@ -32,6 +32,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import AiAgentEventLog, { type AiAgentEvent } from './AiAgentEventLog';
 import { Textarea } from '@/components/ui/textarea';
+import { StreamingAudioStats } from './StreamingAudioPanel';
+import { useWidgetStreamingAudio } from '@/hooks/useWidgetStreamingAudio';
+import { isWidgetConversationActive } from '@/lib/widgetEvents';
 
 // ── Types ──
 
@@ -53,6 +56,7 @@ interface FormValues {
   showUserPerceivedLatency: boolean;
   showGreetingLatency: boolean;
   skipLastVoiceSdkId: boolean;
+  streamingAudio: boolean;
   // Call options
   callDestinationNumber: string;
   callCallerNumber: string;
@@ -136,7 +140,19 @@ const WIDGET_EVENTS = [
   'conversation.agent.state',
   'agent.audio.mute',
   'agent.error',
+  // Pre-playout assistant audio. Only fires when `streaming-audio` is on, and
+  // only on widget builds that forward it (team-telnyx/telnyx-voice-ai-widget#91).
+  'assistant.audio.delta',
+  'assistant.audio.done',
+  'assistant.audio.interrupted',
 ];
+
+/** The subset of WIDGET_EVENTS the streaming-audio panel consumes. */
+const AUDIO_EVENT_TYPES = new Set([
+  'assistant.audio.delta',
+  'assistant.audio.done',
+  'assistant.audio.interrupted',
+]);
 
 const DEFAULT_CLIENT_TOOL_NAME = 'send_telegram';
 const DEFAULT_CLIENT_TOOL_FUNCTION = `const { telegram_id, message } = asRecord(args);
@@ -331,6 +347,7 @@ function buildWidgetElementProps(
     props['show-user-perceived-latency'] = 'true';
   if (values.showGreetingLatency) props['show-greeting-latency'] = 'true';
   if (!values.skipLastVoiceSdkId) props['skip-last-voice-sdk-id'] = 'false';
+  if (values.streamingAudio) props['streaming-audio'] = 'true';
 
   if (values.callDestinationNumber.trim())
     props['call-destination-number'] = values.callDestinationNumber.trim();
@@ -405,6 +422,7 @@ const AiAgentView = () => {
       showUserPerceivedLatency: false,
       showGreetingLatency: false,
       skipLastVoiceSdkId: true,
+      streamingAudio: false,
       callDestinationNumber: '',
       callCallerNumber: '',
       callCallerName: '',
@@ -425,19 +443,47 @@ const AiAgentView = () => {
   const clientToolsActive =
     isEmbedded && !!currentFormValues?.clientToolsEnabled;
 
-  const handleWidgetEvent = useCallback((event: MessageEvent) => {
-    if (
-      event.data &&
-      event.data.type === 'telnyx-ai-agent-event' &&
-      event.data.eventType
-    ) {
+  const {
+    handleAudioEvent,
+    markCallActive,
+    reset: resetStreamingAudio,
+  } = useWidgetStreamingAudio();
+
+  const handleWidgetEvent = useCallback(
+    (event: MessageEvent) => {
+      if (
+        !event.data ||
+        event.data.type !== 'telnyx-ai-agent-event' ||
+        !event.data.eventType
+      ) {
+        return;
+      }
+
+      const { eventType, detail } = event.data;
+
+      // Deltas arrive many times per second. They drive the streaming-audio
+      // panel instead of the event log, which they would otherwise bury.
+      if (AUDIO_EVENT_TYPES.has(eventType)) {
+        handleAudioEvent(eventType, detail);
+        if (eventType === 'assistant.audio.delta') {
+          return;
+        }
+      }
+
       const newEvent: AiAgentEvent = {
         id: crypto.randomUUID(),
-        eventType: event.data.eventType,
-        detail: event.data.detail,
+        eventType,
+        detail,
         timestamp: new Date(),
       };
       setEvents((prev) => [newEvent, ...prev]);
+
+      if (
+        eventType === 'conversation.update' &&
+        isWidgetConversationActive(detail)
+      ) {
+        markCallActive();
+      }
 
       if (event.data.eventType === 'agent.connected') {
         const detail = event.data.detail as
@@ -455,8 +501,9 @@ const AiAgentView = () => {
       } else if (event.data.eventType === 'agent.disconnected') {
         setWidgetConnectionInfo(null);
       }
-    }
-  }, []);
+    },
+    [handleAudioEvent, markCallActive],
+  );
 
   useEffect(() => {
     window.addEventListener('message', handleWidgetEvent);
@@ -628,6 +675,35 @@ const AiAgentView = () => {
     };
   }, [widgetScriptReady, clientToolsActive, pushLog]);
 
+  // Direct-embed mode renders <telnyx-ai-agent> in this document rather than in
+  // an iframe, so there is no postMessage bridge — the audio events have to be
+  // read straight off the element.
+  useEffect(() => {
+    if (!widgetScriptReady || !clientToolsActive) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
+
+    const onAudio = (e: Event) =>
+      handleAudioEvent(e.type, (e as CustomEvent).detail);
+    const onConversationUpdate = (e: Event) => {
+      if (isWidgetConversationActive((e as CustomEvent).detail)) {
+        markCallActive();
+      }
+    };
+
+    for (const type of AUDIO_EVENT_TYPES) {
+      widget.addEventListener(type, onAudio);
+    }
+    widget.addEventListener('conversation.update', onConversationUpdate);
+
+    return () => {
+      for (const type of AUDIO_EVENT_TYPES) {
+        widget.removeEventListener(type, onAudio);
+      }
+      widget.removeEventListener('conversation.update', onConversationUpdate);
+    };
+  }, [widgetScriptReady, clientToolsActive, handleAudioEvent, markCallActive]);
+
   const getIframeSrcDoc = (
     values: FormValues,
     extraAttributes: CustomAttribute[],
@@ -644,6 +720,7 @@ const AiAgentView = () => {
     if (values.showGreetingLatency) attrs.push('show-greeting-latency="true"');
     if (!values.skipLastVoiceSdkId)
       attrs.push('skip-last-voice-sdk-id="false"');
+    if (values.streamingAudio) attrs.push('streaming-audio="true"');
 
     if (values.region && values.region !== 'auto')
       attrs.push(`region="${values.region}"`);
@@ -757,6 +834,7 @@ const AiAgentView = () => {
     setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
     setToolLog([]);
+    resetStreamingAudio();
   };
 
   const handleReset = () => {
@@ -769,6 +847,7 @@ const AiAgentView = () => {
     setToolLog([]);
     setRegisteredTools([]);
     setWidgetScriptReady(false);
+    resetStreamingAudio();
     form.reset();
   };
 
@@ -1084,6 +1163,30 @@ const AiAgentView = () => {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="streamingAudio"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Streaming Audio</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Stream the assistant's audio ahead of playout, so
+                            the greeting is not lost to the post-connect
+                            subscribe. Needs a widget build with{' '}
+                            <code className="text-xs">streaming-audio</code>.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-streaming-audio"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 {/* ── Call Options ── */}
@@ -1361,6 +1464,30 @@ const AiAgentView = () => {
               </CardFooter>
             </form>
           </Form>
+        </Card>
+
+        <Card data-testid="ai-agent-streaming-audio-panel">
+          <CardHeader>
+            <CardTitle>Streaming Audio</CardTitle>
+            <CardDescription>
+              Pre-playout assistant audio, measured from the widget's{' '}
+              <code className="text-xs">assistant.audio.*</code> events. Deltas
+              are kept out of the event log below, which they would bury.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StreamingAudioStats
+              enabled={!!currentFormValues?.streamingAudio}
+              showSubscribeStats={false}
+              disabledHint={
+                <>
+                  Turn on <span className="font-semibold">Streaming Audio</span>{' '}
+                  and embed the agent to measure the assistant's pre-playout
+                  audio stream here.
+                </>
+              }
+            />
+          </CardContent>
         </Card>
 
         <AiAgentEventLog events={events} />
