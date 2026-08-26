@@ -92,9 +92,10 @@ export function estimateAudioMs(
     return null;
   }
 
-  const bytesPerSample = /(^|_)(s|u)?16/.test(format.encoding)
+  const encoding = format.encoding.toLowerCase();
+  const bytesPerSample = /(^|[_-])(?:s|u)?16|pcm16/.test(encoding)
     ? 2
-    : /(^|_)(s|u)?8|mulaw|alaw|pcmu|pcma/i.test(format.encoding)
+    : /(^|[_-])(?:s|u)?8|mulaw|alaw|pcmu|pcma/.test(encoding)
       ? 1
       : null;
 

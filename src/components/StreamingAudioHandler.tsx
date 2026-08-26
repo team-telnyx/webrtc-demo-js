@@ -139,7 +139,8 @@ const StreamingAudioHandler = () => {
 
   // Refs, not state: the event handler must not be re-registered on every delta.
   const callRef = useRef<Call | null>(null);
-  const ackedRef = useRef(false);
+  const subscribedRef = useRef(false);
+  const ackObservedRef = useRef(false);
   const attemptsRef = useRef(0);
   const callActiveAtRef = useRef<number | null>(null);
 
@@ -154,15 +155,17 @@ const StreamingAudioHandler = () => {
       return;
     }
 
-    ackedRef.current = false;
+    subscribedRef.current = false;
+    ackObservedRef.current = false;
     attemptsRef.current = 0;
     callActiveAtRef.current = null;
     reset();
   }, [enabled, callId, reset]);
 
-  // Part 2: subscribe once the call is active, and keep retrying until acked.
+  // Part 2: subscribe once the call is active, and keep retrying until ACA
+  // either acks the subscription or proves it with audio.
   const sendSubscribe = useCallback(() => {
-    if (!enabled || ackedRef.current) {
+    if (!enabled || subscribedRef.current) {
       return;
     }
 
@@ -220,8 +223,10 @@ const StreamingAudioHandler = () => {
       };
 
       if (isSubscribedAck(event)) {
-        if (!ackedRef.current) {
-          ackedRef.current = true;
+        subscribedRef.current = true;
+
+        if (!ackObservedRef.current) {
+          ackObservedRef.current = true;
           const offset = sinceActive();
           setState((prev) => ({ ...prev, ackOffsetMs: offset }));
           pushLog({
@@ -238,15 +243,17 @@ const StreamingAudioHandler = () => {
       if (!audioEvent) {
         // Not audio, but proof the channel is live: retry the subscribe while
         // the ack is still outstanding.
-        if (!ackedRef.current) {
+        if (!subscribedRef.current) {
           sendSubscribe();
         }
         return;
       }
 
-      // Audio is flowing, so the subscription exists even if the ack was missed.
-      const ackWasPending = !ackedRef.current;
-      ackedRef.current = true;
+      // Audio is flowing, so the subscription exists even if the ack has not
+      // arrived yet. Keep ack observation separate so a later ack still records
+      // the offset while this signal stops subscribe retries.
+      const audioArrivedBeforeAck = !ackObservedRef.current;
+      subscribedRef.current = true;
 
       setState((prev) => {
         const responses = [...prev.responses];
@@ -287,7 +294,7 @@ const StreamingAudioHandler = () => {
 
           return {
             ...prev,
-            audioBeforeAck: prev.audioBeforeAck || ackWasPending,
+            audioBeforeAck: prev.audioBeforeAck || audioArrivedBeforeAck,
             responses: [...responses, created],
           };
         }
@@ -315,7 +322,7 @@ const StreamingAudioHandler = () => {
 
         return {
           ...prev,
-          audioBeforeAck: prev.audioBeforeAck || ackWasPending,
+          audioBeforeAck: prev.audioBeforeAck || audioArrivedBeforeAck,
           responses,
         };
       });
