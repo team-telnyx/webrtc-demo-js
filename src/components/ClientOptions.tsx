@@ -48,6 +48,29 @@ import { TurnServersFormField } from './TurnServersFormField';
 import { StunServersFormField } from './StunServersFormField';
 import { IS_DEV_ENV } from '@/lib/vite';
 
+type AnonymousLogin = IClientOptionsDemo['anonymous_login'];
+
+// `target_params` is only sent when something is set in it. The switch keeps a
+// `streamingAudio: false` entry so it can render unchecked, but an opt-out is
+// the same as never opting in, so it is dropped before the options reach the
+// SDK and the `anonymous_login` payload stays as it was without the option.
+const normalizeAnonymousLogin = (
+  anonymousLogin: AnonymousLogin,
+): AnonymousLogin => {
+  if (!anonymousLogin) {
+    return anonymousLogin;
+  }
+
+  const { target_params: targetParams, ...rest } = anonymousLogin;
+  const usedParams = Object.fromEntries(
+    Object.entries(targetParams ?? {}).filter(([, value]) => value !== false),
+  );
+
+  return Object.keys(usedParams).length > 0
+    ? { ...rest, target_params: usedParams }
+    : rest;
+};
+
 const formatIceServerUrls = (server: RTCIceServer) =>
   Array.isArray(server.urls) ? server.urls.join(', ') : server.urls;
 
@@ -126,6 +149,9 @@ const ClientOptions = () => {
       anonymous_login: {
         target_type: '',
         target_id: '',
+        target_params: {
+          streamingAudio: false,
+        },
       },
     },
   });
@@ -158,6 +184,7 @@ const ClientOptions = () => {
       form.setValue('password', '');
       form.setValue('anonymous_login.target_id', '');
       form.setValue('anonymous_login.target_type', 'ai_assistant');
+      form.setValue('anonymous_login.target_params.streamingAudio', false);
       _setLoginMethod(method as LoginMethod);
     },
     [_setLoginMethod, form],
@@ -169,6 +196,7 @@ const ClientOptions = () => {
       values.turnServers,
       values.iceServersMode,
     );
+    values.anonymous_login = normalizeAnonymousLogin(values.anonymous_login);
 
     setClientOptions(values);
     onSaveProfile(values);
@@ -208,26 +236,54 @@ const ClientOptions = () => {
   const loginMethodForm = () => {
     if (loginMethod === 'anonymous') {
       return (
-        <FormField
-          rules={{ required: 'AI Assistant ID is required' }}
-          control={form.control}
-          name="anonymous_login.target_id"
-          render={({ field }) => (
-            <FormItem className="mb-4">
-              <FormLabel>AI Assistant ID</FormLabel>
-              <FormControl>
-                <Input
-                  data-testid="input-anonymous-login-target-id"
-                  type="text"
-                  placeholder="AI Assistant ID"
-                  {...field}
-                />
-              </FormControl>
+        <>
+          <FormField
+            rules={{ required: 'AI Assistant ID is required' }}
+            control={form.control}
+            name="anonymous_login.target_id"
+            render={({ field }) => (
+              <FormItem className="mb-4">
+                <FormLabel>AI Assistant ID</FormLabel>
+                <FormControl>
+                  <Input
+                    data-testid="input-anonymous-login-target-id"
+                    type="text"
+                    placeholder="AI Assistant ID"
+                    {...field}
+                  />
+                </FormControl>
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="anonymous_login.target_params.streamingAudio"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between mb-4">
+                <div>
+                  <FormLabel>Streaming Audio</FormLabel>
+                  <FormDescription>
+                    Send <code>target_params.streamingAudio</code> in
+                    anonymous_login, so the assistant streams its audio from the
+                    start of the call instead of waiting for a subscribe.
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    data-testid="switch-streaming-audio"
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
       );
     }
     if (loginMethod === 'credentials') {
