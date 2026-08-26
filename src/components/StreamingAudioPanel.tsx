@@ -127,9 +127,12 @@ export const StreamingAudioStats = () => {
           value={
             state.ackOffsetMs !== null
               ? 'acked'
-              : state.subscribeAttempts > 0
-                ? 'pending'
-                : 'idle'
+              : chunks > 0
+                ? // Audio without an ack still proves the subscription exists.
+                  'streaming'
+                : state.subscribeAttempts > 0
+                  ? 'pending'
+                  : 'idle'
           }
           hint={`${state.subscribeAttempts} attempt${
             state.subscribeAttempts === 1 ? '' : 's'
