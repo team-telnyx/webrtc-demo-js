@@ -22,6 +22,7 @@ import MediaRecoveryDialog from './components/MediaRecoveryDialog';
 import PreCallDiagnosticsPage from './components/PreCallDiagnosticsPage';
 import StreamingAudioPanel from './components/StreamingAudioPanel';
 import StreamingAudioHandler from './components/StreamingAudioHandler';
+import { cn } from './lib/utils';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -55,8 +56,14 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="dark">
       <TooltipProvider>
-        <PageLayout>
-          <div className="p-4 space-y-4">
+        <PageLayout fitViewport={mode === 'aiagent'}>
+          <div
+            className={cn(
+              'p-4 space-y-4',
+              mode === 'aiagent' &&
+                'md:h-full md:grid md:grid-rows-[auto_minmax(0,1fr)] md:space-y-0 md:gap-4',
+            )}
+          >
             <ClientModeTabs />
             {mode === 'sipjs' && <SipJsDemoView />}
             {mode === 'aiagent' && <AiAgentView />}

@@ -35,6 +35,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { StreamingAudioStats } from './StreamingAudioPanel';
 import { useWidgetStreamingAudio } from '@/hooks/useWidgetStreamingAudio';
 import { isWidgetConversationActive } from '@/lib/widgetEvents';
+import {
+  buildWidgetConnectionProps,
+  serializeWidgetConnectionAttributes,
+  type WidgetConnectionOptions,
+} from '@/lib/widgetConnectionOptions';
 
 // ── Types ──
 
@@ -43,7 +48,7 @@ interface CustomAttribute {
   value: string;
 }
 
-interface FormValues {
+interface FormValues extends WidgetConnectionOptions {
   agentId: string;
   version: string;
   versionId: string;
@@ -331,6 +336,7 @@ function buildWidgetElementProps(
 ): Record<string, string> {
   const props: Record<string, string> = {
     'agent-id': values.agentId,
+    ...buildWidgetConnectionProps(values),
   };
 
   if (values.versionId.trim()) props['version-id'] = values.versionId.trim();
@@ -416,7 +422,10 @@ const AiAgentView = () => {
       versionId: '',
       conversationId: '',
       region: 'auto',
+      rtcIp: '',
+      rtcPort: '',
       trickleIce: false,
+      textOnly: false,
       chatMode: false,
       debug: false,
       showUserPerceivedLatency: false,
@@ -710,7 +719,10 @@ const AiAgentView = () => {
   ) => {
     const versionSuffix = `@${values.version}`;
 
-    const attrs: string[] = [`agent-id="${values.agentId}"`];
+    const attrs: string[] = [
+      `agent-id="${values.agentId}"`,
+      serializeWidgetConnectionAttributes(values),
+    ];
 
     if (values.trickleIce) attrs.push('trickle-ice="true"');
     if (values.chatMode) attrs.push('chat-mode="true"');
@@ -895,8 +907,14 @@ const AiAgentView = () => {
     : {};
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <div className="space-y-4">
+    <div
+      className="grid md:grid-cols-2 gap-4 min-h-0"
+      data-testid="ai-agent-view"
+    >
+      <div
+        className="relative space-y-4 min-w-0 md:min-h-0 md:overflow-y-auto md:overscroll-contain"
+        data-testid="ai-agent-configuration"
+      >
         <Card className="h-fit">
           <CardHeader>
             <CardTitle>AI Agent Widget</CardTitle>
@@ -1032,6 +1050,55 @@ const AiAgentView = () => {
                   />
                 </div>
 
+                {/* ── RTC Routing ── */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    RTC Routing
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Optional WebRTC overrides. Leave blank for default routing.
+                    Not used in Text Only mode.
+                  </p>
+                  <FormField
+                    control={form.control}
+                    name="rtcIp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RTC IP (rtcIp)</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-rtc-ip"
+                            placeholder="Optional — RTC IP address"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="rtcPort"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RTC Port (rtcPort)</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-rtc-port"
+                            type="number"
+                            min={1}
+                            max={65535}
+                            step={1}
+                            placeholder="Optional — RTC port"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* ── Feature Toggles ── */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -1060,13 +1127,39 @@ const AiAgentView = () => {
                   />
                   <FormField
                     control={form.control}
+                    name="textOnly"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Text Only</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Text conversation without WebRTC, microphone access,
+                            or audio playback. Takes precedence over Chat Mode.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-text-only"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="chatMode"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
-                          <FormLabel>Chat Mode</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormLabel>Chat Mode</FormLabel>
+                            <Badge variant="outline">Deprecated</Badge>
+                          </div>
                           <p className="text-sm text-muted-foreground">
-                            Text-only — no microphone or audio playback
+                            Legacy chat UI that still establishes a WebRTC call.
+                            Use Text Only for a conversation without WebRTC.
                           </p>
                         </div>
                         <FormControl>
@@ -1575,8 +1668,11 @@ const AiAgentView = () => {
         )}
       </div>
 
-      <Card className="flex flex-col min-h-[600px]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Card
+        className="flex flex-col min-w-0 h-[min(600px,80dvh)] md:h-full md:min-h-0"
+        data-testid="widget-preview"
+      >
+        <CardHeader className="flex flex-row flex-wrap shrink-0 gap-2 items-center justify-between space-y-0 pb-2">
           <div className="flex-1 min-w-0">
             <CardTitle>Widget Preview</CardTitle>
             <CardDescription>
@@ -1625,9 +1721,9 @@ const AiAgentView = () => {
             Invert background {invertBackground ? '(Dark)' : '(Light)'}
           </Button>
         </CardHeader>
-        <CardContent className="flex-1">
+        <CardContent className="flex-1 min-h-0">
           <div
-            className={`h-full flex items-center justify-center border rounded-md transition-colors ${
+            className={`h-full min-h-0 relative isolate overflow-auto [transform:translateZ(0)] flex items-center justify-center border rounded-md transition-colors ${
               invertBackground ? 'bg-white' : 'bg-zinc-900'
             }`}
             data-testid="widget-container"
