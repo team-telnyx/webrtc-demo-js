@@ -32,6 +32,14 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import AiAgentEventLog, { type AiAgentEvent } from './AiAgentEventLog';
 import { Textarea } from '@/components/ui/textarea';
+import { StreamingAudioStats } from './StreamingAudioPanel';
+import { useWidgetStreamingAudio } from '@/hooks/useWidgetStreamingAudio';
+import { isWidgetConversationActive } from '@/lib/widgetEvents';
+import {
+  buildWidgetConnectionProps,
+  serializeWidgetConnectionAttributes,
+  type WidgetConnectionOptions,
+} from '@/lib/widgetConnectionOptions';
 
 // ── Types ──
 
@@ -40,7 +48,7 @@ interface CustomAttribute {
   value: string;
 }
 
-interface FormValues {
+interface FormValues extends WidgetConnectionOptions {
   agentId: string;
   version: string;
   versionId: string;
@@ -53,6 +61,7 @@ interface FormValues {
   showUserPerceivedLatency: boolean;
   showGreetingLatency: boolean;
   skipLastVoiceSdkId: boolean;
+  streamingAudio: boolean;
   // Call options
   callDestinationNumber: string;
   callCallerNumber: string;
@@ -136,7 +145,19 @@ const WIDGET_EVENTS = [
   'conversation.agent.state',
   'agent.audio.mute',
   'agent.error',
+  // Pre-playout assistant audio. Only fires when `streaming-audio` is on, and
+  // only on widget builds that forward it (team-telnyx/telnyx-voice-ai-widget#91).
+  'assistant.audio.delta',
+  'assistant.audio.done',
+  'assistant.audio.interrupted',
 ];
+
+/** The subset of WIDGET_EVENTS the streaming-audio panel consumes. */
+const AUDIO_EVENT_TYPES = new Set([
+  'assistant.audio.delta',
+  'assistant.audio.done',
+  'assistant.audio.interrupted',
+]);
 
 const DEFAULT_CLIENT_TOOL_NAME = 'send_telegram';
 const DEFAULT_CLIENT_TOOL_FUNCTION = `const { telegram_id, message } = asRecord(args);
@@ -315,6 +336,7 @@ function buildWidgetElementProps(
 ): Record<string, string> {
   const props: Record<string, string> = {
     'agent-id': values.agentId,
+    ...buildWidgetConnectionProps(values),
   };
 
   if (values.versionId.trim()) props['version-id'] = values.versionId.trim();
@@ -331,6 +353,7 @@ function buildWidgetElementProps(
     props['show-user-perceived-latency'] = 'true';
   if (values.showGreetingLatency) props['show-greeting-latency'] = 'true';
   if (!values.skipLastVoiceSdkId) props['skip-last-voice-sdk-id'] = 'false';
+  if (values.streamingAudio) props['streaming-audio'] = 'true';
 
   if (values.callDestinationNumber.trim())
     props['call-destination-number'] = values.callDestinationNumber.trim();
@@ -399,12 +422,16 @@ const AiAgentView = () => {
       versionId: '',
       conversationId: '',
       region: 'auto',
+      rtcIp: '',
+      rtcPort: '',
       trickleIce: false,
+      textOnly: false,
       chatMode: false,
       debug: false,
       showUserPerceivedLatency: false,
       showGreetingLatency: false,
       skipLastVoiceSdkId: true,
+      streamingAudio: false,
       callDestinationNumber: '',
       callCallerNumber: '',
       callCallerName: '',
@@ -425,19 +452,47 @@ const AiAgentView = () => {
   const clientToolsActive =
     isEmbedded && !!currentFormValues?.clientToolsEnabled;
 
-  const handleWidgetEvent = useCallback((event: MessageEvent) => {
-    if (
-      event.data &&
-      event.data.type === 'telnyx-ai-agent-event' &&
-      event.data.eventType
-    ) {
+  const {
+    handleAudioEvent,
+    markCallActive,
+    reset: resetStreamingAudio,
+  } = useWidgetStreamingAudio();
+
+  const handleWidgetEvent = useCallback(
+    (event: MessageEvent) => {
+      if (
+        !event.data ||
+        event.data.type !== 'telnyx-ai-agent-event' ||
+        !event.data.eventType
+      ) {
+        return;
+      }
+
+      const { eventType, detail } = event.data;
+
+      // Deltas arrive many times per second. They drive the streaming-audio
+      // panel instead of the event log, which they would otherwise bury.
+      if (AUDIO_EVENT_TYPES.has(eventType)) {
+        handleAudioEvent(eventType, detail);
+        if (eventType === 'assistant.audio.delta') {
+          return;
+        }
+      }
+
       const newEvent: AiAgentEvent = {
         id: crypto.randomUUID(),
-        eventType: event.data.eventType,
-        detail: event.data.detail,
+        eventType,
+        detail,
         timestamp: new Date(),
       };
       setEvents((prev) => [newEvent, ...prev]);
+
+      if (
+        eventType === 'conversation.update' &&
+        isWidgetConversationActive(detail)
+      ) {
+        markCallActive();
+      }
 
       if (event.data.eventType === 'agent.connected') {
         const detail = event.data.detail as
@@ -455,8 +510,9 @@ const AiAgentView = () => {
       } else if (event.data.eventType === 'agent.disconnected') {
         setWidgetConnectionInfo(null);
       }
-    }
-  }, []);
+    },
+    [handleAudioEvent, markCallActive],
+  );
 
   useEffect(() => {
     window.addEventListener('message', handleWidgetEvent);
@@ -628,13 +684,45 @@ const AiAgentView = () => {
     };
   }, [widgetScriptReady, clientToolsActive, pushLog]);
 
+  // Direct-embed mode renders <telnyx-ai-agent> in this document rather than in
+  // an iframe, so there is no postMessage bridge — the audio events have to be
+  // read straight off the element.
+  useEffect(() => {
+    if (!widgetScriptReady || !clientToolsActive) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
+
+    const onAudio = (e: Event) =>
+      handleAudioEvent(e.type, (e as CustomEvent).detail);
+    const onConversationUpdate = (e: Event) => {
+      if (isWidgetConversationActive((e as CustomEvent).detail)) {
+        markCallActive();
+      }
+    };
+
+    for (const type of AUDIO_EVENT_TYPES) {
+      widget.addEventListener(type, onAudio);
+    }
+    widget.addEventListener('conversation.update', onConversationUpdate);
+
+    return () => {
+      for (const type of AUDIO_EVENT_TYPES) {
+        widget.removeEventListener(type, onAudio);
+      }
+      widget.removeEventListener('conversation.update', onConversationUpdate);
+    };
+  }, [widgetScriptReady, clientToolsActive, handleAudioEvent, markCallActive]);
+
   const getIframeSrcDoc = (
     values: FormValues,
     extraAttributes: CustomAttribute[],
   ) => {
     const versionSuffix = `@${values.version}`;
 
-    const attrs: string[] = [`agent-id="${values.agentId}"`];
+    const attrs: string[] = [
+      `agent-id="${values.agentId}"`,
+      serializeWidgetConnectionAttributes(values),
+    ];
 
     if (values.trickleIce) attrs.push('trickle-ice="true"');
     if (values.chatMode) attrs.push('chat-mode="true"');
@@ -644,6 +732,7 @@ const AiAgentView = () => {
     if (values.showGreetingLatency) attrs.push('show-greeting-latency="true"');
     if (!values.skipLastVoiceSdkId)
       attrs.push('skip-last-voice-sdk-id="false"');
+    if (values.streamingAudio) attrs.push('streaming-audio="true"');
 
     if (values.region && values.region !== 'auto')
       attrs.push(`region="${values.region}"`);
@@ -757,6 +846,7 @@ const AiAgentView = () => {
     setCurrentCustomAttrs([...customAttributes]);
     setIsEmbedded(true);
     setToolLog([]);
+    resetStreamingAudio();
   };
 
   const handleReset = () => {
@@ -769,6 +859,7 @@ const AiAgentView = () => {
     setToolLog([]);
     setRegisteredTools([]);
     setWidgetScriptReady(false);
+    resetStreamingAudio();
     form.reset();
   };
 
@@ -816,8 +907,14 @@ const AiAgentView = () => {
     : {};
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <div className="space-y-4">
+    <div
+      className="grid md:grid-cols-2 gap-4 min-h-0"
+      data-testid="ai-agent-view"
+    >
+      <div
+        className="relative space-y-4 min-w-0 md:min-h-0 md:overflow-y-auto md:overscroll-contain"
+        data-testid="ai-agent-configuration"
+      >
         <Card className="h-fit">
           <CardHeader>
             <CardTitle>AI Agent Widget</CardTitle>
@@ -953,6 +1050,55 @@ const AiAgentView = () => {
                   />
                 </div>
 
+                {/* ── RTC Routing ── */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    RTC Routing
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Optional WebRTC overrides. Leave blank for default routing.
+                    Not used in Text Only mode.
+                  </p>
+                  <FormField
+                    control={form.control}
+                    name="rtcIp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RTC IP (rtcIp)</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-rtc-ip"
+                            placeholder="Optional — RTC IP address"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="rtcPort"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RTC Port (rtcPort)</FormLabel>
+                        <FormControl>
+                          <Input
+                            data-testid="input-rtc-port"
+                            type="number"
+                            min={1}
+                            max={65535}
+                            step={1}
+                            placeholder="Optional — RTC port"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* ── Feature Toggles ── */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -981,13 +1127,39 @@ const AiAgentView = () => {
                   />
                   <FormField
                     control={form.control}
+                    name="textOnly"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Text Only</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Text conversation without WebRTC, microphone access,
+                            or audio playback. Takes precedence over Chat Mode.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-text-only"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="chatMode"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
-                          <FormLabel>Chat Mode</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormLabel>Chat Mode</FormLabel>
+                            <Badge variant="outline">Deprecated</Badge>
+                          </div>
                           <p className="text-sm text-muted-foreground">
-                            Text-only — no microphone or audio playback
+                            Legacy chat UI that still establishes a WebRTC call.
+                            Use Text Only for a conversation without WebRTC.
                           </p>
                         </div>
                         <FormControl>
@@ -1077,6 +1249,30 @@ const AiAgentView = () => {
                         <FormControl>
                           <Switch
                             data-testid="switch-skip-last-voice-sdk-id"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="streamingAudio"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Streaming Audio</FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Stream the assistant's audio ahead of playout, so
+                            the greeting is not lost to the post-connect
+                            subscribe. Needs a widget build with{' '}
+                            <code className="text-xs">streaming-audio</code>.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            data-testid="switch-streaming-audio"
                             checked={field.value}
                             onCheckedChange={field.onChange}
                           />
@@ -1363,6 +1559,30 @@ const AiAgentView = () => {
           </Form>
         </Card>
 
+        <Card data-testid="ai-agent-streaming-audio-panel">
+          <CardHeader>
+            <CardTitle>Streaming Audio</CardTitle>
+            <CardDescription>
+              Pre-playout assistant audio, measured from the widget's{' '}
+              <code className="text-xs">assistant.audio.*</code> events. Deltas
+              are kept out of the event log below, which they would bury.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StreamingAudioStats
+              enabled={!!currentFormValues?.streamingAudio}
+              showSubscribeStats={false}
+              disabledHint={
+                <>
+                  Turn on <span className="font-semibold">Streaming Audio</span>{' '}
+                  and embed the agent to measure the assistant's pre-playout
+                  audio stream here.
+                </>
+              }
+            />
+          </CardContent>
+        </Card>
+
         <AiAgentEventLog events={events} />
 
         {clientToolsActive && (
@@ -1448,8 +1668,11 @@ const AiAgentView = () => {
         )}
       </div>
 
-      <Card className="flex flex-col min-h-[600px]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Card
+        className="flex flex-col min-w-0 h-[min(600px,80dvh)] md:h-full md:min-h-0"
+        data-testid="widget-preview"
+      >
+        <CardHeader className="flex flex-row flex-wrap shrink-0 gap-2 items-center justify-between space-y-0 pb-2">
           <div className="flex-1 min-w-0">
             <CardTitle>Widget Preview</CardTitle>
             <CardDescription>
@@ -1498,9 +1721,9 @@ const AiAgentView = () => {
             Invert background {invertBackground ? '(Dark)' : '(Light)'}
           </Button>
         </CardHeader>
-        <CardContent className="flex-1">
+        <CardContent className="flex-1 min-h-0">
           <div
-            className={`h-full flex items-center justify-center border rounded-md transition-colors ${
+            className={`h-full min-h-0 relative isolate overflow-auto [transform:translateZ(0)] flex items-center justify-center border rounded-md transition-colors ${
               invertBackground ? 'bg-white' : 'bg-zinc-900'
             }`}
             data-testid="widget-container"

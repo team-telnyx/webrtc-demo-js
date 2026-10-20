@@ -27,6 +27,7 @@ import {
 import { useDevices } from '@/hooks/useDevices';
 import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
 import VideoPlayer from './VideoPlayer';
+import { StreamingAudioStats } from './StreamingAudioPanel';
 
 type Props = {
   call: Call;
@@ -223,6 +224,9 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
                 <TabsList>
                   <TabsTrigger value="keyboard">Keyboard</TabsTrigger>
                   <TabsTrigger value="metrics">Metrics</TabsTrigger>
+                  <TabsTrigger value="streaming-audio">
+                    Streaming Audio
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -232,6 +236,10 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
 
               <TabsContent value="metrics">
                 <InCallQualityMetrics />
+              </TabsContent>
+
+              <TabsContent value="streaming-audio">
+                <StreamingAudioStats />
               </TabsContent>
             </Tabs>
           </div>

@@ -19,6 +19,10 @@ import SipJsCallNotificationHandler from './components/SipJsCallNotificationHand
 import { SipJsCall } from './components/SipJsCall';
 import AiAgentView from './components/AiAgentView';
 import MediaRecoveryDialog from './components/MediaRecoveryDialog';
+import PreCallDiagnosticsPage from './components/PreCallDiagnosticsPage';
+import StreamingAudioPanel from './components/StreamingAudioPanel';
+import StreamingAudioHandler from './components/StreamingAudioHandler';
+import { cn } from './lib/utils';
 
 const SdkDemoView = () => (
   <div className="md:grid md:grid-cols-3 gap-4 flex flex-col">
@@ -34,6 +38,7 @@ const SdkDemoView = () => (
     <div className="col-span-2">
       <BlackBoxTestLog />
     </div>
+    <StreamingAudioPanel />
   </div>
 );
 
@@ -51,30 +56,32 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="dark">
       <TooltipProvider>
-        <PageLayout>
-          <div className="p-4 space-y-4">
-            <ClientModeTabs />
-            {mode === 'sipjs' ? (
-              <SipJsDemoView />
-            ) : mode === 'aiagent' ? (
-              <AiAgentView />
-            ) : (
-              <SdkDemoView />
+        <PageLayout fitViewport={mode === 'aiagent'}>
+          <div
+            className={cn(
+              'p-4 space-y-4',
+              mode === 'aiagent' &&
+                'md:h-full md:grid md:grid-rows-[auto_minmax(0,1fr)] md:space-y-0 md:gap-4',
             )}
+          >
+            <ClientModeTabs />
+            {mode === 'sipjs' && <SipJsDemoView />}
+            {mode === 'aiagent' && <AiAgentView />}
+            {mode === 'sdk' && <SdkDemoView />}
+            {mode === 'precall' && <PreCallDiagnosticsPage />}
           </div>
         </PageLayout>
 
-        {mode === 'sdk' ? (
+        {mode === 'sdk' && (
           <>
             <ClientAutoConnect />
             <CallNotificationHandler />
+            <StreamingAudioHandler />
             <MediaRecoveryDialog />
           </>
-        ) : (
-          <SipJsCallNotificationHandler />
         )}
-
-        {mode === 'sdk' ? null : <SipJsCall />}
+        {mode === 'sipjs' && <SipJsCallNotificationHandler />}
+        {mode === 'sipjs' && <SipJsCall />}
       </TooltipProvider>
       <Toaster />
     </ThemeProvider>
