@@ -24,11 +24,6 @@ const TURN_SERVER: RTCIceServer[] = [
     username: 'testuser',
     credential: 'testpassword',
   },
-  {
-    urls: 'turns:turn2.telnyx.com:443',
-    username: 'testuser',
-    credential: 'testpassword',
-  },
 ];
 const TURN_DEV_SERVER: RTCIceServer[] = [
   {
