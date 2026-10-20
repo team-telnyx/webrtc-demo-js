@@ -58,6 +58,7 @@ For more information on how to generate SIP credentials, check the [Telnyx WebRT
 - **Audio Visualization**: Visual representation of audio input/output
 - **Custom Headers**: Add custom SIP headers to your calls
 - **Codec Selection**: Choose preferred audio codecs
+- **Per-Call Devices**: Pick the microphone, speaker and camera for the next call; the same selection is passed to `newCall()` and to `call.answer()` for incoming calls
 
 ## Documentation
 

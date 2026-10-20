@@ -22,6 +22,11 @@ export interface ICallOptions {
   prefetchIceCandidates?: boolean;
   trickleIce?: boolean;
   keepConnectionAliveOnSocketClose?: boolean;
+  // Per-call devices. Applied by newCall() and, since @telnyx/webrtc 2.28.0,
+  // by call.answer() for incoming calls. Undefined keeps the SDK defaults.
+  micId?: string;
+  speakerId?: string;
+  camId?: string;
 }
 
 const callOptionsAtom = atom({
