@@ -55,8 +55,41 @@ export const DEFAULT_DEV_ICE_SERVERS: RTCIceServer[] = [
   ...TURN_DEV_SERVER,
 ];
 
-export const getDefaultIceServers = (isDev = IS_DEV_ENV): RTCIceServer[] =>
-  isDev ? DEFAULT_DEV_ICE_SERVERS : DEFAULT_PROD_ICE_SERVERS;
+// Mirrors regionalTurnUrl in @telnyx/webrtc 2.28.0. Only the plain TURN names
+// (UDP/TCP 3478) have regional variants: turn.telnyx.com and
+// turndev.telnyx.com become <region>.turn.telnyx.com and
+// <region>.turndev.telnyx.com. TURNS/443 keeps the flat name because the
+// regional names aren't on its TLS certificate, and STUN is left alone.
+const REGIONAL_TURN_HOST = /^(turn:)turn(dev)?\.telnyx\.com(?=[:/?]|$)/;
+
+export const regionalTurnUrl = (url: string, region: string): string =>
+  url.replace(REGIONAL_TURN_HOST, `$1${region}.turn$2.telnyx.com`);
+
+// The header's region select stores 'auto' for automatic routing, which the
+// SDK gets as no region at all.
+export const getPinnedRegion = (region?: string | null): string | undefined =>
+  region && region !== 'auto' ? region : undefined;
+
+// The defaults the SDK uses for this environment and region. With a region
+// pinned, the plain TURN entries point at that region's TURN host.
+export const getDefaultIceServers = (
+  region?: string | null,
+  isDev = IS_DEV_ENV,
+): RTCIceServer[] => {
+  const defaults = isDev ? DEFAULT_DEV_ICE_SERVERS : DEFAULT_PROD_ICE_SERVERS;
+  const pinnedRegion = getPinnedRegion(region);
+
+  if (!pinnedRegion) {
+    return defaults;
+  }
+
+  return defaults.map((server) => ({
+    ...server,
+    urls: Array.isArray(server.urls)
+      ? server.urls.map((url) => regionalTurnUrl(url, pinnedRegion))
+      : regionalTurnUrl(server.urls, pinnedRegion),
+  }));
+};
 
 const normalizeStunServers = (
   stunServers: IClientOptionsDemo['stunServers'],
@@ -118,6 +151,7 @@ export const configureIceServers = (
   stunServers: IClientOptionsDemo['stunServers'],
   turnServers: IClientOptionsDemo['turnServers'],
   mode: IceServersMode = 'merge',
+  region?: string | null,
 ): IClientOptionsDemo['iceServers'] => {
   const customIceServers = getCustomIceServers(stunServers, turnServers);
 
@@ -130,21 +164,25 @@ export const configureIceServers = (
     return customIceServers;
   }
 
-  return dedupeIceServers([...getDefaultIceServers(), ...customIceServers]);
+  return dedupeIceServers([
+    ...getDefaultIceServers(region),
+    ...customIceServers,
+  ]);
 };
 
 export const getDisplayedIceServers = (
   stunServers: IClientOptionsDemo['stunServers'],
   turnServers: IClientOptionsDemo['turnServers'],
   mode: IceServersMode = 'merge',
+  region?: string | null,
 ): RTCIceServer[] => {
   const customIceServers = getCustomIceServers(stunServers, turnServers);
 
   if (customIceServers.length === 0) {
-    return getDefaultIceServers();
+    return getDefaultIceServers(region);
   }
 
   return mode === 'replace'
     ? customIceServers
-    : dedupeIceServers([...getDefaultIceServers(), ...customIceServers]);
+    : dedupeIceServers([...getDefaultIceServers(region), ...customIceServers]);
 };
