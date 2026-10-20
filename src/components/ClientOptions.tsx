@@ -136,7 +136,6 @@ const ClientOptions = () => {
       singleInterfaceIce: false,
       iceServersMode: 'merge',
       hangupOnBeforeUnload: true,
-      useCanaryRtcServer: false,
       skipTrailing: false,
       ringbackFile: '/ringback.mp3',
       ringtoneFile: '/ringtone.mp3',
@@ -191,15 +190,22 @@ const ClientOptions = () => {
   );
 
   const onSubmit = (values: Partial<IClientOptionsDemo>) => {
-    values.iceServers = configureIceServers(
-      values.stunServers,
-      values.turnServers,
-      values.iceServersMode,
-    );
-    values.anonymous_login = normalizeAnonymousLogin(values.anonymous_login);
+    const normalizedValues = {
+      ...values,
+      iceServers: configureIceServers(
+        values.stunServers,
+        values.turnServers,
+        values.iceServersMode,
+      ),
+      anonymous_login: normalizeAnonymousLogin(values.anonymous_login),
+    };
 
-    setClientOptions(values);
-    onSaveProfile(values);
+    if (normalizedValues.useCanaryRtcServer === undefined) {
+      delete normalizedValues.useCanaryRtcServer;
+    }
+
+    setClientOptions(normalizedValues);
+    onSaveProfile(normalizedValues);
   };
 
   const onSaveProfile = (values: Partial<IClientOptionsDemo>) => {
@@ -825,22 +831,59 @@ const ClientOptions = () => {
               control={form.control}
               name="useCanaryRtcServer"
               render={({ field }) => (
-                <FormItem className="flex items-center mb-4 justify-between">
-                  <div>
-                    <FormLabel>Canary RTC Server</FormLabel>
-                    <FormDescription>
-                      Outgoing and incoming call flows using the Canary RTC
-                      Server.
-                    </FormDescription>
-                  </div>
+                <FormItem className="mb-4">
+                  <FormLabel id="canary-rtc-server-label">
+                    Canary RTC Server
+                  </FormLabel>
                   <FormControl>
-                    <Switch
-                      data-testid="switch-canary-rtc-server"
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <RadioGroup
+                      aria-labelledby="canary-rtc-server-label"
+                      value={
+                        field.value === undefined
+                          ? 'unset'
+                          : field.value
+                            ? 'enabled'
+                            : 'disabled'
+                      }
+                      className="flex flex-col gap-2 md:flex-row md:gap-6"
+                      onValueChange={(value) =>
+                        field.onChange(
+                          value === 'unset' ? undefined : value === 'enabled',
+                        )
+                      }
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value="enabled"
+                          id="radio-canary-enabled"
+                          data-testid="switch-canary-rtc-server"
+                        />
+                        <Label htmlFor="radio-canary-enabled">Enabled</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value="disabled"
+                          id="radio-canary-disabled"
+                          data-testid="radio-canary-disabled"
+                        />
+                        <Label htmlFor="radio-canary-disabled">Disabled</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value="unset"
+                          id="radio-canary-unset"
+                          data-testid="radio-canary-unset"
+                        />
+                        <Label htmlFor="radio-canary-unset">
+                          Unset (SDK default)
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </FormControl>
-
+                  <FormDescription>
+                    Explicitly enable or disable Canary RTC Server routing, or
+                    leave the option unset for VSP's default routing.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
