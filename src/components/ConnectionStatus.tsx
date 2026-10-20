@@ -1,6 +1,7 @@
 import { useClientOptions } from '@/atoms/clientOptions';
 import { useConnectionStatus, useConnectedRegion, useDc } from '@/atoms/telnyxClient';
 import { clsx } from 'clsx';
+import RegistrationTiming from './RegistrationTiming';
 
 const ConnectionStatus = () => {
   const [status] = useConnectionStatus();
@@ -18,6 +19,7 @@ const ConnectionStatus = () => {
       {status} ({status === 'registered' && clientOptions.login})
       {connectedRegion && <span className='ml-2 text-sm opacity-75'>region: {connectedRegion}</span>}
       {dc && <span className='ml-2 text-sm opacity-75'>dc: {dc}</span>}
+      {status === 'registered' && <RegistrationTiming />}
     </h3>
   );
 };
