@@ -75,7 +75,9 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
     ).socketDisconnect;
 
     if (typeof socketDisconnect !== 'function') {
-      console.error('Current TelnyxRTC client does not expose socketDisconnect');
+      console.error(
+        'Current TelnyxRTC client does not expose socketDisconnect',
+      );
       return;
     }
 
@@ -218,7 +220,10 @@ const ActiveCall = ({ call, title = 'Active Call' }: Props) => {
               <h1>Outbound</h1>
               <AudioVisualizer mediaStream={call.localStream} color="#fff" />
             </div>
-            <AudioPlayer mediaStream={call.remoteStream} />
+            <AudioPlayer
+              mediaStream={call.remoteStream}
+              sinkId={call.options.speakerId}
+            />
             <Tabs defaultValue="keyboard">
               <div className="flex justify-center">
                 <TabsList>

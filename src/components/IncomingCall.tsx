@@ -2,6 +2,7 @@ import { Call } from '@telnyx/webrtc';
 import { useRive } from '@rive-app/react-canvas-lite';
 import { Button } from './ui/button';
 import { useCallOptions } from '@/atoms/callOptions';
+import { getAnswerOptions } from '@/lib/callDevices';
 type Props = {
   call: Call;
 };
@@ -26,7 +27,7 @@ const IncomingCall = ({ call }: Props) => {
         </div>
         <Button
           data-testid="btn-answer-call"
-          onClick={() => call.answer(callOptions)}
+          onClick={() => call.answer(getAnswerOptions(callOptions))}
         >
           Answer
         </Button>

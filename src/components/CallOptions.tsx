@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { ExternalLinkIcon } from 'lucide-react';
+import { ExternalLinkIcon, RefreshCwIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 import { ICallOptions, useCallOptions } from '@/atoms/callOptions';
@@ -23,11 +23,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCallback } from 'react';
 import CodecSelectInput from './CodecInput';
 import CustomHeadersInput from './CustomHeadersInput';
+import DeviceSelect from './DeviceSelect';
+import { Button } from './ui/button';
 import { useClientOptions } from '@/atoms/clientOptions';
+import { useMediaDeviceList } from '@/hooks/useMediaDeviceList';
 
 const CallOptions = () => {
   const [clientOptions] = useClientOptions();
   const [callOptions, setCallOptions] = useCallOptions();
+  const { devices, requestPermission, permissionError } = useMediaDeviceList(
+    clientOptions.video,
+  );
   const form = useForm({
     defaultValues: {
       callerName: '',
@@ -38,6 +44,9 @@ const CallOptions = () => {
       preferred_codecs: [],
       debugOutput: 'socket',
       keepConnectionAliveOnSocketClose: false,
+      micId: undefined,
+      speakerId: undefined,
+      camId: undefined,
     },
     values: callOptions,
   });
@@ -149,6 +158,101 @@ const CallOptions = () => {
                 </FormItem>
               )}
             />
+
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">Devices</p>
+                  <p className="text-xs text-muted-foreground">
+                    Microphone, speaker and camera for the next call. Used by
+                    newCall() and, since @telnyx/webrtc 2.28.0, by call.answer()
+                    when you accept an incoming call. Labels appear once the
+                    browser has media permission.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="btn-refresh-devices"
+                  onClick={requestPermission}
+                >
+                  <RefreshCwIcon className="w-4 mr-1" /> Refresh
+                </Button>
+              </div>
+              {permissionError && (
+                <p className="text-xs text-red-500">{permissionError}</p>
+              )}
+
+              <FormField
+                control={form.control}
+                name="micId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Microphone</FormLabel>
+                    <FormControl>
+                      <DeviceSelect
+                        devices={devices}
+                        kind="audioinput"
+                        fallbackLabel="Microphone"
+                        value={field.value}
+                        onChange={field.onChange}
+                        testId="select-call-microphone"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="speakerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Speaker</FormLabel>
+                    <FormControl>
+                      <DeviceSelect
+                        devices={devices}
+                        kind="audiooutput"
+                        fallbackLabel="Speaker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        testId="select-call-speaker"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Applied with setSinkId on the remote audio element.
+                      Firefox and Safari do not list output devices.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {clientOptions.video && (
+                <FormField
+                  control={form.control}
+                  name="camId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Camera</FormLabel>
+                      <FormControl>
+                        <DeviceSelect
+                          devices={devices}
+                          kind="videoinput"
+                          fallbackLabel="Camera"
+                          value={field.value}
+                          onChange={field.onChange}
+                          testId="select-call-camera"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
             <FormField
               control={form.control}
