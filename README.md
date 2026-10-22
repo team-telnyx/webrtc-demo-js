@@ -58,6 +58,7 @@ For more information on how to generate SIP credentials, check the [Telnyx WebRT
 - **Audio Visualization**: Visual representation of audio input/output
 - **Custom Headers**: Add custom SIP headers to your calls
 - **Codec Selection**: Choose preferred audio codecs
+- **Registration Timing**: The header shows how long the SDK took from `new TelnyxRTC()` to `telnyx.ready`, with the per-step breakdown recorded by @telnyx/webrtc 2.28.0+
 
 ## Documentation
 

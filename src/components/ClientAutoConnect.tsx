@@ -1,4 +1,6 @@
 import { useMediaRecovery } from '@/atoms/mediaRecovery';
+import { useRegistrationTiming } from '@/atoms/registrationTiming';
+import { readRegistrationTiming } from '@/lib/registrationTiming';
 import {
   useConnectionStatus,
   useConnectedRegion,
@@ -60,7 +62,12 @@ const ClientAutoConnect = () => {
   const [, setDc] = useDc();
   const [, setConnectedRegion] = useConnectedRegion();
   const [mediaRecovery, setMediaRecovery] = useMediaRecovery();
+  const [, setRegistrationTiming] = useRegistrationTiming();
   const mediaRecoveryRef = useRef(mediaRecovery);
+  // The SDK keeps only the initial registration summary per client, so after a
+  // reconnect telnyx.ready fires again with the old numbers. Remember what was
+  // shown and skip repeats.
+  const shownTimingRef = useRef<string | null>(null);
 
   useEffect(() => {
     mediaRecoveryRef.current = mediaRecovery;
@@ -71,25 +78,29 @@ const ClientAutoConnect = () => {
       return;
     }
 
+    shownTimingRef.current = null;
+
     const markDisconnected = () => {
       setStatus('disconnected');
       setDc(null);
       setConnectedRegion(null);
+      setRegistrationTiming(null);
     };
 
     const onReady = () => {
       setStatus('registered');
 
-      // @ts-expect-error `dc` is added in @telnyx/webrtc PR #583 but not yet in published types
-      const dc: string | undefined = client.dc;
-      if (dc) {
-        setDc(dc);
-      }
+      // `dc` and `region` are typed since @telnyx/webrtc 2.28.0; older builds
+      // loaded through the version dropdown leave them undefined.
+      setDc(client.dc ?? null);
+      setConnectedRegion(client.region ?? null);
 
-      // @ts-expect-error `region` is added in @telnyx/webrtc PR #583 but not yet in published types
-      const region: string | undefined = client.region;
-      if (region) {
-        setConnectedRegion(region);
+      const timing = readRegistrationTiming(client);
+      if (timing && timing.timestamp !== shownTimingRef.current) {
+        shownTimingRef.current = timing.timestamp;
+        setRegistrationTiming(timing);
+      } else {
+        setRegistrationTiming(null);
       }
     };
     const onSocketMessage = (message: SocketMessage) => {
@@ -179,7 +190,14 @@ const ClientAutoConnect = () => {
       client.off(SwEvent.SocketError, onSocketError);
       client.disconnect();
     };
-  }, [client, setStatus, setDc, setConnectedRegion, setMediaRecovery]);
+  }, [
+    client,
+    setStatus,
+    setDc,
+    setConnectedRegion,
+    setMediaRecovery,
+    setRegistrationTiming,
+  ]);
   return null;
 };
 
