@@ -30,6 +30,7 @@ import {
 import { useClientOptions, useClientProfiles } from '@/atoms/clientOptions';
 import { LoginMethod, useLoginMethod } from '@/atoms/loginMethod';
 import { useConnectionStatus, useTelnyxSdkClient } from '@/atoms/telnyxClient';
+import { useRegion } from '@/atoms/region';
 import { Input } from '@/components/ui/input';
 import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -39,10 +40,10 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Switch } from './ui/switch';
 import { IClientOptionsDemo } from '@/lib/types';
 import {
-  configureIceServers,
   getCustomIceServers,
   getDefaultIceServers,
   getDisplayedIceServers,
+  getPinnedRegion,
 } from '@/lib/iceServers';
 import { TurnServersFormField } from './TurnServersFormField';
 import { StunServersFormField } from './StunServersFormField';
@@ -119,6 +120,8 @@ const ClientOptions = () => {
   const [connectionStatus, setConnectionStatus] = useConnectionStatus();
   const [loginMethod, _setLoginMethod] = useLoginMethod();
   const [client] = useTelnyxSdkClient();
+  const [region] = useRegion();
+  const pinnedRegion = getPinnedRegion(region);
 
   const form = useForm<Partial<IClientOptionsDemo>>({
     values: clientOptions,
@@ -161,7 +164,10 @@ const ClientOptions = () => {
       name: ['stunServers', 'turnServers', 'iceServersMode'],
     });
 
-  const defaultIceServers = useMemo(() => getDefaultIceServers(), []);
+  const defaultIceServers = useMemo(
+    () => getDefaultIceServers(pinnedRegion),
+    [pinnedRegion],
+  );
   const customIceServers = useMemo(
     () => getCustomIceServers(watchedStunServers, watchedTurnServers),
     [watchedStunServers, watchedTurnServers],
@@ -172,8 +178,14 @@ const ClientOptions = () => {
         watchedStunServers,
         watchedTurnServers,
         watchedIceServersMode,
+        pinnedRegion,
       ),
-    [watchedIceServersMode, watchedStunServers, watchedTurnServers],
+    [
+      pinnedRegion,
+      watchedIceServersMode,
+      watchedStunServers,
+      watchedTurnServers,
+    ],
   );
 
   const setLoginMethod = useCallback(
@@ -192,13 +204,13 @@ const ClientOptions = () => {
   const onSubmit = (values: Partial<IClientOptionsDemo>) => {
     const normalizedValues = {
       ...values,
-      iceServers: configureIceServers(
-        values.stunServers,
-        values.turnServers,
-        values.iceServersMode,
-      ),
       anonymous_login: normalizeAnonymousLogin(values.anonymous_login),
     };
+
+    // The client builds iceServers from the STUN/TURN fields when it is
+    // created, so they follow the region selected at that time. Drop any list
+    // saved by older versions of the demo.
+    delete normalizedValues.iceServers;
 
     if (normalizedValues.useCanaryRtcServer === undefined) {
       delete normalizedValues.useCanaryRtcServer;
@@ -662,10 +674,18 @@ const ClientOptions = () => {
                 ICE servers. Choose merge to append custom entries to the
                 defaults, or custom only to replace the defaults for this
                 client.
+                {pinnedRegion && (
+                  <>
+                    {' '}
+                    With the {pinnedRegion} region selected, TURN over UDP/TCP
+                    3478 uses that region&apos;s TURN host. TURNS on 443 stays
+                    on the shared host.
+                  </>
+                )}
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <IceServerList
-                  title={`SDK defaults (${defaultIceServers.length})`}
+                  title={`SDK defaults${pinnedRegion ? ` for ${pinnedRegion}` : ''} (${defaultIceServers.length})`}
                   servers={defaultIceServers}
                 />
                 <IceServerList

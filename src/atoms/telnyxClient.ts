@@ -8,6 +8,7 @@ import { clientOptionsAtom } from './clientOptions';
 import { hostAtom } from './host';
 import { regionAtom } from './region';
 import { IClientOptionsDemo } from '@/lib/types';
+import { configureIceServers } from '@/lib/iceServers';
 import { clientModeAtom } from './clientMode';
 import { simpleUserClientOptionsAtom } from './simpleUserClientOptions';
 import { splitCommaSeparatedList } from '@/lib/string';
@@ -110,12 +111,19 @@ function createTelnyxRTCClient(
 
   return new TelnyxRTCClass({
     ...options,
+    // Built here from the saved STUN/TURN fields, not when the options are
+    // saved, so merge mode keeps the regional TURN defaults of whichever
+    // region is selected now. Undefined when no custom servers are set: the
+    // SDK then applies its own environment and region defaults.
+    iceServers: configureIceServers(
+      options.stunServers,
+      options.turnServers,
+      options.iceServersMode,
+      region,
+    ),
     // @ts-expect-error internal option
     host,
     region: region !== 'auto' ? region : undefined,
-
-    // When iceServers is undefined, the SDK applies its environment-specific defaults.
-    // ClientOptions can also pass a UI-computed merge of defaults + custom servers.
     env: IS_DEV_ENV ? 'development' : 'production',
   });
 }
