@@ -7,7 +7,7 @@ import { toSdkRegion } from '@/lib/regions';
 import { IS_DEV_ENV } from '@/lib/vite';
 
 /**
- * Drives `TelnyxRTC.keepConnectionWarm()` (SDK 2.28.1) from the "Keep
+ * Drives `TelnyxRTC.keepConnectionWarm()` (SDK 2.28.1+) from the "Keep
  * Connection Warm" client option: while the demo is not connected it keeps the
  * signaling host of the selected region resolved and a TLS connection to it
  * open, so the next connect skips DNS, TCP and TLS. Stops as soon as a client
