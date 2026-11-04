@@ -3,6 +3,7 @@ import CallHistory from './components/CallHistory';
 import CallNotificationHandler from './components/CallNotificationHandler';
 import CallOptions from './components/CallOptions';
 import ClientAutoConnect from './components/ClientAutoConnect';
+import ConnectionWarmer from './components/ConnectionWarmer';
 import ClientOptions from './components/ClientOptions';
 import Dialer from './components/Dialer';
 import PageLayout from './components/PageLayout';
@@ -75,6 +76,7 @@ const App = () => {
         {mode === 'sdk' && (
           <>
             <ClientAutoConnect />
+            <ConnectionWarmer />
             <CallNotificationHandler />
             <StreamingAudioHandler />
             <MediaRecoveryDialog />

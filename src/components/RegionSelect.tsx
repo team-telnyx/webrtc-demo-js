@@ -1,4 +1,5 @@
 import { useRegion } from '@/atoms/region';
+import { REGION_OPTIONS } from '@/lib/regions';
 import {
   Select,
   SelectContent,
@@ -15,14 +16,11 @@ const RegionSelect = () => {
         <SelectValue placeholder="Region" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="auto">AUTO</SelectItem>
-        <SelectItem value="eu">EU</SelectItem>
-        <SelectItem value="us-central">US-CENTRAL</SelectItem>
-        <SelectItem value="us-east">US-EAST</SelectItem>
-        <SelectItem value="us-west">US-WEST</SelectItem>
-        <SelectItem value="ca-central">CA-CENTRAL</SelectItem>
-        <SelectItem value="apac">APAC</SelectItem>
-        <SelectItem value="south-asia">SOUTH-ASIA</SelectItem>
+        {REGION_OPTIONS.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );
