@@ -134,6 +134,7 @@ const ClientOptions = () => {
       pushWhenActive: false,
       earlySdpAnswer: false,
       prefetchIceCandidates: false,
+      keepConnectionWarm: false,
       forceRelayCandidate: false,
       trickleIce: false,
       singleInterfaceIce: false,
@@ -763,6 +764,33 @@ const ClientOptions = () => {
                   </div>
                   <FormControl>
                     <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="keepConnectionWarm"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between mb-4">
+                  <div>
+                    <FormLabel>Keep Connection Warm</FormLabel>
+                    <FormDescription>
+                      While the demo is not connected, resolve the signaling
+                      host and open a TLS connection to it every 50 s
+                      (TelnyxRTC.keepConnectionWarm), so the next connect does
+                      not pay for DNS, TCP and TLS. Follows the selected region.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      data-testid="switch-keep-connection-warm"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />

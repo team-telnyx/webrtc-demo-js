@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { IS_DEV_ENV } from '@/lib/vite';
+import { REGION_OPTIONS } from '@/lib/regions';
 import {
   Card,
   CardContent,
@@ -127,15 +128,6 @@ type WidgetVersionOption = {
 
 // ── Constants ──
 
-const REGION_OPTIONS = [
-  { value: 'auto', label: 'AUTO' },
-  { value: 'eu', label: 'EU' },
-  { value: 'us-central', label: 'US-CENTRAL' },
-  { value: 'us-east', label: 'US-EAST' },
-  { value: 'us-west', label: 'US-WEST' },
-  { value: 'ca-central', label: 'CA-CENTRAL' },
-  { value: 'apac', label: 'APAC' },
-] as const;
 
 const WIDGET_EVENTS = [
   'agent.connected',

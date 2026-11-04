@@ -59,6 +59,8 @@ For more information on how to generate SIP credentials, check the [Telnyx WebRT
 - **Custom Headers**: Add custom SIP headers to your calls
 - **Codec Selection**: Choose preferred audio codecs
 - **Registration Timing**: The header shows how long the SDK took from `new TelnyxRTC()` to `telnyx.ready`, with the per-step breakdown recorded by @telnyx/webrtc 2.28.0+
+- Region pinning with every region the installed SDK documents (`asia`, `in`, `me` since 2.28.x; `south-asia` listed as deprecated) and region-aware default ICE servers
+- Keep Connection Warm: drives `TelnyxRTC.keepConnectionWarm()` while the demo is not connected, so the first connect skips DNS, TCP and TLS
 
 ## Documentation
 

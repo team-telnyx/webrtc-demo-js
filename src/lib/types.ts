@@ -20,6 +20,9 @@ export interface IClientOptionsDemo extends IClientOptions {
   // in @telnyx/webrtc.
   enableCallRecording?: boolean;
   pushWhenActive?: boolean;
+  // Demo-only: keep the signaling host warm (DNS + TCP + TLS) with
+  // TelnyxRTC.keepConnectionWarm() while the demo is not connected.
+  keepConnectionWarm?: boolean;
 }
 
 export type TurnServer = {

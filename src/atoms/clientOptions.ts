@@ -24,6 +24,7 @@ const clientOptionsDefault: IClientOptionsDemo = {
   mutedMicOnStart: false,
   enableCallReports: true,
   enableCallRecording: false,
+  keepConnectionWarm: false,
   mediaPermissionsRecovery: {
     enabled: true,
     timeout: 20000,
