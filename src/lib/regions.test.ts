@@ -12,7 +12,7 @@ describe('REGION_OPTIONS', () => {
 
   it('offers the regions added in 2.28.x', () => {
     const values = REGION_OPTIONS.map((o) => o.value);
-    expect(values).toEqual(expect.arrayContaining(['asia', 'in', 'me']));
+    expect(values).toEqual(expect.arrayContaining(['asia', 'in', 'me', 'au', 'sy']));
   });
 
   it('marks south-asia as deprecated and lists it last', () => {
